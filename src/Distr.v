@@ -223,6 +223,92 @@ Section Distr.
   Defined.
 
 
+  Lemma bind_ret_left : forall (A B : Type) 
+    (a : A) (f : A -> dist B), Bind (Ret a) f = f a.
+  Proof.
+    intros ? ? ? f.
+    unfold Bind, Ret.
+    rewrite app_nil_r.
+    induction (f a) as [ |(bx, px) ts IHn]. 
+    + simpl; reflexivity. 
+    + simpl; repeat f_equal. 
+      destruct px; 
+      repeat f_equal; 
+      try lia.
+      apply IHn.
+  Qed.
+
+  Lemma bind_ret_right : forall (A B : Type) 
+    (a : dist A), Bind a Ret = a.
+  Proof.
+    intros ? ? a.
+    unfold Bind, Ret, mul_prob.
+    induction a as [| (bx, px) ts IHn]. 
+    + simpl; reflexivity.
+    + simpl; repeat f_equal. 
+      destruct px; 
+      repeat f_equal; 
+      try lia.
+      apply IHn.
+  Qed.
+
+
+  Lemma bind_map : ∀ (A B C : Type) 
+    (ax : A)  (f : A -> dist B) 
+    (g : B -> dist C)
+    (ts : dist A) (px : prob), 
+    Bind (map (λ '(ut, pt), 
+      (ut, mul_prob px pt)) (f ax) ++ Bind ts f) g =
+    map (λ '(ut, pt), (ut, mul_prob px pt)) 
+      (Bind (f ax) g) ++ Bind (Bind ts f) g.
+  Proof.
+    intros ? ? ? ? ?.
+    induction (f ax) as [| (axx, pxx) tss IHn].
+    + simpl; 
+      intros ? ? p; 
+      reflexivity.
+    + intros ? ? ?. 
+      simpl. 
+      rewrite IHn.
+      rewrite app_assoc. 
+      eapply app_inv_tail_iff.
+      rewrite map_app, map_map.
+      apply app_inv_tail_iff,
+      map_ext. 
+      intros [ut pt].
+      rewrite mul_prob_assoc.
+      reflexivity.
+  Qed.
+
+
+
+  Lemma bind_assoc : ∀ (A B C : Type) 
+    (am : dist A) (f : A -> dist B) (g : B -> dist C), 
+    Bind (Bind am f) g = Bind am (fun a => Bind (f a) g).
+  Proof.
+    intros ? ? ?. 
+    induction am as [| (ax, px) ts IHn].
+    + simpl. 
+      reflexivity.
+    + intros ? ?. 
+      simpl. 
+      rewrite <-IHn.
+      rewrite bind_map; 
+      reflexivity.
+  Qed.
+
+
+
+  Global Instance distmonad_law : MonadLaws distmonad.
+  Proof.
+    constructor; intros.
+    + apply bind_ret_left.
+    + apply bind_ret_right; 
+      exact A.
+    + apply bind_assoc.
+  Defined.
+
+
   
 
 
