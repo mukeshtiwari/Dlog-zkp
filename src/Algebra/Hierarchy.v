@@ -137,6 +137,146 @@ Section Algebra.
     (* Global Existing Instance ring_mul_Proper. *)
     Global Existing Instance ring_sub_Proper.
 
+
+    Class commutative_ring :=
+    {
+      commutative_ring_ring : ring;
+      commutative_ring_is_commutative : is_commutative (eq := eq) (op := mul)
+    }.
+
+    Global Existing Instance commutative_ring_ring.
+    Global Existing Instance commutative_ring_is_commutative.
+
+    Class is_zero_product_zero_factor :=
+      zero_product_zero_factor : forall x y, x * y = 0 -> x = 0 \/ y = 0.
+      
+    Class is_zero_neq_one :=
+      zero_neq_one : zero <> one.
+
+    (* I don't see any immediate usage of Integral domain *)
+    Class integral_domain :=
+    {
+      integral_domain_commutative_ring : commutative_ring;
+      integral_domain_is_zero_product_zero_factor : is_zero_product_zero_factor;
+      integral_domain_is_zero_neq_one : is_zero_neq_one
+    }.
+
+
+    Global Existing Instance integral_domain_commutative_ring.
+    Global Existing Instance integral_domain_is_zero_product_zero_factor.
+    Global Existing Instance integral_domain_is_zero_neq_one.
+   
+    Context 
+      {inv : T -> T}
+      {div : T -> T -> T}.
+
     
+    Class is_left_multiplicative_inverse := 
+      left_multiplicative_inverse : forall x, x <> 0 -> (inv x) * x = 1.
+
+    Class field :=
+    {
+      field_commutative_ring : commutative_ring;
+      field_is_left_multiplicative_inverse : is_left_multiplicative_inverse;
+      field_is_zero_neq_one : is_zero_neq_one;
+      field_div_definition : forall x y , div x y = x * inv y;
+      field_inv_Proper : Proper (eq ==> eq) inv;
+      field_div_Proper : Proper (eq ==> eq ==> eq) div
+    }.
+
+
+    Global Existing Instance field_commutative_ring.
+    Global Existing Instance field_is_left_multiplicative_inverse.
+    Global Existing Instance field_is_zero_neq_one.
+    Global Existing Instance field_inv_Proper.
+    Global Existing Instance field_div_Proper.
+
+
+  End OneTypeTwoOp.
+
+  Section VectorSpace.
+
+   (* Field Elements *)
+    Context 
+      {F : Type} 
+      {eqf : F -> F -> Prop}
+      {zero one : F}
+      {add mul sub div : F -> F -> F}
+      {opp inv : F -> F}.
+
+    Local Notation "0" := zero.
+    Local Notation "1" := one.
+    Local Notation "- x" := (opp x).
+    Local Infix "+" := add.
+    Local Infix "*" := mul.
+    Local Infix "-" := sub. 
+    Local Infix "/" := div.
+    
+    Context 
+      {V : Type}
+      {eqv : V -> V -> Prop}
+      {vid : V} 
+      {vopp : V -> V}
+      {vadd : V -> V -> V} 
+      {smul : V -> F -> V}.
+
+
+    Local Infix "=" := eqv : type_scope. 
+    Local Notation "a <> b" := (not (a = b)) : type_scope.
+    
+
+    Class is_field_one :=
+      field_one : forall v, smul v 1 = v.
+
+    Class is_field_zero :=
+      field_zero : forall v, smul v 0 = vid.
+      
+    (* what will be the correct name for this? *)  
+    Class is_smul_associative_fmul := 
+      smul_associative_fmul : forall r1 r2 v, 
+        smul v (r1 * r2) = smul (smul v r1) r2.
+
+    Class is_smul_distributive_fadd :=
+      smul_distributive_fadd : forall r1 r2 v, 
+        smul v (r1 + r2) = vadd (smul v r1) (smul v r2).
+  
+    Class is_smul_distributive_vadd :=
+      smul_distributive_vadd : forall r v1 v2, 
+        smul (vadd v1 v2) r = vadd (smul v1 r) (smul v2 r).
+
+
+    (* https://www.maths.usyd.edu.au/u/bobh/UoS/MATH2902/vswhole.pdf *)  
+    Class vector_space :=
+    {
+      vector_space_commutative_group : 
+        commutative_group (eq := eqv) (op := vadd) (id := vid) (inv := vopp);
+      vector_space_field : field (eq := eqf) (zero := zero) (one := one) 
+        (opp := opp) (add := add) (sub := sub) (mul := mul) (inv := inv) (div := div);
+      vector_space_field_one : is_field_one;
+      vector_space_field_zero : is_field_zero;
+      vector_space_smul_associative_fmul : is_smul_associative_fmul;
+      vector_space_smul_distributive_fadd : is_smul_distributive_fadd;
+      vector_space_smul_distributive_vadd : is_smul_distributive_vadd;
+      vector_space_smul_Proper : Proper (eqv ==> eqf ==> eqv) smul;
+    }.
+
+    Global Existing Instance vector_space_commutative_group.
+    Global Existing Instance vector_space_field.
+    Global Existing Instance vector_space_field_one.
+    Global Existing Instance vector_space_field_zero.
+    Global Existing Instance vector_space_smul_associative_fmul.
+    Global Existing Instance vector_space_smul_distributive_fadd.
+    Global Existing Instance vector_space_smul_distributive_vadd.
+    Global Existing Instance vector_space_smul_Proper.
+
+  End VectorSpace.
+
+End Algebra.
+    
+
+
+
+
+
 
   
