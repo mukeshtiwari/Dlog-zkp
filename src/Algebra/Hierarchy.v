@@ -223,26 +223,32 @@ Section Algebra.
 
     Local Infix "=" := eqv : type_scope. 
     Local Notation "a <> b" := (not (a = b)) : type_scope.
+    (* Print Grammar constr. *)
+    Local Infix "*s" := smul 
+      (at level 40).
+    Local Infix "+v" := vadd 
+      (at level 50).
+      
     
 
     Class is_field_one :=
-      field_one : forall v, smul v 1 = v.
+      field_one : forall v, v *s 1 = v.
 
     Class is_field_zero :=
-      field_zero : forall v, smul v 0 = vid.
+      field_zero : forall v, v *s 0 = vid.
       
     (* what will be the correct name for this? *)  
     Class is_smul_associative_fmul := 
       smul_associative_fmul : forall r1 r2 v, 
-        smul v (r1 * r2) = smul (smul v r1) r2.
+        v *s (r1 * r2) = (v *s r1) *s r2.
 
     Class is_smul_distributive_fadd :=
       smul_distributive_fadd : forall r1 r2 v, 
-        smul v (r1 + r2) = vadd (smul v r1) (smul v r2).
+        v *s (r1 + r2) = (v *s r1) +v (v *s r2).
   
     Class is_smul_distributive_vadd :=
       smul_distributive_vadd : forall r v1 v2, 
-        smul (vadd v1 v2) r = vadd (smul v1 r) (smul v2 r).
+        (v1 +v v2) *s r = (v1 *s r) +v (v2 *s r).
 
 
     (* https://www.maths.usyd.edu.au/u/bobh/UoS/MATH2902/vswhole.pdf *)  
