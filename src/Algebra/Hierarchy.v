@@ -22,10 +22,10 @@ Section Algebra.
       {op : T -> T -> T} 
       {id : T}.
 
-    Local Infix "=" := eq : type_scope. 
+    Local Infix "=" := eq : type_scope.
     Local Notation "a <> b" := (not (a = b)) : type_scope.
 
-
+    (* Print Visibility type_scope. *)
   
     Class is_associative :=
       associative : forall x y z, 
@@ -88,6 +88,8 @@ Section Algebra.
     Global Existing Instance commutative_group_is_commutative.
 
   End OneTypeOneOp.
+
+  
   
   Section OneTypeTwoOp.
 
@@ -101,7 +103,7 @@ Section Algebra.
       {mul : T -> T -> T}.
 
 
-    Local Infix "=" := eq : type_scope. 
+    Local Infix "=" := eq : type_scope.
     Local Notation "a <> b" := (not (a = b)) : type_scope.
     Local Notation "0" := zero.
     Local Notation "1" := one.
@@ -137,7 +139,7 @@ Section Algebra.
     (* Global Existing Instance ring_mul_Proper. *)
     Global Existing Instance ring_sub_Proper.
 
-
+    
     Class commutative_ring :=
     {
       commutative_ring_ring : ring;
@@ -221,7 +223,7 @@ Section Algebra.
       {smul : V -> F -> V}.
 
 
-    Local Infix "=" := eqv : type_scope. 
+    Local Infix "=" := eqv : type_scope.
     Local Notation "a <> b" := (not (a = b)) : type_scope.
     (* Print Grammar constr. *)
     Local Infix "*s" := smul 
