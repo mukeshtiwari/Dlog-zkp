@@ -12,7 +12,7 @@ Require Import ExtLib.Structures.Monad
   Coq.Sorting.Permutation
   Coq.Relations.Relation_Definitions
   Coq.Logic.FunctionalExtensionality 
-  Prob.
+  Sigma.Prob.
 
 Import ListNotations.
 Section Distr.
