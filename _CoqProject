@@ -1,3 +1,5 @@
 -R src/ Sigma
 
 src/Prob.v
+src/Algebra/Hierarchy.v
+src/Algebra/Monoid.v
