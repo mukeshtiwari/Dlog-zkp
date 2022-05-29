@@ -4,6 +4,7 @@ Require Import Setoid
     Coq.Unicode.Utf8.
 
 Section Monoid.
+  
 
   Context 
     {T : Type} 
