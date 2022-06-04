@@ -262,8 +262,10 @@ Section Algebra.
     {
       vector_space_commutative_group : 
         commutative_group (eq := eqv) (op := vadd) (id := vid) (inv := vopp);
-      vector_space_field : field (eq := eqf) (zero := zero) (one := one) 
-        (opp := opp) (add := add) (sub := sub) (mul := mul) (inv := inv) (div := div);
+      vector_space_field : 
+        field (eq := eqf) (zero := zero) (one := one) 
+        (opp := opp) (add := add) (sub := sub) (mul := mul) 
+        (inv := inv) (div := div);
       vector_space_field_one : is_field_one;
       vector_space_field_zero : is_field_zero;
       vector_space_smul_associative_fmul : is_smul_associative_fmul;
