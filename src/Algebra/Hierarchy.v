@@ -285,7 +285,19 @@ Section Algebra.
 
 End Algebra.
     
+Section ZeroNeqOne.
+  Context 
+    {T eq zero one} 
+    {Hne: @is_zero_neq_one T eq zero one} 
+    {He : @Equivalence T eq}.
 
+  Lemma one_neq_zero : not (eq one zero).
+  Proof.
+    intro HH; 
+    symmetry in HH. 
+    auto using zero_neq_one.
+  Qed.
+End ZeroNeqOne.
 
 
 

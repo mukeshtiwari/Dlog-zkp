@@ -165,3 +165,9 @@ Section Group.
       Qed. 
     End ZeroNeqOne.
 End Group.
+
+        
+  
+
+
+
