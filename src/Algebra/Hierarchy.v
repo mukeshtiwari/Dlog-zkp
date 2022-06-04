@@ -1,6 +1,7 @@
 Require Import 
   Coq.Classes.Morphisms.
 
+
 Local Close Scope nat_scope. 
 Local Close Scope type_scope.
 Local Close Scope core_scope.
@@ -24,7 +25,9 @@ Section Algebra.
 
     Local Infix "=" := eq : type_scope.
     Local Notation "a <> b" := (not (a = b)) : type_scope.
-
+    
+    
+   
     (* Print Visibility type_scope. *)
   
     Class is_associative :=
@@ -198,7 +201,7 @@ Section Algebra.
 
   Section VectorSpace.
 
-   (* Field Elements *)
+   (* Scalar Elements *)
     Context 
       {F : Type} 
       {eqf : F -> F -> Prop}
@@ -214,6 +217,7 @@ Section Algebra.
     Local Infix "-" := sub. 
     Local Infix "/" := div.
     
+    (* Vector Elements *)
     Context 
       {V : Type}
       {eqv : V -> V -> Prop}
