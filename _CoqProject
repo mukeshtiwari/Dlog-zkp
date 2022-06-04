@@ -4,3 +4,4 @@ src/Prob.v
 src/Algebra/Hierarchy.v
 src/Algebra/Monoid.v
 src/Algebra/Group.v
+src/Algebra/Ring.v
