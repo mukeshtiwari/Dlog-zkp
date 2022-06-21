@@ -181,17 +181,44 @@ Section Elgamal.
   (* Not needed for now *)
   Section Ballot.
 
-    
+
     (* It combines two vectors pointwise using the function (f : R -> T -> U) *)
     Definition zip_with {R T U : Type} : 
       forall {n : nat}, (R -> T -> U) ->  
       Vector.t R n -> Vector.t T n -> Vector.t U n.
-      induction n.
-      + intros f u v. 
-        exact (@nil _). 
-      + intros f u v.
-        exact (cons _ (f (hd u) (hd v)) _ (IHn f (tl u) (tl v))).
+    Proof.
+      refine(
+        fix zip_with n f u {struct u} :=
+        match u as u' in Vector.t _ n'  
+          return
+            forall (pf : n' = n), 
+              u = eq_rect n' _ u' n pf -> 
+              Vector.t T n' -> Vector.t U n'  
+        with 
+        | nil _ => 
+            fun pf H v => @nil _ 
+        | cons _ hu m tu => 
+            fun pf H v => 
+            match v as v' in Vector.t _ (S m')
+              return 
+                forall (pf : m' = m),
+                  v = eq_rect m' (fun w => Vector.t T (S w)) v' m pf ->
+                  Vector.t U (S m') 
+            with 
+            | nil _ => idProp
+            | cons _ hv n tv => 
+                fun pfv Hv => 
+                  cons _ 
+                    (f hu hv) _ 
+                    _ 
+            end eq_refl eq_refl 
+        end eq_refl eq_refl
+      ).
+      subst.
+      exact (zip_with _ f tu tv).
     Defined.
+    
+    
 
 
     Definition encrypted_ballot {n : nat} 
@@ -352,6 +379,7 @@ Section Elgamal.
   End Ballot.
         
 
-End Elgamal.  
+End Elgamal.
+
 
 
