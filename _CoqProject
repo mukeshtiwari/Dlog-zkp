@@ -1,6 +1,7 @@
 -R src/ Sigma
 
 src/Prob.v
+src/Distr.v
 src/Algebra/Hierarchy.v
 src/Algebra/Monoid.v
 src/Algebra/Group.v

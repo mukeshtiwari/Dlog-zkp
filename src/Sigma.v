@@ -4,7 +4,7 @@ Require Import Setoid
   Sigma.Algebra.Field Sigma.Algebra.Integral_domain
   Sigma.Algebra.Ring Sigma.Algebra.Vector_space
   Lia Vector Coq.Unicode.Utf8 Sigma.Prob
-  Psatz.
+  Sigma.Distr Psatz.
 
 Import VectorNotations.
 
@@ -74,6 +74,7 @@ Module Zkp.
       (* 
         (com, cha, res)
         g^res = com * h ^ cha
+        Turn this into decidable Proposition! 
       *)
       Definition schnorr_protocol_correct (v : @sigma_proto 1 1 1) : Prop :=
         match v with
@@ -104,6 +105,104 @@ Module Zkp.
         reflexivity.
         typeclasses eauto.
       Qed.
+
+
+      (* special soundness: if the prover replies two challenge with 
+        same randomness, then exatractor can extract a witness,
+        or the witness? *)
+      Lemma special_soundness : 
+        forall r c c', c <> c' ->  
+        schnorr_protocol_correct (schnorr_protocol r c) -> 
+        schnorr_protocol_correct (schnorr_protocol r c') ->
+        ∃ y : F, g^y = h.
+      Proof.
+        unfold schnorr_protocol_correct,
+        schnorr_protocol; simpl.
+        intros * Ha Hb Hc.
+        remember (r + c * x) as res₁.
+        remember (r + c' * x) as res₂.
+        exists ((res₁ - res₂)/(c - c')).
+        subst.
+        (* I need to simplify it*)
+
+
+      Admitted.
+
+      Lemma simulator_correctness : 
+        ∀ z c, schnorr_protocol_correct (schnorr_simulator z c).
+      Proof.
+        unfold schnorr_protocol_correct, 
+          schnorr_simulator; intros ? ?; simpl.
+        rewrite <-associative.
+        rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
+          zero one add mul sub div 
+          opp inv G (@eq G) gid ginv gop gpow).
+        rewrite field_zero_iff_left,
+        vector_space_field_zero,
+        monoid_is_right_identity.
+        reflexivity.
+        typeclasses eauto.
+      Qed.
+
+
+       (* https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf 
+        We fix the challenge and show that both,  protocol 
+        using witness x as input and simulated --not using x--, have the same 
+        distributions.
+      
+        To prove the indistinguishability between a real transcript 
+        and a simulated transcript, we construct two distributions,
+        one using the witness (real transcript) and other without
+        using the witness (fake/simulator transcript). 
+        We demonstrate that  
+        the probability of the real transcript is same as 
+        the fake transcript. One thing that is implicit 
+        in these two distributions is both, real transcript 
+        and fake transcript, pass the verification test, 
+        i.e. returns true to a verifier. We use this implicit knowledge and
+        construct two distributions as a pair in 
+        which the first pair is a sigma triple and second pair
+        is the probability of the triple, ((com, chal, res), prob), 
+        in the given distribution. Thereafter we apply the 
+        sigma_compute to crunch the first pair, 
+        (com, chal, res), and produce boolean a value (true), 
+        and then we show that these two distribution are similar. 
+      *)
+      
+
+      Definition schnorr_protocol_distribution 
+        {lf : list F} {Hlfn : lf <> List.nil} (c : F) := 
+        Distr.Bind (Distr.uniform_with_replacement lf Hlfn) 
+          (fun r => Distr.Ret 
+            (schnorr_protocol_correct (schnorr_protocol r c))).
+
+      Definition simulator_distribution 
+        {lf : list F} {Hlfn : lf <> List.nil} (c : F) :=
+        Distr.Bind (Distr.uniform_with_replacement lf Hlfn)
+          (fun z => Distr.Ret 
+            (schnorr_protocol_correct (schnorr_simulator z c))).
+      
+      (*
+        Now we prove that two distributions, real one --constructed by 
+        using the witness x-- and fake one --constructed without x--,
+        are similar, modulo prob_equiv. 
+        How to bring =r= notation from Prob? Also, 
+        the monadic notations?
+      *)
+
+      Lemma special_honest_verifier_zkp : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
+        Distr.dist_equiv 
+          (@schnorr_protocol_distribution lf Hlfn c) 
+          (@ simulator_distribution lf Hlfn c).
+      Proof.
+        intros ? ? ?.
+        unfold schnorr_protocol_distribution, 
+        simulator_distribution.
+        
+
+
+      Admitted.
 
       
 
