@@ -4,9 +4,14 @@ Require Import Setoid
   Sigma.Algebra.Field Sigma.Algebra.Integral_domain
   Sigma.Algebra.Ring Sigma.Algebra.Vector_space
   Lia Vector Coq.Unicode.Utf8 Sigma.Prob
-  Sigma.Distr Psatz.
+  Sigma.Distr Psatz
+  ExtLib.Structures.Monad.
+      
+Import 
+  MonadNotation 
+  VectorNotations.
 
-Import VectorNotations.
+Local Open Scope monad_scope.
 
 Module Zkp.
 
@@ -17,7 +22,9 @@ Module Zkp.
       {F : Type}
       {zero one : F} 
       {add mul sub div : F -> F -> F}
-      {opp inv : F -> F}.
+      {opp inv : F -> F}
+      {Fdec: forall x y : F, {x = y} + {x <> y}}. 
+      (* decidable equality on Field *)
 
     (* Vector Element *)
     Context 
@@ -27,13 +34,38 @@ Module Zkp.
       {gop : G -> G -> G} 
       {gpow : G -> F -> G}
       {Hvec: @vector_space F (@eq F) zero one add mul sub 
-        div opp inv G (@eq G) gid ginv gop gpow}.
+        div opp inv G (@eq G) gid ginv gop gpow}
+      {Gdec : forall x y : G, {x = y} + {x <> y}}. 
+      (* decidable equality on G *)
     
+    Lemma gdec_true : forall x y, 
+      (if Gdec x y then true else false) = true <-> x = y.
+    Proof.
+      intros ? ?.
+      destruct (Gdec x y); split; 
+      intro H; auto.
+      inversion H.
+    Qed.
+
+    Lemma gdec_false : forall x y, 
+      (if Gdec x y then true else false) = false <-> x <> y.
+    Proof.
+      intros ? ?.
+      destruct (Gdec x y); split; 
+      intro H; auto.
+      inversion H. 
+      congruence.
+    Qed.
+
+    
+
     Local Infix "^" := gpow.
     Local Infix "*" := mul.
     Local Infix "/" := div.
     Local Infix "+" := add.
     Local Infix "-" := sub.
+
+
 
     (* sigma protocol for proof of knowledge of discrete logarithm *)
     (* A prover is convincing a verified that she know the discrete log, 
@@ -76,16 +108,19 @@ Module Zkp.
         g^res = com * h ^ cha
         Turn this into decidable Proposition! 
       *)
-      Definition schnorr_protocol_correct (v : @sigma_proto 1 1 1) : Prop :=
+      Definition schnorr_protocol_correct (v : @sigma_proto 1 1 1) : bool :=
         match v with
         | mk_sigma _ _ _ com chal res =>  
-          g^(hd res) = gop (hd com) (h^(hd chal))
+          match Gdec (g^(hd res)) (gop (hd com) (h^(hd chal))) with 
+          | left _ => true
+          | right _ => false 
+          end
         end.
 
 
       (* Sigma protocol is correct *)  
       Lemma schnorr_correctness: forall r c, 
-        schnorr_protocol_correct (schnorr_protocol r c). 
+        schnorr_protocol_correct (schnorr_protocol r c) = true.
       Proof.
         unfold schnorr_protocol, 
           schnorr_protocol_correct;
@@ -102,8 +137,11 @@ Module Zkp.
         rewrite <- (@vector_space_smul_distributive_fadd F (@eq F) 
           zero one add mul sub div
           opp inv G (@eq G) gid ginv gop gpow).
-        reflexivity.
-        typeclasses eauto.
+        subst.
+        destruct (Gdec (g ^ (r + c * x)) (g ^ (r + c * x))) eqn:Hg.
+        + reflexivity.
+        + congruence.
+        + typeclasses eauto.
       Qed.
 
 
@@ -112,8 +150,8 @@ Module Zkp.
         or the witness? *)
       Lemma special_soundness : 
         forall r c c', c <> c' ->  
-        schnorr_protocol_correct (schnorr_protocol r c) -> 
-        schnorr_protocol_correct (schnorr_protocol r c') ->
+        schnorr_protocol_correct (schnorr_protocol r c) = true -> 
+        schnorr_protocol_correct (schnorr_protocol r c') = true ->
         ∃ y : F, g^y = h.
       Proof.
         unfold schnorr_protocol_correct,
@@ -123,16 +161,18 @@ Module Zkp.
         remember (r + c' * x) as res₂.
         exists ((res₁ - res₂)/(c - c')).
         subst.
+        rewrite gdec_true in Hb, Hc.
         (* I need to simplify it*)
 
 
       Admitted.
 
       Lemma simulator_correctness : 
-        ∀ z c, schnorr_protocol_correct (schnorr_simulator z c).
+        ∀ z c, schnorr_protocol_correct (schnorr_simulator z c) = true.
       Proof.
         unfold schnorr_protocol_correct, 
           schnorr_simulator; intros ? ?; simpl.
+        rewrite gdec_true.
         rewrite <-associative.
         rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
           zero one add mul sub div 
@@ -169,18 +209,17 @@ Module Zkp.
         and then we show that these two distribution are similar. 
       *)
       
+      
 
       Definition schnorr_protocol_distribution 
         {lf : list F} {Hlfn : lf <> List.nil} (c : F) := 
-        Distr.Bind (Distr.uniform_with_replacement lf Hlfn) 
-          (fun r => Distr.Ret 
-            (schnorr_protocol_correct (schnorr_protocol r c))).
+        r <- (uniform_with_replacement lf Hlfn) ;;
+        Ret (schnorr_protocol_correct (schnorr_protocol r c)).
 
       Definition simulator_distribution 
         {lf : list F} {Hlfn : lf <> List.nil} (c : F) :=
-        Distr.Bind (Distr.uniform_with_replacement lf Hlfn)
-          (fun z => Distr.Ret 
-            (schnorr_protocol_correct (schnorr_simulator z c))).
+        z <- (uniform_with_replacement lf Hlfn) ;;
+        Ret (schnorr_protocol_correct (schnorr_simulator z c)).
       
       (*
         Now we prove that two distributions, real one --constructed by 
@@ -199,11 +238,12 @@ Module Zkp.
         intros ? ? ?.
         unfold schnorr_protocol_distribution, 
         simulator_distribution.
-        
+        setoid_rewrite schnorr_correctness;
+        setoid_rewrite simulator_correctness.
+        reflexivity.
+      Qed.
 
-
-      Admitted.
-
+  
       
 
-  End Basic_sigma.
+    End Basic_sigma.

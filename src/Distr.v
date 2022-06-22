@@ -1,4 +1,5 @@
-Require Import ExtLib.Structures.Monad
+Require Import 
+  ExtLib.Structures.Monad
   ExtLib.Structures.Functor
   ExtLib.Structures.Applicative
   ExtLib.Structures.MonadLaws
