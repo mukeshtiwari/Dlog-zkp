@@ -243,7 +243,7 @@ Module Zkp.
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
           Distr.dist_equiv 
             (@schnorr_protocol_distribution lf Hlfn c) 
-            (@ simulator_distribution lf Hlfn c).
+            (@simulator_distribution lf Hlfn c).
         Proof.
           intros ? ? ?.
           unfold schnorr_protocol_distribution, 
@@ -255,7 +255,23 @@ Module Zkp.
       
       End Proofs.
 
-  
-      
+    (* call the sha 256 hash function 
+      here to turn the interactive version into non-interactive,
+      strong Fiat Shamir transformation
+      https://eprint.iacr.org/2016/771.pdf.
+      Definition nizp_schnorr (r : F) :=
+        let c := sha256_string statement-with-other-values in  
+        schnorr_protocol r c.
+    *)
 
     End Basic_sigma.
+
+    (* 
+    Parallel Composition
+    AND composition
+    EQ Composition
+    OR Composition  
+    *)
+
+
+    Section And_Sigma.

@@ -655,7 +655,6 @@ Section Distr.
     subrelation eq (respectful Ra Rb).
   Proof. 
     intros f g Hfg.
-    Print subrelation. 
     subst. 
     intros a a' Raa'. 
     apply sb.
