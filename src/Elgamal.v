@@ -32,9 +32,10 @@ Section Elgamal.
   Context 
     (x : F) (* private key *)
     (g h : G) (* group generator and public key *)
-    (Hk : h = g^x).
+    (Hk : h = g^x). (* assumption that public key and private key are related *)
 
-  Section EncDec.   
+  Section EncDec.  
+
     Definition enc (m : F) (r : F) : G * G := 
       (g^r, gop (g^m) (h^r)).
 
@@ -182,6 +183,8 @@ Section Elgamal.
   Section Ballot.
 
 
+   
+
     (* It combines two vectors pointwise using the function (f : R -> T -> U) *)
     Definition zip_with {R T U : Type} : 
       forall {n : nat}, (R -> T -> U) ->  
@@ -218,7 +221,7 @@ Section Elgamal.
       exact (zip_with _ f tu tv).
     Defined.
     
-    
+
 
 
     Definition encrypted_ballot {n : nat} 
@@ -380,6 +383,8 @@ Section Elgamal.
         
 
 End Elgamal.
+
+(* What about security proof of Elgamal Method? *)
 
 
 
