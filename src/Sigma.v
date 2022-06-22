@@ -93,7 +93,8 @@ Module Zkp.
       *)
       Section Def.
       
-        Context (x : F) (g h : G) (key_rel : h = g^x).
+        Context (x : F) (g h : G). 
+        (* h = g^x *)
 
 
         (* Real transcript, using the witness x *)
@@ -224,6 +225,7 @@ Module Zkp.
           {lf : list F} {Hlfn : lf <> List.nil} (c : F) := 
           r <- (uniform_with_replacement lf Hlfn) ;;
           Ret (schnorr_protocol_correct g h (schnorr_protocol x g r c)).
+        
 
         (* without secret *)
         Definition simulator_distribution 
