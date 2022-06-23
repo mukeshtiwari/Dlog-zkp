@@ -218,9 +218,30 @@ Module Zkp.
           intros * Ha Hb Hc.
           remember (r + c * x) as res₁.
           remember (r + c' * x) as res₂.
-          exists ((res₁ - res₂)/(c - c')).
+          exists ((res₁ + opp res₂) * inv (c + opp c')).
           subst.
           rewrite gdec_true in Hb, Hc.
+          assert (Ht : opp (r + c' * x) = 
+            opp (c' * x) + opp r).
+          rewrite group_inv_flip;
+          reflexivity.
+          rewrite Ht; clear Ht.
+          assert (Ht : (r + c * x + (opp (c' * x) + opp r)) = 
+          ((opp (c' * x) + opp r) + r + c * x)).
+          rewrite commutative, associative.
+          reflexivity.
+          rewrite Ht; clear Ht.
+          assert (Ht : opp (c' * x) + opp r + r = 
+          opp (c' * x)).
+          rewrite <-associative.
+          rewrite field_zero_iff_left.
+          rewrite monoid_is_right_identity.
+          reflexivity.
+          rewrite Ht.
+          
+          
+          
+          
           (* I need to simplify it*)
 
 
@@ -273,9 +294,8 @@ Module Zkp.
           (a, c, r), and produce boolean a value (true), 
           and then we show that these two distribution are similar. 
         *)
-        
-        
-        (* involves secret x*)
+
+        (* involves secret x*)    
         Definition schnorr_distribution 
           {lf : list F} {Hlfn : lf <> List.nil} (c : F) := 
           r <- (uniform_with_replacement lf Hlfn) ;;
@@ -309,6 +329,19 @@ Module Zkp.
           reflexivity.
         Qed.
           
+        (* in fact, it's identical *)
+        Lemma special_honest_verifier_zkp_identical : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
+          (@schnorr_distribution lf Hlfn c)  = 
+          (@simulator_distribution lf Hlfn c).
+      Proof.
+        intros ? ? ?.
+        unfold schnorr_distribution, 
+        simulator_distribution.
+        setoid_rewrite schnorr_correctness;
+        setoid_rewrite simulator_correctness.
+        reflexivity.
+      Qed.
 
 
       End Proofs.
