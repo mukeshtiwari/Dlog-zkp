@@ -1081,7 +1081,7 @@ Section Example.
     Definition prob1 (l : list nat) (H : l <> []) :=
       x <- uniform_with_replacement l H ;;
       y <- uniform_with_replacement l H ;; 
-      ret  (x * y, x, y).
+      ret  (x, y).
 
     (*
     Definition prob2 (l : list nat) (H : l <> []) :=
@@ -1093,48 +1093,50 @@ Section Example.
     Definition prob2 (l : list nat) (H : l <> []) :=
       y <- uniform_with_replacement l H ;;
       x <- uniform_with_replacement l H ;; 
-      ret  (y * x, y, x).
+      ret  (y, x).
   
     Eval compute in prob1 [1; 2; 3; 4] Hneq.
     (*
-      [(1, 1, 1, {| num := 1; denum := 16 |});
-       (2, 1, 2, {| num := 1; denum := 16 |});
-       (3, 1, 3, {| num := 1; denum := 16 |});
-       (4, 1, 4, {| num := 1; denum := 16 |});
-       (2, 2, 1, {| num := 1; denum := 16 |});
-       (4, 2, 2, {| num := 1; denum := 16 |});
-       (6, 2, 3, {| num := 1; denum := 16 |});
-       (8, 2, 4, {| num := 1; denum := 16 |});
-       (3, 3, 1, {| num := 1; denum := 16 |});
-       (6, 3, 2, {| num := 1; denum := 16 |});
-       (9, 3, 3, {| num := 1; denum := 16 |});
-       (12, 3, 4, {| num := 1; denum := 16 |});
-       (4, 4, 1, {| num := 1; denum := 16 |});
-       (8, 4, 2, {| num := 1; denum := 16 |});
-       (12, 4, 3, {| num := 1; denum := 16 |});
-       (16, 4, 4, {| num := 1; denum := 16 |})]
-     : dist (nat * nat * nat)
+      = [(1, 1, {| num := 1; denum := 16 |});
+       (1, 2, {| num := 1; denum := 16 |});
+       (1, 3, {| num := 1; denum := 16 |});
+       (1, 4, {| num := 1; denum := 16 |});
+       (2, 1, {| num := 1; denum := 16 |});
+       (2, 2, {| num := 1; denum := 16 |});
+       (2, 3, {| num := 1; denum := 16 |});
+       (2, 4, {| num := 1; denum := 16 |});
+       (3, 1, {| num := 1; denum := 16 |});
+       (3, 2, {| num := 1; denum := 16 |});
+       (3, 3, {| num := 1; denum := 16 |});
+       (3, 4, {| num := 1; denum := 16 |});
+       (4, 1, {| num := 1; denum := 16 |});
+       (4, 2, {| num := 1; denum := 16 |});
+       (4, 3, {| num := 1; denum := 16 |});
+       (4, 4, {| num := 1; denum := 16 |})]
+     : dist (nat * nat)
+
     *)
 
     Eval compute in prob2 [1; 2; 3; 4] Hneq.
     (*
-       [(1, 1, 1, {| num := 1; denum := 16 |});
-       (2, 1, 2, {| num := 1; denum := 16 |});
-       (3, 1, 3, {| num := 1; denum := 16 |});
-       (4, 1, 4, {| num := 1; denum := 16 |});
-       (2, 2, 1, {| num := 1; denum := 16 |});
-       (4, 2, 2, {| num := 1; denum := 16 |});
-       (6, 2, 3, {| num := 1; denum := 16 |});
-       (8, 2, 4, {| num := 1; denum := 16 |});
-       (3, 3, 1, {| num := 1; denum := 16 |});
-       (6, 3, 2, {| num := 1; denum := 16 |});
-       (9, 3, 3, {| num := 1; denum := 16 |});
-       (12, 3, 4, {| num := 1; denum := 16 |});
-       (4, 4, 1, {| num := 1; denum := 16 |});
-       (8, 4, 2, {| num := 1; denum := 16 |});
-       (12, 4, 3, {| num := 1; denum := 16 |});
-       (16, 4, 4, {| num := 1; denum := 16 |})]
-     : dist (nat * nat * nat)
+       [(1, 1, {| num := 1; denum := 16 |});
+       (1, 2, {| num := 1; denum := 16 |});
+       (1, 3, {| num := 1; denum := 16 |});
+       (1, 4, {| num := 1; denum := 16 |});
+       (2, 1, {| num := 1; denum := 16 |});
+       (2, 2, {| num := 1; denum := 16 |});
+       (2, 3, {| num := 1; denum := 16 |});
+       (2, 4, {| num := 1; denum := 16 |});
+       (3, 1, {| num := 1; denum := 16 |});
+       (3, 2, {| num := 1; denum := 16 |});
+       (3, 3, {| num := 1; denum := 16 |});
+       (3, 4, {| num := 1; denum := 16 |});
+       (4, 1, {| num := 1; denum := 16 |});
+       (4, 2, {| num := 1; denum := 16 |});
+       (4, 3, {| num := 1; denum := 16 |});
+       (4, 4, {| num := 1; denum := 16 |})]
+     : dist (nat * nat)
+
     *)
 
     Local Infix "=r=" := dist_equiv 
