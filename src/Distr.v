@@ -1050,6 +1050,19 @@ Section Event.
     simpl in Hone. nia.
   Qed.
 
+  Lemma uniform_probability : 
+    forall (lf : list A)  (Hlf : lf <> []) a b, 
+    In (a, b) (uniform_with_replacement lf Hlf) ->
+    b = mk_prob 1 (Pos.of_nat (List.length lf)).
+  Proof.
+    intros * Ha.
+    unfold uniform_with_replacement in Ha.
+    apply prob_list in Ha.
+    destruct Ha as [_ Ha].
+    exact Ha.
+  Qed.
+
+
 
 
 

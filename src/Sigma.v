@@ -9,7 +9,8 @@ Require Import Setoid
   Coq.Bool.Bool
   Coq.PArith.Pnat 
   Coq.NArith.BinNatDef
-  Coq.PArith.BinPos.
+  Coq.PArith.BinPos
+  Sigma.Distr.
       
 Import 
   MonadNotation 
@@ -315,12 +316,7 @@ Module Zkp.
           which the first pair is a sigma triple and second pair
           is the probability of the triple, ((a, c, r), prob), 
           in the given distribution. 
-          
-          In the proof, we apply (map) 
-          accepting_conversation to crunch the first pair, 
-          (a, c, r), and produce boolean a value (true), 
-          and then we show that these two distribution are 
-          identical 
+        
         *)
 
         (* involves secret x*)    
@@ -343,29 +339,95 @@ Module Zkp.
         
         Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
+        Lemma probability_schnorr_distribution_generic : 
+         forall l trans prob c n,
+          (forall trx prx, List.In (trx, prx) l -> 
+            prx = 1 / n) ->  
+          List.In (trans, prob)
+            (Bind l
+              (λ r : F, Ret (schnorr_protocol x g r c))) ->
+          prob = 1 / n.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+    
+
         (* Every elements in @schnorr_distribution 
           has probability 1/ (List.length lf) where 
           lf the list of Field element from which the 
           random r is drawn *)
         Lemma probability_schnorr_distribution : 
           forall (lf : list F) 
-          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob, 
+          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n,
+          n = List.length lf -> 
           List.In ((a₁; c₁; r₁), prob) 
             (@schnorr_distribution lf Hlfn c) ->
-          prob = 1 / (List.length lf). 
+          prob = 1 / n. 
         Proof.
           cbn.
-          induction lf. 
-          + simpl; intros.
-            lia.
-          + destruct lf.
-            ++ simpl; intros.
-               unfold schnorr_protocol in H.
-               admit.
-            ++ remember (List.cons f lf) as flf.
-               intros.
-        Admitted.
+          intros * Hn Hl.
+          assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
+            List.length lf).
+          unfold uniform_with_replacement.
+          rewrite List.map_length;
+          reflexivity.
+          pose proof probability_schnorr_distribution_generic
+          (uniform_with_replacement lf Hlfn)
+          (a₁; c₁; r₁) prob c n as Ht.
+          rewrite Hn.
+          rewrite Hn in Ht.
+          specialize (Ht 
+            (uniform_probability lf Hlfn) Hl).
+          exact Ht.
+        Qed.
 
+         
+        Lemma probability_simulator_distribution_generic : 
+         forall l trans prob c n,
+          (forall trx prx, List.In (trx, prx) l -> 
+            prx = 1 / n) ->  
+          List.In (trans, prob)
+            (Bind l
+              (λ r : F, Ret (schnorr_simulator g h r c))) ->
+          prob = 1 / n.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
 
         (* Every elements in @simulator_distribution 
           has probability 1/ (List.length lf) where 
@@ -373,16 +435,29 @@ Module Zkp.
           random r is drawn *)
         Lemma probability_simulator_distribution : 
           forall (lf : list F) 
-          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob, 
+          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n, 
+          n = List.length lf -> 
           List.In ((a₁; c₁; r₁), prob) 
             (@simulator_distribution lf Hlfn c) ->
-          prob = 1 / (List.length lf).
+          prob = 1 / n.
         Proof.
-          intros.
-          unfold simulator_distribution in H.
-          cbn in H.
-        Admitted. 
-        
+          cbn.
+          intros * Hn Hl.
+          assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
+            List.length lf).
+          unfold uniform_with_replacement.
+          rewrite List.map_length;
+          reflexivity.
+          pose proof probability_simulator_distribution_generic
+          (uniform_with_replacement lf Hlfn)
+          (a₁; c₁; r₁) prob c n as Ht.
+          rewrite Hn.
+          rewrite Hn in Ht.
+          specialize (Ht 
+            (uniform_probability lf Hlfn) Hl).
+          exact Ht.
+        Qed.
+         
       
 
         Lemma generic_distribution : 
