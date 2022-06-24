@@ -45,11 +45,11 @@ Section Elgamal.
       end.
 
     
-      (* encryption and decryption lemma.
-        Note that we are getting g^m back, not m, 
-        so we need to run a proof search to recover 
-        m from g^m 
-      *)
+    (* encryption and decryption lemma.
+      Note that we are getting g^m back, not m, 
+      so we need to run a proof search to recover 
+      m from g^m 
+    *)
     Lemma dec_is_left_inv_of_enc : 
       forall (c d : G) (r m : F), 
       (c, d) = enc m r -> g^m = dec (c, d).

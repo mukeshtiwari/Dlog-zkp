@@ -5,7 +5,8 @@ Require Import Setoid
   Sigma.Algebra.Ring Sigma.Algebra.Vector_space
   Lia Vector Coq.Unicode.Utf8 Sigma.Prob
   Sigma.Distr Psatz
-  ExtLib.Structures.Monad.
+  ExtLib.Structures.Monad
+  Coq.Bool.Bool.
       
 Import 
   MonadNotation 
@@ -57,6 +58,15 @@ Module Zkp.
       congruence.
     Qed.
 
+    Lemma gdec_eq_true : forall x, 
+      (if Gdec x x then true else false) = true.
+    Proof.
+      intros ?.
+      destruct (Gdec x x).
+      reflexivity.
+      congruence.
+    Qed.
+
     
 
     Local Infix "^" := gpow.
@@ -71,7 +81,7 @@ Module Zkp.
     (* A prover is convincing a verified that she know the discrete log, 
       log_{g} h = x. We will turn this into NIZK by Fiat-Shamir transform 
       (careful )*)
-    (* It generic! In case of basic sigma, *)
+   
     Record sigma_proto {n m r : nat}:= 
       mk_sigma 
       {
@@ -98,6 +108,7 @@ Module Zkp.
       *)
       Section Def.
       
+        (* x is a secret *)
         Context (x : F) (g h : G). 
         (* h = g^x *)
       
@@ -107,7 +118,7 @@ Module Zkp.
           ([g^r]; [c]; [r + c * x]).
 
         (* Fake transcript without the witness x, simulator with 
-          random z and c *)
+          random r and c *)
         Definition schnorr_simulator (r c : F) : sigma_proto := 
           ([gop (g^r) (h^(opp c))]; [c]; [r]).
 
@@ -161,7 +172,7 @@ Module Zkp.
         Qed.
 
 
-        (* it's same as above but better clear. *)
+        (* it's same as above but more clear. *)
         Lemma schnorr_correctness_berry : forall r c a₁ c₁ r₁, 
            (a₁; c₁; r₁) = (schnorr_protocol x g r c) ->
            accepting_conversation g h (a₁; c₁; r₁) = true.
@@ -238,9 +249,8 @@ Module Zkp.
           rewrite monoid_is_right_identity.
           reflexivity.
           rewrite Ht.
-          
-          
-          
+
+
           
           (* I need to simplify it*)
 
@@ -272,8 +282,8 @@ Module Zkp.
 
         (* https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf 
           We fix the challenge and show that both,  protocol 
-          using witness x as input and simulated --not using x--, have the same 
-          distributions.
+          using witness x as input and simulated --not using x--, 
+          have the same distributions.
         
           To prove the indistinguishability between a real transcript 
           and a simulated transcript, we construct two distributions,
@@ -289,24 +299,152 @@ Module Zkp.
           construct two distributions as a pair in 
           which the first pair is a sigma triple and second pair
           is the probability of the triple, ((a, c, r), prob), 
-          in the given distribution. Thereafter we apply the 
+          in the given distribution. 
+          
+          In the proof, we apply (map) 
           accepting_conversation to crunch the first pair, 
           (a, c, r), and produce boolean a value (true), 
-          and then we show that these two distribution are similar. 
+          and then we show that these two distribution are 
+          identical 
         *)
 
         (* involves secret x*)    
         Definition schnorr_distribution 
           {lf : list F} {Hlfn : lf <> List.nil} (c : F) := 
           r <- (uniform_with_replacement lf Hlfn) ;;
-          Ret (accepting_conversation g h (schnorr_protocol x g r c)).
+          Ret (schnorr_protocol x g r c).
         
-
+        
         (* without secret *)
         Definition simulator_distribution 
           {lf : list F} {Hlfn : lf <> List.nil} (c : F) :=
           r <- (uniform_with_replacement lf Hlfn) ;;
-          Ret (accepting_conversation g h (schnorr_simulator g h r c)).
+          Ret (schnorr_simulator g h r c).
+
+
+        
+        Lemma generic_distribution : 
+          forall l c, 
+          List.map (λ '(a, p), (accepting_conversation g h a, p))
+          (Bind l
+             (λ r : F, Ret (schnorr_protocol x g r c))) =
+          List.map (λ '(a, p), (accepting_conversation g h a, p))
+          (Bind l
+             (λ r : F, Ret (schnorr_simulator g h r c))).
+        Proof.
+          induction l. 
+          + simpl; intros ?.
+            reflexivity.
+          + simpl; intros ?.
+            destruct a as (a, b);
+            simpl.
+            f_equal.
+            rewrite key_rel.
+            assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
+            rewrite smul_pow_up. 
+            reflexivity.
+            rewrite Hg; 
+            clear Hg.
+            assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
+            rewrite smul_pow_up. 
+            reflexivity.
+            rewrite Hg; 
+            clear Hg.
+            assert (Ht : 
+              (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
+            (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
+            rewrite <- (@monoid_is_associative G (@eq G) gop gid).
+            reflexivity. 
+            typeclasses eauto.
+            rewrite Ht; clear Ht. 
+            assert (Ht : (gop (g ^ a) (g ^ (x * c))) = 
+              g^(a + x * c)).
+            rewrite (@vector_space_smul_distributive_fadd 
+              F (@eq F) zero one add mul sub div 
+              opp inv G (@eq G) gid ginv gop gpow).
+            reflexivity.
+            typeclasses eauto.
+            rewrite Ht; 
+            clear Ht.
+            rewrite <-(@vector_space_smul_distributive_fadd 
+              F (@eq F) zero one add mul sub div 
+              opp inv G (@eq G) gid ginv gop gpow).
+            assert (Ht : (x * opp c + x * c) = 
+              x * (opp c + c)).
+            (* why rewrite not working? *)
+            pose proof ring_is_left_distributive.
+            unfold is_left_distributive in H.
+            specialize (H x (opp c) c).
+            symmetry.
+            exact H.
+            rewrite Ht; clear Ht.
+            assert (Ht : (opp c) + c = c + opp c).
+            rewrite (@commutative_group_is_commutative F 
+            (@eq F) add zero opp).
+            reflexivity.
+            typeclasses eauto.
+            rewrite Ht; 
+            clear Ht.
+            assert (Ht : (c + opp c) = zero).
+            rewrite field_zero_iff_right.
+            reflexivity.
+            rewrite Ht; clear Ht.
+            assert (Ht : x * zero = zero).
+            rewrite ring_mul_0_r;
+            reflexivity.
+            rewrite Ht; 
+            clear Ht.
+            assert (Ht : (g ^ zero) = gid).
+            rewrite vector_space_field_zero.
+            reflexivity.
+            rewrite Ht; 
+            clear Ht.
+            assert (Ht : (gop (g ^ a) gid) = g^a).
+            rewrite monoid_is_right_identity.
+            reflexivity.
+            rewrite Ht;
+            clear Ht.
+            assert (Ht : c * x = x * c).
+            rewrite (@commutative_ring_is_commutative F (@eq F) zero 
+              one opp add sub mul).
+            reflexivity.
+            typeclasses eauto.
+            rewrite Ht; 
+            clear Ht.
+            rewrite (@commutative_group_is_commutative F 
+            (@eq F) add zero opp).
+            rewrite !gdec_eq_true.
+            reflexivity.
+            typeclasses eauto.
+            typeclasses eauto.
+            apply IHl.
+        Qed.
+           
+
+
+
+        (* in fact, it's identical *)
+        Lemma special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
+            List.map (fun '(a, p) => 
+              (accepting_conversation g h a, p))
+              (@schnorr_distribution lf Hlfn c) = 
+            List.map (fun '(a, p) => 
+              (accepting_conversation g h a, p))
+              (@simulator_distribution lf Hlfn c).
+        Proof.
+          intros ? ? ?.
+          unfold schnorr_distribution, 
+          simulator_distribution.
+          cbn.
+          apply generic_distribution.
+        Qed.
+        
+        
+
+
+       
+
         
         (*
           Now we prove that two distributions, real one --constructed by 
@@ -314,35 +452,8 @@ Module Zkp.
           are similar, modulo prob_equiv. 
           How to bring =r= notation from Prob? 
         *)
-
-        Lemma special_honest_verifier_zkp : 
-          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
-          Distr.dist_equiv 
-            (@schnorr_distribution lf Hlfn c) 
-            (@simulator_distribution lf Hlfn c).
-        Proof.
-          intros ? ? ?.
-          unfold schnorr_distribution, 
-          simulator_distribution.
-          setoid_rewrite schnorr_correctness;
-          setoid_rewrite simulator_correctness.
-          reflexivity.
-        Qed.
           
-        (* in fact, it's identical *)
-        Lemma special_honest_verifier_zkp_identical : 
-        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
-          (@schnorr_distribution lf Hlfn c)  = 
-          (@simulator_distribution lf Hlfn c).
-      Proof.
-        intros ? ? ?.
-        unfold schnorr_distribution, 
-        simulator_distribution.
-        setoid_rewrite schnorr_correctness;
-        setoid_rewrite simulator_correctness.
-        reflexivity.
-      Qed.
-
+        
 
       End Proofs.
 
