@@ -6,7 +6,10 @@ Require Import Setoid
   Lia Vector Coq.Unicode.Utf8 Sigma.Prob
   Sigma.Distr Psatz
   ExtLib.Structures.Monad
-  Coq.Bool.Bool.
+  Coq.Bool.Bool
+  Coq.PArith.Pnat 
+  Coq.NArith.BinNatDef
+  Coq.PArith.BinPos.
       
 Import 
   MonadNotation 
@@ -337,8 +340,51 @@ Module Zkp.
           r <- (uniform_with_replacement lf Hlfn) ;;
           Ret (schnorr_simulator g h r c).
 
-
         
+        Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+        (* Every elements in @schnorr_distribution 
+          has probability 1/ (List.length lf) where 
+          lf the list of Field element from which the 
+          random r is drawn *)
+        Lemma probability_schnorr_distribution : 
+          forall (lf : list F) 
+          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob, 
+          List.In ((a₁; c₁; r₁), prob) 
+            (@schnorr_distribution lf Hlfn c) ->
+          prob = 1 / (List.length lf). 
+        Proof.
+          cbn.
+          induction lf. 
+          + simpl; intros.
+            lia.
+          + destruct lf.
+            ++ simpl; intros.
+               unfold schnorr_protocol in H.
+               admit.
+            ++ remember (List.cons f lf) as flf.
+               intros.
+        Admitted.
+
+
+        (* Every elements in @simulator_distribution 
+          has probability 1/ (List.length lf) where 
+          lf the list of Field element from which the 
+          random r is drawn *)
+        Lemma probability_simulator_distribution : 
+          forall (lf : list F) 
+          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob, 
+          List.In ((a₁; c₁; r₁), prob) 
+            (@simulator_distribution lf Hlfn c) ->
+          prob = 1 / (List.length lf).
+        Proof.
+          intros.
+          unfold simulator_distribution in H.
+          cbn in H.
+        Admitted. 
+        
+      
+
         Lemma generic_distribution : 
           forall l c, 
           List.map (λ '(a, p), (accepting_conversation g h a, p))
@@ -439,7 +485,7 @@ Module Zkp.
 
 
 
-        (* in fact, it's identical *)
+        (* it's identical *)
         (* We map 
           accepting_conversation to crunch the first pair, 
           (a, c, r), and produce boolean a value (true), 
