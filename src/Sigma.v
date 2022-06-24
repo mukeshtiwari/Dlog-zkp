@@ -78,22 +78,20 @@ Module Zkp.
 
 
     (* sigma protocol for proof of knowledge of discrete logarithm *)
-    (* A prover is convincing a verified that she know the discrete log, 
+    (* A prover is convincing a verifier that she know the discrete log, 
       log_{g} h = x. We will turn this into NIZK by Fiat-Shamir transform 
       (careful )*)
    
     Record sigma_proto {n m r : nat}:= 
       mk_sigma 
       {
-        announcement : Vector.t G n; 
-        challenge : Vector.t F m; 
-        response : Vector.t F r
+        announcement : Vector.t G n; (* prover announcement*)
+        challenge : Vector.t F m; (* verifier randomness *)
+        response : Vector.t F r (* prover response *)
       }.
-      (* 
-      I am not adding any axioms because it will 
-      depend on how we componse the protocols. 
-      *)
+     
 
+    
     Notation "( a ; c ; r )" := 
       (@mk_sigma _ _ _ a c r).
 
@@ -113,20 +111,21 @@ Module Zkp.
         (* h = g^x *)
       
 
-        (* Real transcript, using the witness x *)
-        Definition schnorr_protocol (r : F) (c : F) : sigma_proto := 
+        (* Real transcript, using the (secret) witness x *)
+        Definition schnorr_protocol (r : F) (c : F) : sigma_proto  :=  
           ([g^r]; [c]; [r + c * x]).
 
-        (* Fake transcript without the witness x, simulator with 
-          random r and c *)
+        (* Fake transcript (without the witness x) *)
         Definition schnorr_simulator (r c : F) : sigma_proto := 
           ([gop (g^r) (h^(opp c))]; [c]; [r]).
 
         (* 
-          (a, c, r)
-          g^res = ann * h ^ cha
+          
+          This function checks if a conversation (a; c; r) 
+          is accepting or not. It checks if g^r = a * h^c
         *)
-        Definition accepting_conversation (v : @sigma_proto 1 1 1) : bool :=
+        Definition accepting_conversation 
+          (v : @sigma_proto 1 1 1) : bool :=
           match v with
           | (a; c; r) =>  
             match Gdec (g^(hd r)) (gop (hd a) (h^(hd c))) with 
@@ -139,12 +138,17 @@ Module Zkp.
 
       Section Proofs.
 
-        Context (x : F) (g h : G) (key_rel : h = g^x).
+        (* available in global context *)
+        Context 
+          (x : F) (* secret witness *) 
+          (g h : G) (* public values *)
+          (key_rel : h = g^x). (* relation that prover trying to 
+            establish, or convince a verifier*)
 
         (* Sigma protocol is correct.
           For some randomness r (a = g^r) and challenge c, 
           (schnorr_protocol x g r c) returns 
-          an accepting conversation (a₁; c₁; r₁) 
+          an accepting conversation.
         *)
         Lemma schnorr_correctness : forall r c,
            accepting_conversation g h (schnorr_protocol x g r c) = true.
@@ -172,7 +176,10 @@ Module Zkp.
         Qed.
 
 
-        (* it's same as above but more clear. *)
+        (* it's same as above but more clear. 
+           It explicitly binds the accepting 
+           conversation to variables (a₁; c₁; r₁).
+        *)
         Lemma schnorr_correctness_berry : forall r c a₁ c₁ r₁, 
            (a₁; c₁; r₁) = (schnorr_protocol x g r c) ->
            accepting_conversation g h (a₁; c₁; r₁) = true.
@@ -183,10 +190,10 @@ Module Zkp.
         Qed.
 
 
-        (* simulator produces an accepting conversation 
+        (* simulator produces an accepting conversation,
            without using the secret x *)
-        Lemma simulator_correctness : 
-           ∀ r c, accepting_conversation g h 
+        Lemma simulator_correctness : forall r c, 
+          accepting_conversation g h 
             (schnorr_simulator g h r c) = true.
         Proof.
           unfold accepting_conversation, 
@@ -205,6 +212,11 @@ Module Zkp.
          Qed.
         
         
+        (* it's same as above but more clear. 
+           It explicitly binds the accepting 
+           conversation of simulator 
+           to variables (a₁; c₁; r₁).
+        *)
         Lemma simulator_correctness_berry : 
           forall r c a₁ c₁ r₁,
           (a₁; c₁; r₁) = (schnorr_simulator g h r c) ->
@@ -217,7 +229,8 @@ Module Zkp.
 
 
         (* special soundness: if the prover replies two challenge with 
-          same randomness, then exatractor can extract a/the? witness *)
+          same randomness r, i.e., same announcement, 
+          then exatractor can extract the witness *)
         Lemma special_soundness : 
           forall r c c', c <> c' ->  
           accepting_conversation g h (schnorr_protocol x g r c) = true -> 
@@ -249,23 +262,22 @@ Module Zkp.
           rewrite monoid_is_right_identity.
           reflexivity.
           rewrite Ht.
-
-
-          
-          (* I need to simplify it*)
-
-
+          (* I need to discharge this goal:
+            g ^ ((opp (c' * x) + c * x) * inv (c + opp c')) = g ^ x
+          *)
         Admitted.
 
 
+        (* Same as above but with explicit bindings 
+          for conversations. *)
         Lemma special_soundness_berry : 
           forall r c c', c <> c' -> 
           forall a₁ c₁ r₁ a₂ c₂ r₂, 
           (a₁; c₁; r₁) = (schnorr_protocol x g r c)  -> (* first conversation *)
-          accepting_conversation g h (a₁; c₁; r₁) = true ->  
+          accepting_conversation g h (a₁; c₁; r₁) = true -> (* and it's accepting *) 
           (a₂; c₂; r₂) = (schnorr_protocol x g r c') -> (* second conversation *)
-          accepting_conversation g h (a₂; c₂; r₂) = true -> 
-          ∃ y : F, g^y = h.
+          accepting_conversation g h (a₂; c₂; r₂) = true -> (* and it's accepting *)
+          ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
         Proof.
           intros * Hdisj * Ha Hb Hc Hd.
           rewrite Ha in Hb.
@@ -309,8 +321,12 @@ Module Zkp.
         *)
 
         (* involves secret x*)    
-        Definition schnorr_distribution 
-          {lf : list F} {Hlfn : lf <> List.nil} (c : F) := 
+        (* Under the hood, it is modelled as a list and 
+           looks like:
+           [((a; c; r), prob); ((a; c; r), prop) ......]
+        *)
+        Definition schnorr_distribution {lf : list F} 
+          {Hlfn : lf <> List.nil} (c : F) : dist sigma_proto :=
           r <- (uniform_with_replacement lf Hlfn) ;;
           Ret (schnorr_protocol x g r c).
         
@@ -424,6 +440,12 @@ Module Zkp.
 
 
         (* in fact, it's identical *)
+        (* We map 
+          accepting_conversation to crunch the first pair, 
+          (a, c, r), and produce boolean a value (true), 
+          and then we show that these two distribution are 
+          identical 
+        *)
         Lemma special_honest_verifier_zkp : 
           forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
             List.map (fun '(a, p) => 
@@ -440,19 +462,6 @@ Module Zkp.
           apply generic_distribution.
         Qed.
         
-        
-
-
-       
-
-        
-        (*
-          Now we prove that two distributions, real one --constructed by 
-          using the witness x-- and fake one --constructed without x--,
-          are similar, modulo prob_equiv. 
-          How to bring =r= notation from Prob? 
-        *)
-          
         
 
       End Proofs.
