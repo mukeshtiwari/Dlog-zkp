@@ -266,6 +266,33 @@ Module Zkp.
           rewrite monoid_is_right_identity.
           reflexivity.
           rewrite Ht.
+          rewrite <-ring_mul_opp_l.
+          (* this rewriting fails because of some 
+          Proper instance 
+          rewrite <-ring_is_right_distributive.
+          *)
+          pose proof ring_is_right_distributive as Hr.
+          unfold is_right_distributive in Hr.
+          specialize (Hr x (opp c') c).
+          rewrite <-Hr.
+          rewrite commutative, associative.
+          assert (Hwt : c + opp c' = opp c' + c).
+          rewrite commutative; reflexivity.
+          rewrite Hwt; clear Hwt.
+          assert (Hwt : inv (opp c' + c) * (opp c' + c) =
+            (opp c' + c) * inv (opp c' + c)).
+          rewrite commutative; 
+          reflexivity.
+          rewrite Hwt; clear Hwt.
+          rewrite field_right_multiplicative_inverse .
+          rewrite monoid_is_left_idenity.
+          reflexivity.
+          intro Hf.
+          pose proof ring_neq_sub_neq_zero c c' Ha as Hw.
+          rewrite <-Hf in Hw.
+          apply Hw.
+          
+          
           (* I need to discharge this goal:
             g ^ ((opp (c' * x) + c * x) * inv (c + opp c')) = g ^ x
           *)
@@ -463,11 +490,9 @@ Module Zkp.
         Lemma generic_distribution : 
           forall l c, 
           List.map (λ '(a, p), (accepting_conversation g h a, p))
-          (Bind l
-             (λ r : F, Ret (schnorr_protocol x g r c))) =
+            (Bind l (λ r : F, Ret (schnorr_protocol x g r c))) =
           List.map (λ '(a, p), (accepting_conversation g h a, p))
-          (Bind l
-             (λ r : F, Ret (schnorr_simulator g h r c))).
+            (Bind l (λ r : F, Ret (schnorr_simulator g h r c))).
         Proof.
           induction l. 
           + simpl; intros ?.
