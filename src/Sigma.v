@@ -289,328 +289,327 @@ Module Zkp.
           reflexivity.
           intro Hf.
           pose proof ring_neq_sub_neq_zero c c' Ha as Hw.
-          rewrite <-Hf in Hw.
           apply Hw.
-          
-          
-          (* I need to discharge this goal:
-            g ^ ((opp (c' * x) + c * x) * inv (c + opp c')) = g ^ x
-          *)
-        Admitted.
+          rewrite ring_sub_definition.
+          rewrite commutative.
+          exact Hf.
+      Qed.
 
 
-        (* Same as above but with explicit bindings 
-          for conversations. *)
-        Lemma special_soundness_berry : 
-          forall r c c', c <> c' -> 
-          forall a₁ c₁ r₁ a₂ c₂ r₂, 
-          (a₁; c₁; r₁) = (schnorr_protocol x g r c)  -> (* first conversation *)
-          accepting_conversation g h (a₁; c₁; r₁) = true -> (* and it's accepting *) 
-          (a₂; c₂; r₂) = (schnorr_protocol x g r c') -> (* second conversation *)
-          accepting_conversation g h (a₂; c₂; r₂) = true -> (* and it's accepting *)
-          ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
-        Proof.
-          intros * Hdisj * Ha Hb Hc Hd.
-          rewrite Ha in Hb.
-          rewrite Hc in Hd.
-          eapply special_soundness.
-          + exact Hdisj.
-          + exact Hb.
-          + exact Hd.
-        Qed.   
-
-      
-        
 
 
-        (* https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf 
-          We fix the challenge and show that both,  protocol 
-          using witness x as input and simulated --not using x--, 
-          have the same distributions.
-        
-          To prove the indistinguishability between a real transcript 
-          and a simulated transcript, we construct two distributions,
-          one using the witness (real transcript) and other without
-          using the witness (fake/simulator transcript). 
-          We demonstrate that  
-          the probability of the real transcript is same as 
-          the fake transcript. One thing that is implicit 
-          in these two distributions is both, real transcript 
-          and fake transcript, pass the verification test, 
-          i.e. returns true to a verifier. 
-          We use this implicit knowledge and
-          construct two distributions as a pair in 
-          which the first pair is a sigma triple and second pair
-          is the probability of the triple, ((a, c, r), prob), 
-          in the given distribution. 
-        
-        *)
-
-        (* involves secret x*)    
-        (* Under the hood, it is modelled as a list and 
-           looks like:
-           [((a; c; r), prob); ((a; c; r), prop) ......]
-        *)
-        Definition schnorr_distribution {lf : list F} 
-          {Hlfn : lf <> List.nil} (c : F) : dist sigma_proto :=
-          r <- (uniform_with_replacement lf Hlfn) ;;
-          Ret (schnorr_protocol x g r c).
-        
-        
-        (* without secret *)
-        Definition simulator_distribution 
-          {lf : list F} {Hlfn : lf <> List.nil} (c : F) :=
-          r <- (uniform_with_replacement lf Hlfn) ;;
-          Ret (schnorr_simulator g h r c).
-
-        
-        Notation "p / q" := (mk_prob p (Pos.of_nat q)).
-
-        Lemma probability_schnorr_distribution_generic : 
-         forall l trans prob c n,
-          (forall trx prx, List.In (trx, prx) l -> 
-            prx = 1 / n) ->  
-          List.In (trans, prob)
-            (Bind l
-              (λ r : F, Ret (schnorr_protocol x g r c))) ->
-          prob = 1 / n.
-        Proof.
-          induction l as [|(a, p) l IHl].
-          + intros * Ha Hin.
-            simpl in Hin.
-            inversion Hin.
-          + intros * Ha Hin.
-            pose proof (Ha a p (or_introl eq_refl)).
-            destruct Hin as [Hwa | Hwb].
-            inversion Hwa; subst; 
-            clear Hwa.
-            unfold mul_prob, 
-            Prob.one; simpl.
-            f_equal.
-            nia.
-            simpl in Hwb.
-            eapply IHl.
-            intros ? ? Hinn.
-            exact (Ha trx prx (or_intror Hinn)).
-            exact Hwb.
-        Qed.
+      (* Same as above but with explicit bindings 
+        for conversations. *)
+      Lemma special_soundness_berry : 
+        forall r c c', c <> c' -> 
+        forall a₁ c₁ r₁ a₂ c₂ r₂, 
+        (a₁; c₁; r₁) = (schnorr_protocol x g r c)  -> (* first conversation *)
+        accepting_conversation g h (a₁; c₁; r₁) = true -> (* and it's accepting *) 
+        (a₂; c₂; r₂) = (schnorr_protocol x g r c') -> (* second conversation *)
+        accepting_conversation g h (a₂; c₂; r₂) = true -> (* and it's accepting *)
+        ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
+      Proof.
+        intros * Hdisj * Ha Hb Hc Hd.
+        rewrite Ha in Hb.
+        rewrite Hc in Hd.
+        eapply special_soundness.
+        + exact Hdisj.
+        + exact Hb.
+        + exact Hd.
+      Qed.   
 
     
-
-        (* Every elements in @schnorr_distribution 
-          has probability 1/ (List.length lf) where 
-          lf the list of Field element from which the 
-          random r is drawn *)
-        Lemma probability_schnorr_distribution : 
-          forall (lf : list F) 
-          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n,
-          n = List.length lf -> 
-          List.In ((a₁; c₁; r₁), prob) 
-            (@schnorr_distribution lf Hlfn c) ->
-          prob = 1 / n. 
-        Proof.
-          cbn.
-          intros * Hn Hl.
-          assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
-            List.length lf).
-          unfold uniform_with_replacement.
-          rewrite List.map_length;
-          reflexivity.
-          pose proof probability_schnorr_distribution_generic
-          (uniform_with_replacement lf Hlfn)
-          (a₁; c₁; r₁) prob c n as Ht.
-          rewrite Hn.
-          rewrite Hn in Ht.
-          specialize (Ht 
-            (uniform_probability lf Hlfn) Hl).
-          exact Ht.
-        Qed.
-
-         
-        Lemma probability_simulator_distribution_generic : 
-         forall l trans prob c n,
-          (forall trx prx, List.In (trx, prx) l -> 
-            prx = 1 / n) ->  
-          List.In (trans, prob)
-            (Bind l
-              (λ r : F, Ret (schnorr_simulator g h r c))) ->
-          prob = 1 / n.
-        Proof.
-          induction l as [|(a, p) l IHl].
-          + intros * Ha Hin.
-            simpl in Hin.
-            inversion Hin.
-          + intros * Ha Hin.
-            pose proof (Ha a p (or_introl eq_refl)).
-            destruct Hin as [Hwa | Hwb].
-            inversion Hwa; subst; 
-            clear Hwa.
-            unfold mul_prob, 
-            Prob.one; simpl.
-            f_equal.
-            nia.
-            simpl in Hwb.
-            eapply IHl.
-            intros ? ? Hinn.
-            exact (Ha trx prx (or_intror Hinn)).
-            exact Hwb.
-        Qed.
-
-        (* Every elements in @simulator_distribution 
-          has probability 1/ (List.length lf) where 
-          lf the list of Field element from which the 
-          random r is drawn *)
-        Lemma probability_simulator_distribution : 
-          forall (lf : list F) 
-          (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n, 
-          n = List.length lf -> 
-          List.In ((a₁; c₁; r₁), prob) 
-            (@simulator_distribution lf Hlfn c) ->
-          prob = 1 / n.
-        Proof.
-          cbn.
-          intros * Hn Hl.
-          assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
-            List.length lf).
-          unfold uniform_with_replacement.
-          rewrite List.map_length;
-          reflexivity.
-          pose proof probability_simulator_distribution_generic
-          (uniform_with_replacement lf Hlfn)
-          (a₁; c₁; r₁) prob c n as Ht.
-          rewrite Hn.
-          rewrite Hn in Ht.
-          specialize (Ht 
-            (uniform_probability lf Hlfn) Hl).
-          exact Ht.
-        Qed.
-         
       
 
-        Lemma generic_distribution : 
-          forall l c, 
-          List.map (λ '(a, p), (accepting_conversation g h a, p))
-            (Bind l (λ r : F, Ret (schnorr_protocol x g r c))) =
-          List.map (λ '(a, p), (accepting_conversation g h a, p))
-            (Bind l (λ r : F, Ret (schnorr_simulator g h r c))).
-        Proof.
-          induction l. 
-          + simpl; intros ?.
-            reflexivity.
-          + simpl; intros ?.
-            destruct a as (a, b);
-            simpl.
-            f_equal.
-            rewrite key_rel.
-            assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
-            rewrite smul_pow_up. 
-            reflexivity.
-            rewrite Hg; 
-            clear Hg.
-            assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
-            rewrite smul_pow_up. 
-            reflexivity.
-            rewrite Hg; 
-            clear Hg.
-            assert (Ht : 
-              (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
-            (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
-            rewrite <- (@monoid_is_associative G (@eq G) gop gid).
-            reflexivity. 
-            typeclasses eauto.
-            rewrite Ht; clear Ht. 
-            assert (Ht : (gop (g ^ a) (g ^ (x * c))) = 
-              g^(a + x * c)).
-            rewrite (@vector_space_smul_distributive_fadd 
-              F (@eq F) zero one add mul sub div 
-              opp inv G (@eq G) gid ginv gop gpow).
-            reflexivity.
-            typeclasses eauto.
-            rewrite Ht; 
-            clear Ht.
-            rewrite <-(@vector_space_smul_distributive_fadd 
-              F (@eq F) zero one add mul sub div 
-              opp inv G (@eq G) gid ginv gop gpow).
-            assert (Ht : (x * opp c + x * c) = 
-              x * (opp c + c)).
-            (* why rewrite not working? *)
-            pose proof ring_is_left_distributive.
-            unfold is_left_distributive in H.
-            specialize (H x (opp c) c).
-            symmetry.
-            exact H.
-            rewrite Ht; clear Ht.
-            assert (Ht : (opp c) + c = c + opp c).
-            rewrite (@commutative_group_is_commutative F 
-            (@eq F) add zero opp).
-            reflexivity.
-            typeclasses eauto.
-            rewrite Ht; 
-            clear Ht.
-            assert (Ht : (c + opp c) = zero).
-            rewrite field_zero_iff_right.
-            reflexivity.
-            rewrite Ht; clear Ht.
-            assert (Ht : x * zero = zero).
-            rewrite ring_mul_0_r;
-            reflexivity.
-            rewrite Ht; 
-            clear Ht.
-            assert (Ht : (g ^ zero) = gid).
-            rewrite vector_space_field_zero.
-            reflexivity.
-            rewrite Ht; 
-            clear Ht.
-            assert (Ht : (gop (g ^ a) gid) = g^a).
-            rewrite monoid_is_right_identity.
-            reflexivity.
-            rewrite Ht;
-            clear Ht.
-            assert (Ht : c * x = x * c).
-            rewrite (@commutative_ring_is_commutative F (@eq F) zero 
-              one opp add sub mul).
-            reflexivity.
-            typeclasses eauto.
-            rewrite Ht; 
-            clear Ht.
-            rewrite (@commutative_group_is_commutative F 
-            (@eq F) add zero opp).
-            rewrite !gdec_eq_true.
-            reflexivity.
-            typeclasses eauto.
-            typeclasses eauto.
-            apply IHl.
-        Qed.
-           
+
+      (* https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf 
+        We fix the challenge and show that both,  protocol 
+        using witness x as input and simulated --not using x--, 
+        have the same distributions.
+      
+        To prove the indistinguishability between a real transcript 
+        and a simulated transcript, we construct two distributions,
+        one using the witness (real transcript) and other without
+        using the witness (fake/simulator transcript). 
+        We demonstrate that  
+        the probability of the real transcript is same as 
+        the fake transcript. One thing that is implicit 
+        in these two distributions is both, real transcript 
+        and fake transcript, pass the verification test, 
+        i.e. returns true to a verifier. 
+        We use this implicit knowledge and
+        construct two distributions as a pair in 
+        which the first pair is a sigma triple and second pair
+        is the probability of the triple, ((a, c, r), prob), 
+        in the given distribution. 
+      
+      *)
+
+      (* involves secret x*)    
+      (* Under the hood, it is modelled as a list and 
+          looks like:
+          [((a; c; r), prob); ((a; c; r), prop) ......]
+      *)
+      Definition schnorr_distribution {lf : list F} 
+        {Hlfn : lf <> List.nil} (c : F) : dist sigma_proto :=
+        r <- (uniform_with_replacement lf Hlfn) ;;
+        Ret (schnorr_protocol x g r c).
+      
+      
+      (* without secret *)
+      Definition simulator_distribution 
+        {lf : list F} {Hlfn : lf <> List.nil} (c : F) :=
+        r <- (uniform_with_replacement lf Hlfn) ;;
+        Ret (schnorr_simulator g h r c).
+
+      
+      Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+      Lemma probability_schnorr_distribution_generic : 
+        forall l trans prob c n,
+        (forall trx prx, List.In (trx, prx) l -> 
+          prx = 1 / n) ->  
+        List.In (trans, prob)
+          (Bind l
+            (λ r : F, Ret (schnorr_protocol x g r c))) ->
+        prob = 1 / n.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
 
 
 
-        (* it's identical *)
-        (* We map 
-          accepting_conversation to crunch the first pair, 
-          (a, c, r), and produce boolean a value (true), 
-          and then we show that these two distribution are 
-          identical 
-        *)
-        Lemma special_honest_verifier_zkp : 
-          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
-            List.map (fun '(a, p) => 
-              (accepting_conversation g h a, p))
-              (@schnorr_distribution lf Hlfn c) = 
-            List.map (fun '(a, p) => 
-              (accepting_conversation g h a, p))
-              (@simulator_distribution lf Hlfn c).
-        Proof.
-          intros ? ? ?.
-          unfold schnorr_distribution, 
-          simulator_distribution.
-          cbn.
-          apply generic_distribution.
-        Qed.
+      (* Every elements in @schnorr_distribution 
+        has probability 1/ (List.length lf) where 
+        lf the list of Field element from which the 
+        random r is drawn *)
+      Lemma probability_schnorr_distribution : 
+        forall (lf : list F) 
+        (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n,
+        n = List.length lf -> 
+        List.In ((a₁; c₁; r₁), prob) 
+          (@schnorr_distribution lf Hlfn c) ->
+        prob = 1 / n. 
+      Proof.
+        cbn.
+        intros * Hn Hl.
+        assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
+          List.length lf).
+        unfold uniform_with_replacement.
+        rewrite List.map_length;
+        reflexivity.
+        pose proof probability_schnorr_distribution_generic
+        (uniform_with_replacement lf Hlfn)
+        (a₁; c₁; r₁) prob c n as Ht.
+        rewrite Hn.
+        rewrite Hn in Ht.
+        specialize (Ht 
+          (uniform_probability lf Hlfn) Hl).
+        exact Ht.
+      Qed.
+
         
-        
+      Lemma probability_simulator_distribution_generic : 
+        forall l trans prob c n,
+        (forall trx prx, List.In (trx, prx) l -> 
+          prx = 1 / n) ->  
+        List.In (trans, prob)
+          (Bind l
+            (λ r : F, Ret (schnorr_simulator g h r c))) ->
+        prob = 1 / n.
+      Proof.
+        induction l as [|(a, p) l IHl].
+        + intros * Ha Hin.
+          simpl in Hin.
+          inversion Hin.
+        + intros * Ha Hin.
+          pose proof (Ha a p (or_introl eq_refl)).
+          destruct Hin as [Hwa | Hwb].
+          inversion Hwa; subst; 
+          clear Hwa.
+          unfold mul_prob, 
+          Prob.one; simpl.
+          f_equal.
+          nia.
+          simpl in Hwb.
+          eapply IHl.
+          intros ? ? Hinn.
+          exact (Ha trx prx (or_intror Hinn)).
+          exact Hwb.
+      Qed.
 
-      End Proofs.
+      (* Every elements in @simulator_distribution 
+        has probability 1/ (List.length lf) where 
+        lf the list of Field element from which the 
+        random r is drawn *)
+      Lemma probability_simulator_distribution : 
+        forall (lf : list F) 
+        (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n, 
+        n = List.length lf -> 
+        List.In ((a₁; c₁; r₁), prob) 
+          (@simulator_distribution lf Hlfn c) ->
+        prob = 1 / n.
+      Proof.
+        cbn.
+        intros * Hn Hl.
+        assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
+          List.length lf).
+        unfold uniform_with_replacement.
+        rewrite List.map_length;
+        reflexivity.
+        pose proof probability_simulator_distribution_generic
+        (uniform_with_replacement lf Hlfn)
+        (a₁; c₁; r₁) prob c n as Ht.
+        rewrite Hn.
+        rewrite Hn in Ht.
+        specialize (Ht 
+          (uniform_probability lf Hlfn) Hl).
+        exact Ht.
+      Qed.
+        
+    
+
+      Lemma generic_distribution : 
+        forall l c, 
+        List.map (λ '(a, p), (accepting_conversation g h a, p))
+          (Bind l (λ r : F, Ret (schnorr_protocol x g r c))) =
+        List.map (λ '(a, p), (accepting_conversation g h a, p))
+          (Bind l (λ r : F, Ret (schnorr_simulator g h r c))).
+      Proof.
+        induction l. 
+        + simpl; intros ?.
+          reflexivity.
+        + simpl; intros ?.
+          destruct a as (a, b);
+          simpl.
+          f_equal.
+          rewrite key_rel.
+          assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
+          rewrite smul_pow_up. 
+          reflexivity.
+          rewrite Hg; 
+          clear Hg.
+          assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
+          rewrite smul_pow_up. 
+          reflexivity.
+          rewrite Hg; 
+          clear Hg.
+          assert (Ht : 
+            (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
+          (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
+          rewrite <- (@monoid_is_associative G (@eq G) gop gid).
+          reflexivity. 
+          typeclasses eauto.
+          rewrite Ht; clear Ht. 
+          assert (Ht : (gop (g ^ a) (g ^ (x * c))) = 
+            g^(a + x * c)).
+          rewrite (@vector_space_smul_distributive_fadd 
+            F (@eq F) zero one add mul sub div 
+            opp inv G (@eq G) gid ginv gop gpow).
+          reflexivity.
+          typeclasses eauto.
+          rewrite Ht; 
+          clear Ht.
+          rewrite <-(@vector_space_smul_distributive_fadd 
+            F (@eq F) zero one add mul sub div 
+            opp inv G (@eq G) gid ginv gop gpow).
+          assert (Ht : (x * opp c + x * c) = 
+            x * (opp c + c)).
+          (* why rewrite not working? *)
+          pose proof ring_is_left_distributive.
+          unfold is_left_distributive in H.
+          specialize (H x (opp c) c).
+          symmetry.
+          exact H.
+          rewrite Ht; clear Ht.
+          assert (Ht : (opp c) + c = c + opp c).
+          rewrite (@commutative_group_is_commutative F 
+          (@eq F) add zero opp).
+          reflexivity.
+          typeclasses eauto.
+          rewrite Ht; 
+          clear Ht.
+          assert (Ht : (c + opp c) = zero).
+          rewrite field_zero_iff_right.
+          reflexivity.
+          rewrite Ht; clear Ht.
+          assert (Ht : x * zero = zero).
+          rewrite ring_mul_0_r;
+          reflexivity.
+          rewrite Ht; 
+          clear Ht.
+          assert (Ht : (g ^ zero) = gid).
+          rewrite vector_space_field_zero.
+          reflexivity.
+          rewrite Ht; 
+          clear Ht.
+          assert (Ht : (gop (g ^ a) gid) = g^a).
+          rewrite monoid_is_right_identity.
+          reflexivity.
+          rewrite Ht;
+          clear Ht.
+          assert (Ht : c * x = x * c).
+          rewrite (@commutative_ring_is_commutative F (@eq F) zero 
+            one opp add sub mul).
+          reflexivity.
+          typeclasses eauto.
+          rewrite Ht; 
+          clear Ht.
+          rewrite (@commutative_group_is_commutative F 
+          (@eq F) add zero opp).
+          rewrite !gdec_eq_true.
+          reflexivity.
+          typeclasses eauto.
+          typeclasses eauto.
+          apply IHl.
+      Qed.
+          
+
+
+
+      (* it's identical *)
+      (* We map 
+        accepting_conversation to crunch the first pair, 
+        (a, c, r), and produce boolean a value (true), 
+        and then we show that these two distribution are 
+        identical 
+      *)
+      Lemma special_honest_verifier_zkp : 
+        forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
+          List.map (fun '(a, p) => 
+            (accepting_conversation g h a, p))
+            (@schnorr_distribution lf Hlfn c) = 
+          List.map (fun '(a, p) => 
+            (accepting_conversation g h a, p))
+            (@simulator_distribution lf Hlfn c).
+      Proof.
+        intros ? ? ?.
+        unfold schnorr_distribution, 
+        simulator_distribution.
+        cbn.
+        apply generic_distribution.
+      Qed.
+      
+      
+
+    End Proofs.
 
     (* call the sha 256 hash function 
       here to turn the interactive version into non-interactive,
@@ -631,4 +630,4 @@ Module Zkp.
     *)
 
 
-    Section And_Sigma.
+  Section And_Sigma.
