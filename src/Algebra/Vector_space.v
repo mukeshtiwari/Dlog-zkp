@@ -42,7 +42,7 @@ Section Vector_Space.
     eapply group_cancel_right with (z := smul u v).
     rewrite group_is_left_inverse,
      <-(@vector_space_smul_distributive_fadd F eqf zero one add mul sub div
-      opp inv V eqv vid vopp vadd smul), 
+      opp inv V eqv vid vopp vadd smul),
       field_zero_iff_left,
       vector_space_field_zero;
       try reflexivity; 

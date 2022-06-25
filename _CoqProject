@@ -2,6 +2,7 @@
 
 src/Prob.v
 src/Distr.v
+src/Util.v
 src/Algebra/Hierarchy.v
 src/Algebra/Monoid.v
 src/Algebra/Group.v

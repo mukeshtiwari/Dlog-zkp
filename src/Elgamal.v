@@ -56,7 +56,7 @@ Section Elgamal.
     Proof. 
       unfold enc, dec; 
       intros ? ? ? ? H;
-      inversion H; clear H. 
+      inversion H; clear H.
       rewrite Hk.
       rewrite <- !(@vector_space_smul_associative_fmul F (@eq F) 
         zero one add mul sub div 
