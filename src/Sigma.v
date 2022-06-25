@@ -10,7 +10,8 @@ Require Import Setoid
   Coq.PArith.Pnat 
   Coq.NArith.BinNatDef
   Coq.PArith.BinPos
-  Sigma.Distr.
+  Sigma.Distr 
+  Sigma.Util.
       
 Import 
   MonadNotation 
@@ -115,13 +116,13 @@ Module Zkp.
         (* h = g^x *)
       
 
-        (* Real transcript, using the (secret) witness x *)
-        Definition schnorr_protocol (r : F) (c : F) : sigma_proto  :=  
-          ([g^r]; [c]; [r + c * x]).
+        (* Real transcript, using randomness u and (secret) witness x *)
+        Definition schnorr_protocol (u c : F) : sigma_proto  :=  
+          ([g^u]; [c]; [u + c * x]).
 
         (* Fake transcript (without the witness x) *)
-        Definition schnorr_simulator (r c : F) : sigma_proto := 
-          ([gop (g^r) (h^(opp c))]; [c]; [r]).
+        Definition schnorr_simulator (u c : F) : sigma_proto := 
+          ([gop (g^u) (h^(opp c))]; [c]; [u]).
 
         (* 
           
@@ -154,7 +155,7 @@ Module Zkp.
           (schnorr_protocol x g r c) returns 
           an accepting conversation.
         *)
-        Lemma schnorr_correctness : forall r c,
+        Lemma schnorr_completeness : forall r c,
            accepting_conversation g h (schnorr_protocol x g r c) = true.
         Proof.
           unfold schnorr_protocol, 
@@ -184,19 +185,19 @@ Module Zkp.
            It explicitly binds the accepting 
            conversation to variables (a₁; c₁; r₁).
         *)
-        Lemma schnorr_correctness_berry : forall r c a₁ c₁ r₁, 
+        Lemma schnorr_completeness_berry : forall r c a₁ c₁ r₁, 
            (a₁; c₁; r₁) = (schnorr_protocol x g r c) ->
            accepting_conversation g h (a₁; c₁; r₁) = true.
         Proof.
           intros * Ha.
           rewrite Ha.
-          eapply schnorr_correctness.
+          eapply schnorr_completeness.
         Qed.
 
 
         (* simulator produces an accepting conversation,
            without using the secret x *)
-        Lemma simulator_correctness : forall r c, 
+        Lemma simulator_completeness : forall r c, 
           accepting_conversation g h 
             (schnorr_simulator g h r c) = true.
         Proof.
@@ -221,102 +222,123 @@ Module Zkp.
            conversation of simulator 
            to variables (a₁; c₁; r₁).
         *)
-        Lemma simulator_correctness_berry : 
+        Lemma simulator_completeness_berry : 
           forall r c a₁ c₁ r₁,
           (a₁; c₁; r₁) = (schnorr_simulator g h r c) ->
           accepting_conversation g h (a₁; c₁; r₁) = true.
         Proof.
           intros * Ha.
           rewrite Ha.
-          apply simulator_correctness.
+          apply simulator_completeness.
         Qed.
 
 
-        (* special soundness: if the prover replies two challenge with 
-          same randomness r, i.e., same announcement, 
-          then exatractor can extract the witness *)
-        Lemma special_soundness : 
-          forall r c c', c <> c' ->  
-          accepting_conversation g h (schnorr_protocol x g r c) = true -> 
-          accepting_conversation g h (schnorr_protocol x g r c') = true ->
-          ∃ y : F, g^y = h.
-        Proof.
-          unfold accepting_conversation,
-          schnorr_protocol; simpl.
-          intros * Ha Hb Hc.
-          remember (r + c * x) as res₁.
-          remember (r + c' * x) as res₂.
-          exists ((res₁ + opp res₂) * inv (c + opp c')).
-          subst.
-          rewrite gdec_true in Hb, Hc.
-          assert (Ht : opp (r + c' * x) = 
-            opp (c' * x) + opp r).
-          rewrite group_inv_flip;
-          reflexivity.
-          rewrite Ht; clear Ht.
-          assert (Ht : (r + c * x + (opp (c' * x) + opp r)) = 
-          ((opp (c' * x) + opp r) + r + c * x)).
-          rewrite commutative, associative.
-          reflexivity.
-          rewrite Ht; clear Ht.
-          assert (Ht : opp (c' * x) + opp r + r = 
-          opp (c' * x)).
-          rewrite <-associative.
-          rewrite field_zero_iff_left.
-          rewrite monoid_is_right_identity.
-          reflexivity.
-          rewrite Ht.
-          rewrite <-ring_mul_opp_l.
-          (* this rewriting fails because of some 
-          Proper instance 
-          rewrite <-ring_is_right_distributive.
-          *)
-          pose proof ring_is_right_distributive as Hr.
-          unfold is_right_distributive in Hr.
-          specialize (Hr x (opp c') c).
-          rewrite <-Hr.
-          rewrite commutative, associative.
-          assert (Hwt : c + opp c' = opp c' + c).
-          rewrite commutative; reflexivity.
-          rewrite Hwt; clear Hwt.
-          assert (Hwt : inv (opp c' + c) * (opp c' + c) =
-            (opp c' + c) * inv (opp c' + c)).
-          rewrite commutative; 
-          reflexivity.
-          rewrite Hwt; clear Hwt.
-          rewrite field_right_multiplicative_inverse .
-          rewrite monoid_is_left_idenity.
-          reflexivity.
-          intro Hf.
-          pose proof ring_neq_sub_neq_zero c c' Ha as Hw.
-          apply Hw.
-          rewrite ring_sub_definition.
-          rewrite commutative.
-          exact Hf.
+            
+      Lemma rewrite_gop : 
+        forall a b c d : G, 
+        a = b -> c = d -> gop a c = gop b d.
+      Proof.
+        intros * Hab Hcd.
+        subst.
+        reflexivity.
       Qed.
-
-
-
-
-      (* Same as above but with explicit bindings 
-        for conversations. *)
+      
+      
+      (* special soundness: if the prover replies two challenge with 
+        same randomness r, i.e., same announcement, 
+        then exatractor can extract the witness 
+      *)
       Lemma special_soundness_berry : 
-        forall r c c', c <> c' -> 
-        forall a₁ c₁ r₁ a₂ c₂ r₂, 
-        (a₁; c₁; r₁) = (schnorr_protocol x g r c)  -> (* first conversation *)
-        accepting_conversation g h (a₁; c₁; r₁) = true -> (* and it's accepting *) 
-        (a₂; c₂; r₂) = (schnorr_protocol x g r c') -> (* second conversation *)
-        accepting_conversation g h (a₂; c₂; r₂) = true -> (* and it's accepting *)
+        forall a c₁ r₁ c₂ r₂, 
+        (hd c₁) <> (hd c₂) -> (* todo: write a function on vectors*)
+        accepting_conversation g h (a; c₁; r₁) = true -> (* and it's accepting *) 
+        accepting_conversation g h (a; c₂; r₂) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
       Proof.
-        intros * Hdisj * Ha Hb Hc Hd.
-        rewrite Ha in Hb.
-        rewrite Hc in Hd.
-        eapply special_soundness.
-        + exact Hdisj.
-        + exact Hb.
-        + exact Hd.
-      Qed.   
+        intros * Ha Hb Hc.
+        apply gdec_true in Hb, Hc.
+        simpl in * |- .
+        rename a into att.
+        destruct (vector_head att) as (a & ah & Haa).
+        rewrite Haa in Hb, Hc.
+        rename c₁ into ct₁.
+        destruct (vector_head ct₁) as (c₁ & ch₁ & Hc₁).
+        rewrite Hc₁ in Ha, Hb.
+        rename c₂ into ct₂.
+        destruct (vector_head ct₂) as (c₂ & ch₂ & Hc₂).
+        rewrite Hc₂ in Ha, Hc.
+        rename r₁ into rt₁.
+        destruct (vector_head rt₁) as (r₁ & rh₁ & Hr₁).
+        rewrite Hr₁ in Hb.
+        rename r₂ into rt₂.
+        destruct (vector_head rt₂) as (r₂ & rh₂ & Hr₂).
+        rewrite Hr₂ in Hc.
+        simpl in Ha, Hb, Hc.
+        clear Haa Hc₁ Hc₂ Hr₁ Hr₂
+        ah ch₁ ch₂ rh₁ rh₂.
+        exists ((r₁ - r₂) * inv (c₁ - c₂)).
+        eapply f_equal with (f := ginv) in Hc.
+        rewrite connection_between_vopp_and_fopp in Hc.
+        rewrite group_inv_flip  in Hc.
+        rewrite commutative in Hc.
+        pose proof (rewrite_gop _ _ _ _ Hb Hc) as Hcom.
+        rewrite key_rel in Hcom.
+        rewrite <-(@vector_space_smul_distributive_fadd 
+          F (@eq F) zero one add mul sub div 
+          opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+        rewrite <- !(@vector_space_smul_associative_fmul F (@eq F) 
+          zero one add mul sub div 
+          opp inv G (@eq G) gid ginv gop gpow Hvec) in Hcom.
+        rewrite <-ring_sub_definition in Hcom.
+        assert (Ht : (gop a (g ^ (x * c₁))) = 
+        (gop (g ^ (x * c₁)) a)).
+        rewrite commutative; reflexivity.
+        rewrite Ht in Hcom;
+        clear Ht.
+        setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+        in Hcom.
+        remember ((ginv (g ^ (x * c₂)))) as t. 
+        assert (Hwt : (gop a (gop (ginv a) t)) = t).
+        rewrite associative.
+        rewrite group_is_right_inverse,
+        monoid_is_left_idenity;
+        reflexivity.
+        subst.
+        rewrite Hwt in Hcom;
+        clear Hwt.
+        rewrite connection_between_vopp_and_fopp in Hcom.
+        rewrite <- smul_distributive_fadd in Hcom.
+        rewrite <-ring_mul_opp_r in Hcom.
+        (* This rewrite is not working! 
+        setoid_rewrite <-ring_is_left_distributive in Hcom.
+        *)
+        pose proof ring_is_left_distributive as Hl.
+        unfold is_left_distributive in Hl.
+        specialize (Hl x c₁ (opp c₂)).
+        rewrite <-Hl in Hcom;
+        clear Hl.
+        rewrite <-smul_pow_up.
+        rewrite Hcom.
+        rewrite smul_pow_mul.
+        rewrite ring_sub_definition.
+        rewrite associative, commutative,
+        associative, commutative.
+        assert (Hwt : (c₁ + opp c₂) * inv (c₁ + opp c₂) = 
+          one).
+        rewrite commutative, field_is_left_multiplicative_inverse.
+        reflexivity.
+        intros Hf.
+        pose proof ring_neq_sub_neq_zero c₁ c₂ Ha as Hw.
+        apply Hw.
+        rewrite ring_sub_definition.
+        exact Hf.
+        rewrite Hwt.
+        rewrite monoid_is_right_identity.
+        reflexivity.
+        typeclasses eauto.
+        typeclasses eauto.
+      Qed.
+        
 
     
       
@@ -350,17 +372,17 @@ Module Zkp.
           looks like:
           [((a; c; r), prob); ((a; c; r), prop) ......]
       *)
-      Definition schnorr_distribution {lf : list F} 
-        {Hlfn : lf <> List.nil} (c : F) : dist sigma_proto :=
-        r <- (uniform_with_replacement lf Hlfn) ;;
-        Ret (schnorr_protocol x g r c).
+      Definition schnorr_distribution (lf : list F) 
+        (Hlfn : lf <> List.nil) (c : F) : dist sigma_proto :=
+        u <- (uniform_with_replacement lf Hlfn) ;;
+        Ret (schnorr_protocol x g u c).
       
       
       (* without secret *)
       Definition simulator_distribution 
-        {lf : list F} {Hlfn : lf <> List.nil} (c : F) :=
-        r <- (uniform_with_replacement lf Hlfn) ;;
-        Ret (schnorr_simulator g h r c).
+        (lf : list F) (Hlfn : lf <> List.nil) (c : F) :=
+        u <- (uniform_with_replacement lf Hlfn) ;;
+        Ret (schnorr_simulator g h u c).
 
       
       Notation "p / q" := (mk_prob p (Pos.of_nat q)).
@@ -371,7 +393,7 @@ Module Zkp.
           prx = 1 / n) ->  
         List.In (trans, prob)
           (Bind l
-            (λ r : F, Ret (schnorr_protocol x g r c))) ->
+            (λ u : F, Ret (schnorr_protocol x g u c))) ->
         prob = 1 / n.
       Proof.
         induction l as [|(a, p) l IHl].
@@ -432,7 +454,7 @@ Module Zkp.
           prx = 1 / n) ->  
         List.In (trans, prob)
           (Bind l
-            (λ r : F, Ret (schnorr_simulator g h r c))) ->
+            (λ u : F, Ret (schnorr_simulator g h u c))) ->
         prob = 1 / n.
       Proof.
         induction l as [|(a, p) l IHl].
@@ -489,9 +511,9 @@ Module Zkp.
       Lemma generic_distribution : 
         forall l c, 
         List.map (λ '(a, p), (accepting_conversation g h a, p))
-          (Bind l (λ r : F, Ret (schnorr_protocol x g r c))) =
+          (Bind l (λ u : F, Ret (schnorr_protocol x g u c))) =
         List.map (λ '(a, p), (accepting_conversation g h a, p))
-          (Bind l (λ r : F, Ret (schnorr_simulator g h r c))).
+          (Bind l (λ u : F, Ret (schnorr_simulator g h u c))).
       Proof.
         induction l. 
         + simpl; intros ?.
