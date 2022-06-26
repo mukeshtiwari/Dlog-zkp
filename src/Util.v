@@ -162,19 +162,29 @@ Section Vect.
   Defined.
   
   
-  (* I need to think about it. *)
-  Definition two_challenge_vectors_disjoint 
-    {n : nat} (u v : Vector.t R n)  :=
-    Vector.fold_right (fun x y => x && y)
-      (zip_with (fun x y => 
-        match Hdec x y with 
-        | left _ => false
-        | right _ => true
-        end) u v) true.
+  Definition eq_bool (x y : R) : bool :=
+    match Hdec x y with 
+    | left _ => true 
+    | right _ => false
+    end.
 
+  
+  Definition two_challenge_vectors_disjoint 
+    {n : nat} (u v : Vector.t R n) :=
+    Vector.fold_right (fun x y => x && y)
+      (zip_with (fun x y => negb (eq_bool x y)) u v) true.
     
+  Lemma dec_true : forall x y, 
+    (if Hdec x y then true else false) = true <-> x = y.
+  Proof.
+    intros ? ?.
+    destruct (Hdec x y); split; 
+    intro H; auto.
+    inversion H.
+  Qed.
+
   Lemma dec_false : forall x y, 
-    (if Hdec x y then false else true) = false <-> x = y.
+    (if Hdec x y then true else false) = false <-> x <> y.
   Proof.
     intros ? ?.
     destruct (Hdec x y); split; 
@@ -183,17 +193,8 @@ Section Vect.
     congruence.
   Qed.
 
-  Lemma dec_true : forall x y, 
-    (if Hdec x y then false else true) = true <-> x <> y.
-  Proof.
-    intros ? ?.
-    destruct (Hdec x y); split; 
-    intro H; auto.
-    inversion H.
-  Qed.
-
   Lemma dec_eq_true : forall x, 
-    (if Hdec x x then false else true) = false.
+    (if Hdec x x then true else false) = true.
   Proof.
     intros ?.
     destruct (Hdec x x).
@@ -202,14 +203,16 @@ Section Vect.
   Qed.
 
 
+  (* Two vectors are pointwise not equal *)
   Lemma two_challenge_vectors_disjoint_true : 
     forall n (u v : Vector.t R (S n)), 
     two_challenge_vectors_disjoint u v = true ->
-    hd u <> hd v /\ tl u <> tl v.
+    forall m : Fin.t (S n), 
+    Vector.nth u m <> Vector.nth v m. 
   Proof.
     induction n. 
     + unfold two_challenge_vectors_disjoint;
-      intros ? ? Ha.
+      intros ? ? Ha ?.
       destruct (vector_inv_S u) as (uh & ut & Hu).
       destruct (vector_inv_S v) as (vh & vt & Hv).
       pose proof (vector_inv_0 ut) as Hun.
@@ -219,11 +222,38 @@ Section Vect.
       rewrite Hu, Hv in Ha |- *.
       simpl in Ha |- *.
       rewrite andb_true_r in Ha.
-      apply dec_true in Ha.
-      split.
+      apply negb_true_iff in Ha.
+      destruct (fin_inv_S _ m) as [Hb | (b & Hb)];
+      subst; cbn.
+      unfold eq_bool in Ha.
+      rewrite dec_false in Ha.
       exact Ha.
-  Admitted.
-  
+      destruct (fin_inv_0 b).
+    + unfold two_challenge_vectors_disjoint;
+      intros ? ? Ha ?.
+      destruct (vector_inv_S u) as (uh & ut & Hu).
+      destruct (vector_inv_S v) as (vh & vt & Hv).
+      rewrite Hu, Hv in Ha.
+      simpl in Ha.
+      apply andb_true_iff in Ha.
+      destruct Ha as [Ha Hb].
+      rewrite Hu, Hv;
+      simpl.
+      destruct (fin_inv_S _ m) as [Hc | (c & Hc)].
+      subst; cbn.
+      apply negb_true_iff in Ha.
+      unfold eq_bool in Ha.
+      apply dec_false in Ha.
+      exact Ha.
+      (* indcution case *)
+      subst; cbn.
+      apply IHn.
+      exact Hb.
+  Qed.
+
+
+
+      
       
       
 
