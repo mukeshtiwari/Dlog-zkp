@@ -244,37 +244,44 @@ Module Zkp.
       Qed.
       
       
+      Local Infix "u <!> v" :=
+        (@two_challenge_vectors_disjoint _ Fdec _ u v)
+        (at level 70).
       (* special soundness: if the prover replies two challenge with 
         same randomness r, i.e., same announcement, 
         then exatractor can extract the witness 
       *)
       Lemma special_soundness_berry : 
         forall a c₁ r₁ c₂ r₂, 
-        (hd c₁) <> (hd c₂) -> (* todo: write a function on vectors*)
+        (* Notations? *)
+        @two_challenge_vectors_disjoint _ Fdec _ c₁ c₂ = true ->
         accepting_conversation g h (a; c₁; r₁) = true -> (* and it's accepting *) 
         accepting_conversation g h (a; c₂; r₂) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
       Proof.
         intros * Ha Hb Hc.
+        pose proof (@two_challenge_vectors_disjoint_true _ Fdec
+        0 c₁ c₂ Ha Fin.F1) as Hfin.
+
         apply gdec_true in Hb, Hc.
         simpl in * |- .
         rename a into att.
-        destruct (vector_head att) as (a & ah & Haa).
+        destruct (vector_inv_S att) as (a & ah & Haa).
         rewrite Haa in Hb, Hc.
         rename c₁ into ct₁.
-        destruct (vector_head ct₁) as (c₁ & ch₁ & Hc₁).
-        rewrite Hc₁ in Ha, Hb.
+        destruct (vector_inv_S ct₁) as (c₁ & ch₁ & Hc₁).
+        rewrite Hc₁ in Ha, Hb, Hfin.
         rename c₂ into ct₂.
-        destruct (vector_head ct₂) as (c₂ & ch₂ & Hc₂).
-        rewrite Hc₂ in Ha, Hc.
+        destruct (vector_inv_S ct₂) as (c₂ & ch₂ & Hc₂).
+        rewrite Hc₂ in Ha, Hc, Hfin.
         rename r₁ into rt₁.
-        destruct (vector_head rt₁) as (r₁ & rh₁ & Hr₁).
+        destruct (vector_inv_S rt₁) as (r₁ & rh₁ & Hr₁).
         rewrite Hr₁ in Hb.
         rename r₂ into rt₂.
-        destruct (vector_head rt₂) as (r₂ & rh₂ & Hr₂).
+        destruct (vector_inv_S rt₂) as (r₂ & rh₂ & Hr₂).
         rewrite Hr₂ in Hc.
-        simpl in Ha, Hb, Hc.
-        clear Haa Hc₁ Hc₂ Hr₁ Hr₂
+        simpl in Ha, Hb, Hc, Hfin.
+        clear Ha Haa Hc₁ Hc₂ Hr₁ Hr₂
         ah ch₁ ch₂ rh₁ rh₂.
         exists ((r₁ - r₂) * inv (c₁ - c₂)).
         eapply f_equal with (f := ginv) in Hc.
@@ -328,7 +335,7 @@ Module Zkp.
         rewrite commutative, field_is_left_multiplicative_inverse.
         reflexivity.
         intros Hf.
-        pose proof ring_neq_sub_neq_zero c₁ c₂ Ha as Hw.
+        pose proof ring_neq_sub_neq_zero c₁ c₂ Hfin as Hw.
         apply Hw.
         rewrite ring_sub_definition.
         exact Hf.
