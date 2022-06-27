@@ -243,18 +243,15 @@ Module Zkp.
         reflexivity.
       Qed.
       
-      
-      Local Infix "u <!> v" :=
-        (@two_challenge_vectors_disjoint _ Fdec _ u v)
-        (at level 70).
+  
+
       (* special soundness: if the prover replies two challenge with 
         same randomness r, i.e., same announcement, 
         then exatractor can extract the witness 
       *)
       Lemma special_soundness_berry : 
         forall a c₁ r₁ c₂ r₂, 
-        (* Notations? *)
-        @two_challenge_vectors_disjoint _ Fdec _ c₁ c₂ = true ->
+        @two_challenge_vectors_disjoint F Fdec _ c₁ c₂ = true ->  (* Todo: Change this into a notation c₁ <|> c₂. *)
         accepting_conversation g h (a; c₁; r₁) = true -> (* and it's accepting *) 
         accepting_conversation g h (a; c₂; r₂) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
@@ -262,7 +259,6 @@ Module Zkp.
         intros * Ha Hb Hc.
         pose proof (@two_challenge_vectors_disjoint_true _ Fdec
         0 c₁ c₂ Ha Fin.F1) as Hfin.
-
         apply gdec_true in Hb, Hc.
         simpl in * |- .
         rename a into att.
@@ -283,7 +279,7 @@ Module Zkp.
         simpl in Ha, Hb, Hc, Hfin.
         clear Ha Haa Hc₁ Hc₂ Hr₁ Hr₂
         ah ch₁ ch₂ rh₁ rh₂.
-        exists ((r₁ - r₂) * inv (c₁ - c₂)).
+        exists ((r₁ - r₂) * inv (c₁ - c₂)). (* Witness *)
         eapply f_equal with (f := ginv) in Hc.
         rewrite connection_between_vopp_and_fopp in Hc.
         rewrite group_inv_flip  in Hc.
