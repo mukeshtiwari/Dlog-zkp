@@ -247,7 +247,7 @@ Module Zkp.
 
       (* special soundness: if the prover replies two challenge with 
         same randomness r, i.e., same announcement, 
-        then exatractor can extract the witness 
+        then exatractor can extract a witness 
       *)
       Lemma special_soundness_berry : 
         forall a c₁ r₁ c₂ r₂, 
@@ -256,6 +256,7 @@ Module Zkp.
         accepting_conversation g h (a; c₂; r₂) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
       Proof.
+        clear key_rel.
         intros * Ha Hb Hc.
         pose proof (@two_challenge_vectors_disjoint_true _ Fdec
         0 c₁ c₂ Ha Fin.F1) as Hfin.
@@ -279,67 +280,53 @@ Module Zkp.
         simpl in Ha, Hb, Hc, Hfin.
         clear Ha Haa Hc₁ Hc₂ Hr₁ Hr₂
         ah ch₁ ch₂ rh₁ rh₂.
+        (* actual proof starts here *)
         exists ((r₁ - r₂) * inv (c₁ - c₂)). (* Witness *)
         eapply f_equal with (f := ginv) in Hc.
         rewrite connection_between_vopp_and_fopp in Hc.
         rewrite group_inv_flip  in Hc.
         rewrite commutative in Hc.
         pose proof (rewrite_gop _ _ _ _ Hb Hc) as Hcom.
-        rewrite key_rel in Hcom.
         rewrite <-(@vector_space_smul_distributive_fadd 
           F (@eq F) zero one add mul sub div 
           opp inv G (@eq G) gid ginv gop gpow) in Hcom.
-        rewrite <- !(@vector_space_smul_associative_fmul F (@eq F) 
-          zero one add mul sub div 
-          opp inv G (@eq G) gid ginv gop gpow Hvec) in Hcom.
         rewrite <-ring_sub_definition in Hcom.
-        assert (Ht : (gop a (g ^ (x * c₁))) = 
-        (gop (g ^ (x * c₁)) a)).
+        assert (Hwt : gop a (h ^ c₁) = gop (h ^ c₁) a).
         rewrite commutative; reflexivity.
-        rewrite Ht in Hcom;
-        clear Ht.
+        rewrite Hwt in Hcom; clear Hwt.
         setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
         in Hcom.
-        remember ((ginv (g ^ (x * c₂)))) as t. 
-        assert (Hwt : (gop a (gop (ginv a) t)) = t).
+        assert (Hwt : (gop a (gop (ginv a) (ginv (h ^ c₂)))) = 
+        (ginv (h ^ c₂))).
         rewrite associative.
         rewrite group_is_right_inverse,
         monoid_is_left_idenity;
         reflexivity.
-        subst.
-        rewrite Hwt in Hcom;
-        clear Hwt.
+        rewrite Hwt in Hcom; clear Hwt.
         rewrite connection_between_vopp_and_fopp in Hcom.
-        rewrite <- smul_distributive_fadd in Hcom.
-        rewrite <-ring_mul_opp_r in Hcom.
-        (* This rewrite is not working! 
-        setoid_rewrite <-ring_is_left_distributive in Hcom.
-        *)
-        pose proof ring_is_left_distributive as Hl.
-        unfold is_left_distributive in Hl.
-        specialize (Hl x c₁ (opp c₂)).
-        rewrite <-Hl in Hcom;
-        clear Hl.
-        rewrite <-smul_pow_up.
-        rewrite Hcom.
-        rewrite smul_pow_mul.
-        rewrite ring_sub_definition.
-        rewrite associative, commutative,
-        associative, commutative.
-        assert (Hwt : (c₁ + opp c₂) * inv (c₁ + opp c₂) = 
-          one).
-        rewrite commutative, field_is_left_multiplicative_inverse.
-        reflexivity.
+        rewrite <-(@vector_space_smul_distributive_fadd 
+          F (@eq F) zero one add mul sub div 
+          opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+        apply f_equal with (f := fun x => x^(inv (c₁ + opp c₂)))
+        in Hcom.
+        rewrite !smul_pow_up in Hcom.
+        assert (Hw : (c₁ + opp c₂) * inv (c₁ + opp c₂) = 
+        (inv (c₁ + opp c₂) * (c₁ + opp c₂))).
+        rewrite commutative; reflexivity.
+        rewrite Hw in Hcom; clear Hw.
+        rewrite field_is_left_multiplicative_inverse in Hcom.
+        pose proof vector_space_field_one as Hone.
+        unfold is_field_one in Hone.
+        specialize (Hone h).
+        rewrite Hone in Hcom.
+        rewrite <-ring_sub_definition in Hcom.
+        exact Hcom.
         intros Hf.
         pose proof ring_neq_sub_neq_zero c₁ c₂ Hfin as Hw.
         apply Hw.
         rewrite ring_sub_definition.
         exact Hf.
-        rewrite Hwt.
-        rewrite monoid_is_right_identity.
-        reflexivity.
-        typeclasses eauto.
-        typeclasses eauto.
+        all:typeclasses eauto.
       Qed.
         
 
