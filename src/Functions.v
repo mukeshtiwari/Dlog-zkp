@@ -18,6 +18,7 @@ Require Import Coq.ZArith.ZArith
 
     Local Infix "*" := op.
 
+    (* Big_o notations *)
     (* This function computes e^n by repeated squaring. In addtion, 
       it return the nubmer of steps it has taken *)
     Fixpoint repeat_op_ntimes_rec (e : T) (n : positive) : T * positive :=
@@ -97,16 +98,35 @@ Require Import Coq.ZArith.ZArith
       | Z0 => id
       | Zpos p => fst (repeat_op_ntimes_rec e p)
       | Zneg p => inv (fst (repeat_op_ntimes_rec e p))
+        (* How to reason about inv's complexity? *)
       end.
 
     
 
     Definition repeat_op_ntimes_N (e : T) (n : N) :=
       match n with
-      | N0 => id
-      | Npos p => fst (repeat_op_ntimes_rec e p)
+      | N0 => (id, xH) 
+      | Npos p => (repeat_op_ntimes_rec e p)
       end.
 
+   
+    (* *)
+    Lemma complexity_repeat_op_ntimes_N :
+      forall e n, 
+      (N.pos (snd (repeat_op_ntimes_N e n)) <= 1 + n)%N.
+    Proof.
+      intros ? [|n];
+      cbn.
+      + nia.
+      + pose proof repeat_op_ntimes_rec_bound n e as Hne. 
+        destruct (repeat_op_ntimes_rec e n); cbn in *;
+        destruct n;
+        nia.
+    Qed.
+      
+    
+
+    
 
     Fixpoint repeat_op_ntimes_unary_nat (e : T) (n : nat) := 
       match n with
@@ -170,15 +190,17 @@ Require Import Coq.ZArith.ZArith
 
 
 
-    Lemma connection_N_and_unary_nat : forall (n : nat) (m : N) e, 
+    Lemma connection_N_and_unary_nat : 
+      forall (n : nat) (m : N) e, 
       m = (N.of_nat n) ->
-      repeat_op_ntimes_unary_nat e n = repeat_op_ntimes_N e m.
+      repeat_op_ntimes_unary_nat e n = fst (repeat_op_ntimes_N e m).
     Proof.
       destruct m.
       + intros ? He. rewrite binnat_zero with (n := n). 
         reflexivity. exact He.
-      + simpl. generalize dependent n; generalize dependent p.
-      induction p using positive_ind.
+      + simpl. 
+        generalize dependent n; generalize dependent p.
+        induction p using positive_ind.
         * simpl. intros.
           destruct (binnat_odd p n H) as [k [Hkl Hkr]].
           pose proof (IHp k e Hkr) as Hp. rewrite Hkl.
@@ -206,9 +228,10 @@ Require Import Coq.ZArith.ZArith
           rewrite Ht. simpl. rewrite right_identity. 
           reflexivity.
     Qed. 
+
     
-
-
+    
+      
 End Functions.
 
 
