@@ -18,6 +18,66 @@ Require Import Coq.ZArith.ZArith
 
     Local Infix "*" := op.
 
+
+    (* Function without counter *)
+    Fixpoint repeat_op_ntimes_rec_w (e : T) (n : positive) : T :=
+      match n with
+      | xH => e 
+      | xO p => 
+        let ret := repeat_op_ntimes_rec_w e p 
+        in ret * ret 
+      | xI p => 
+        let ret := repeat_op_ntimes_rec_w e p 
+        in e * (ret * ret)
+      end.
+
+
+    (* Inducive Type to capture the complexity of  *)
+    Inductive complexity_repeat_op_ntimes_rec (e : T) :
+      positive -> T -> N -> Prop :=
+    | xH_case : complexity_repeat_op_ntimes_rec e xH e N0
+    | xO_case p ret w : complexity_repeat_op_ntimes_rec e p ret w ->
+        complexity_repeat_op_ntimes_rec e (xO p) (ret * ret) (N.succ w)
+    | xI_case p ret w : complexity_repeat_op_ntimes_rec e p ret w ->
+        complexity_repeat_op_ntimes_rec e (xI p) (e * (ret * ret)) (N.succ w).
+
+
+
+    Lemma correct_complexity_repeat_op_ntimes_rec : 
+      forall n e, 
+      complexity_repeat_op_ntimes_rec e n 
+        (repeat_op_ntimes_rec_w e n)  (N.log2 (N.pos n)).
+    Proof.
+      induction n; 
+      intros e.
+      + specialize (IHn e).
+        assert (Hwt : ((N.pos n~1) = (2 * (N.pos n) + 1))%N).
+        cbn; nia.
+        rewrite Hwt; clear Hwt.
+        rewrite N.log2_succ_double.
+        remember ((N.log2 (N.pos n))) as p. 
+        cbn.
+        apply xI_case.
+        exact IHn.
+        nia. 
+      + specialize (IHn e).
+        assert (Hwt : ((N.pos n~0) = (2 * (N.pos n)))%N).
+        cbn; nia.
+        rewrite Hwt; clear Hwt.
+        rewrite N.log2_double.
+        remember ((N.log2 (N.pos n))) as p. 
+        cbn.
+        apply xO_case.
+        exact IHn.
+        nia.
+      + cbn; apply xH_case.
+    Qed.  
+
+
+
+    
+
+
     (* Big_o notations *)
     (* This function computes e^n by repeated squaring. In addtion, 
       it return the nubmer of steps it has taken *)
@@ -283,7 +343,7 @@ Module Fn.
     end.
 
 
-    
+
   Definition Npow_mod (e : N) (n w : N) :=
     match n with
     | N0 => Npos xH
