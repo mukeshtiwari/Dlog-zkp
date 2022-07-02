@@ -21,37 +21,64 @@ Require Import Coq.ZArith.ZArith
     (* Big_o notations *)
     (* This function computes e^n by repeated squaring. In addtion, 
       it return the nubmer of steps it has taken *)
-    Fixpoint repeat_op_ntimes_rec (e : T) (n : positive) : T * positive :=
+    Fixpoint repeat_op_ntimes_rec (e : T) (n : positive) : T * N :=
       match n with
-      | xH => (e, xH)
+      | xH => (e, N0)
       | xO p => 
         let (ret, w) := repeat_op_ntimes_rec e p 
-        in (ret * ret, Pos.add 1 w) 
+        in (ret * ret, N.add 1 w) 
       | xI p => 
         let (ret, w) := repeat_op_ntimes_rec e p 
-        in (e * (ret * ret), Pos.add 1 w) 
+        in (e * (ret * ret), N.add 1 w) 
       end.
+
 
     (* Proof that the number of steps is bounded by a 
       polynomial. It can be even proven it's bounded 
         <= Log2 n but it will take some effort *)
     Lemma repeat_op_ntimes_rec_bound : 
-      forall n e, (snd (repeat_op_ntimes_rec e n) <= n)%positive.
+      forall n e, (snd (repeat_op_ntimes_rec e n) <= N.log2 (N.pos n))%N.
     Proof.
       induction n;
       intros ?.
-      + cbn.
-        pose proof (IHn e). 
-        destruct (repeat_op_ntimes_rec e n) as [cnt w];
-        cbn in * |- *.
-        destruct w; try nia. 
-      + cbn.
-        pose proof (IHn e).
-        destruct (repeat_op_ntimes_rec e n) as [cnt w];
-        cbn in * |- *.
-        destruct w; try nia.
-      + cbn. nia.
-    Qed.  
+      + specialize (IHn e).
+        remember (repeat_op_ntimes_rec e n) as Heq.
+        destruct Heq as [u v].
+        assert (Hwt : (repeat_op_ntimes_rec e n~1) = 
+          (e * (u * u), N.add 1 v)).
+        cbn. rewrite <-HeqHeq;
+        reflexivity.
+        rewrite Hwt; clear Hwt.
+        assert (Hwt : ((N.pos n~1) = (2 * (N.pos n) + 1))%N).
+        cbn; nia.
+        rewrite Hwt; clear Hwt.
+        rewrite N.log2_succ_double.
+        assert (Hwt : snd (u, v) = v) by reflexivity.
+        rewrite Hwt in IHn; clear Hwt.
+        assert (Hwt : (snd (op e (op u u), 1 + v) = 1 + v)%N) by reflexivity.
+        rewrite Hwt; clear Hwt.
+        all:nia. 
+      + specialize (IHn e).
+        remember (repeat_op_ntimes_rec e n) as Heq.
+        destruct Heq as [u v].
+        assert (Hwt : (repeat_op_ntimes_rec e n~0) = 
+          ((u * u), N.add 1 v)).
+        cbn; rewrite <-HeqHeq;
+        reflexivity.
+        rewrite Hwt; clear Hwt.
+        assert (Hwt : ((N.pos n~0) = (2 * (N.pos n)))%N).
+        cbn; nia.
+        rewrite Hwt; clear Hwt.
+        rewrite N.log2_double.
+        assert (Hwt : snd (u, v) = v) by reflexivity.
+        rewrite Hwt in IHn; clear Hwt.
+        assert (Hwt : (snd ((op u u), 1 + v) = 1 + v)%N) 
+          by reflexivity.
+        rewrite Hwt; clear Hwt.
+        all:nia. 
+      + cbn; nia.
+    Qed.
+
 
 
   
@@ -247,10 +274,16 @@ Module Fn.
   Fixpoint repeat_op_ntimes_rec (e : N) (n : positive) (w : N) : N :=
     match n with
     | xH => N.modulo e w
-    | xO p => let ret := repeat_op_ntimes_rec e p w in N.modulo (ret * ret) w
-    | xI p => let ret := repeat_op_ntimes_rec e p w in N.modulo (e * (ret * ret)) w 
+    | xO p => 
+      let ret := repeat_op_ntimes_rec e p w in 
+      N.modulo (ret * ret) w
+    | xI p => 
+      let ret := repeat_op_ntimes_rec e p w in 
+      N.modulo (e * (ret * ret)) w 
     end.
 
+
+    
   Definition Npow_mod (e : N) (n w : N) :=
     match n with
     | N0 => Npos xH
