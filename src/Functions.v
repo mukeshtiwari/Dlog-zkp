@@ -326,8 +326,11 @@ Section Fn.
 
   
     
-  Lemma zmod_nmod : forall (b a w : N), prime (Z.of_N w) ->
-    Z.of_N (Npow_mod a b w) = Zpow_mod (Z.of_N a) (Z.of_N b) (Z.of_N w).
+  Lemma zmod_nmod : 
+    forall (b a w : N), 
+    prime (Z.of_N w) ->
+    Z.of_N (Npow_mod a b w) = 
+    Zpow_mod (Z.of_N a) (Z.of_N b) (Z.of_N w).
   Proof.
     intros ? ? ? Hw.
     rewrite Zpow_mod_correct.

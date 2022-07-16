@@ -1601,7 +1601,8 @@ Section Fermat_Little_Theorem.
  
 
   Theorem fermat_little_Z : forall (a : N) (p : N),
-    prime (Z.of_N p) -> Z.modulo (Z.of_N a) (Z.of_N p) <> 0%Z ->
+    prime (Z.of_N p) -> 
+    Z.modulo (Z.of_N a) (Z.of_N p) <> 0%Z ->
     Zpow_mod (Z.of_N a) (Z.of_N (p - 1)) (Z.of_N p) = 1%Z.
   Proof.
     intros * Hp Hna.
