@@ -6,7 +6,6 @@ From Coq Require Import Even.
 Section Fn.
   
 
-
   Fixpoint repeat_op_ntimes_rec (e : N) (n : positive) (w : N) : N :=
     match n with
     | xH => N.modulo e w
@@ -125,7 +124,8 @@ Section Fn.
   Qed.
 
 
-  Lemma Npow_mod_unary_bound : forall (n : nat) (e w : N), prime (Z.of_N w) -> 
+  Lemma Npow_mod_unary_bound : 
+    forall (n : nat) (e w : N), prime (Z.of_N w) -> 
     (Npow_mod_unary e n w < w)%N.
   Proof.
     induction n.
@@ -138,7 +138,8 @@ Section Fn.
       lia.
   Qed.
 
-  Lemma binnat_zero : forall (n : nat), 0%N = N.of_nat n -> n = 0%nat.
+  Lemma binnat_zero : 
+    forall (n : nat), 0%N = N.of_nat n -> n = 0%nat.
   Proof.
     induction n; try lia.
   Qed.
@@ -207,7 +208,8 @@ Section Fn.
   Qed.
 
   (* slow is equivalent to fast *)
-  Lemma npow_mod_exp_unary_binary_eqv : forall (n : N) e w, prime (Z.of_N w) ->
+  Lemma npow_mod_exp_unary_binary_eqv : 
+    forall (n : N) e w, prime (Z.of_N w) ->
     Npow_mod_unary e (N.to_nat n) w = Npow_mod e n w.
   Proof.
     destruct n.
@@ -242,7 +244,9 @@ Section Fn.
      
 
   
-  Lemma mod_reduce_pow : forall n e w, prime (Z.of_N w) -> repeat_op_ntimes_rec e n w = 
+  Lemma mod_reduce_pow : 
+    forall n e w, prime (Z.of_N w) -> 
+    repeat_op_ntimes_rec e n w = 
     repeat_op_ntimes_rec (N.modulo e w) n w.
   Proof.
     induction n.
@@ -277,7 +281,10 @@ Section Fn.
       exact Hp.
   Qed.
 
-  Lemma wp_mod_zero : forall (w k p : N), prime (Z.of_N p) -> (2 <= k)%N -> (2 <= p)%N ->
+  Lemma wp_mod_zero : 
+    forall (w k p : N), 
+    prime (Z.of_N p) -> 
+    (2 <= k)%N -> (2 <= p)%N ->
     (w mod p = 0)%N ->  (Npow_mod (w mod p) k p = 0)%N.
   Proof.
     intros ? ? ? Hp Hk Hpt Hwp.
@@ -295,7 +302,10 @@ Section Fn.
     reflexivity. lia.
   Qed.
     
-  Lemma wp_mod_one : forall (w k p : N), prime (Z.of_N p) -> (2 <= k)%N -> (2 <= p)%N ->
+  Lemma wp_mod_one : 
+    forall (w k p : N), 
+    prime (Z.of_N p) -> 
+    (2 <= k)%N -> (2 <= p)%N ->
     (w mod p = 1)%N ->  (Npow_mod (w mod p) k p = 1)%N.
   Proof.
     intros ? ? ? Hp Hk Hpt Hwp.
