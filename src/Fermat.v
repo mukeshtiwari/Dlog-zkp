@@ -1608,7 +1608,8 @@ Section Fermat_Little_Theorem.
     intros * Hp Hna.
     rewrite <-zmod_nmod,
     <-npow_mod_exp_unary_binary_eqv.
-    pose proof npow_mod_nat (N.to_nat (p - 1)) (N.to_nat a)  (N.to_nat p).
+    pose proof npow_mod_nat 
+      (N.to_nat (p - 1)) (N.to_nat a)  (N.to_nat p).
     pose proof prime_ge_2 (Z.of_N p) Hp as Hf.
     rewrite N_nat_Z in H.
     specialize (H Hp).
@@ -1638,6 +1639,78 @@ Section Fermat_Little_Theorem.
     exact Hp.
     exact Hp.
   Qed.
+
+ Lemma mod_eq_custom : 
+    forall (a b : Z), 
+    (0 < b)%Z -> 
+    Z.modulo a b = (a - b * (a / b))%Z.
+  Proof.
+    intros a b Hb.
+    rewrite Zmod_eq; nia.
+  Qed. 
+
+
+  Lemma mod_not_zero_one : 
+    forall w p, prime p -> 
+    (0 < w < p)%Z -> Z.modulo w p = w.
+  Proof.
+    intros ? ? Hp Hw.
+    rewrite mod_eq_custom.
+    assert (Hwp: (w/p = 0)%Z).
+    apply Zdiv_small; nia.
+    rewrite Hwp. nia. nia.
+  Qed.
+
+  Theorem fermat_little_ZZ : 
+    forall (a : Z) (p : Z),
+    prime p -> 
+    (0 < a < p)%Z -> 
+    Zpow_mod a (p - 1) p = 1%Z.
+  Proof.
+    intros * Hp Ha.
+    assert (Hw : a = Z.of_N (Z.to_N a)).
+    rewrite Z2N.id; 
+    try reflexivity.
+    nia.
+    rewrite Hw;
+    clear Hw.
+    assert (Hw : (p - 1 = Z.of_N (Z.to_N (p - 1)))%Z).
+    rewrite Z2N.id; 
+    try reflexivity.
+    nia.
+    rewrite Hw;
+    clear Hw.
+    assert (Hw : (p = Z.of_N (Z.to_N p))%Z).
+    rewrite Z2N.id; 
+    try reflexivity.
+    nia.
+    rewrite Hw;
+    clear Hw.
+    assert (Hw : (Z.of_N (Z.to_N (Z.of_N (Z.to_N p) - 1))) =
+    (Z.of_N (Z.to_N p - 1))).
+    nia.
+    rewrite Hw; clear Hw.
+    rewrite fermat_little_Z.
+    reflexivity.
+    rewrite Z2N.id.
+    exact Hp.
+    nia. 
+    rewrite !Z2N.id.
+    intro Hf.
+    pose proof mod_not_zero_one a p Hp Ha as Hw.
+    nia. 
+    nia. 
+    nia.
+  Qed.
+
+    
+
+    
+
+
+
+    
+    
    
 
 End Fermat_Little_Theorem.    

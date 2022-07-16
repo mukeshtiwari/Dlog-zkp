@@ -88,14 +88,6 @@ Module Zpstar.
     Defined.
 
 
-    Lemma mod_eq_custom : 
-      forall a b, 
-      0 < b -> 
-      a mod b = a - b * (a / b).
-    Proof.
-      intros a b Hb; 
-      rewrite Zmod_eq; nia.
-    Qed. 
 
     Lemma mod_not_eq_zero : 
       forall m, 
@@ -141,6 +133,7 @@ Module Zpstar.
       nia. exact Hwpp.
     Qed. 
 
+
     Lemma mod_not_zero_general: 
       forall vm vn, 
       vm mod p <> 0 -> 
@@ -183,7 +176,8 @@ Module Zpstar.
       apply (Z.mod_pos_bound (vx * vy) p H_0_p).
       assert ((vx * vy) mod p <> 0).
       pose proof (@mod_not_zero vx vy Hvx Hvy).
-      exact H. nia.
+      exact H. 
+      nia.
     Qed.
 
     Lemma multiplication_bound : 
@@ -215,25 +209,60 @@ Module Zpstar.
         end).
     Defined.
   
-    
-    Lemma fermat_theorem :
-      forall au, 
+   
+    Lemma fermat_theorem : forall au, 
       0 < au < p ->
       Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 1)) (Z.to_N p)) = 1.
     Proof.
       intros ? Hau.
-      rewrite zmod_nmod.
+      rewrite zmod_nmod, 
+      !Z2N.id.
+      rewrite fermat_little_ZZ;
+      try nia; try assumption.
+      all:try nia.
       rewrite !Z2N.id.
+      exact Hp.
+      nia.
+    Qed.
+
+
+    Lemma mod_pow_bound : forall au,
+      0 < au < p ->
+      0 < au ^ (p - 2) mod p.
+    Proof.
+      intros ? [Ha Hb].
+      pose proof Z.mod_pos_bound au p H_0_p as [Ht Hl].
+      
     Admitted.
-    
+
+    Lemma mod_bound : forall au, 
+      0 < au < p ->
+      0 < Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 2)) (Z.to_N p)) < p.
+    Proof.
+      intros ? Ha.
+      rewrite zmod_nmod, 
+      !Z2N.id,
+      Zpow_mod_correct.
+      split.
+      apply mod_pow_bound;
+      try assumption.
+      apply Z_mod_lt.
+      all:try nia.
+      rewrite Z2N.id.
+      exact Hp.
+      nia.
+    Qed. 
+
+
+
+    (* u ^ (p - 2) is inverse of u *)
     Definition inv_zpstar (u : Zpstar) : Zpstar.
       refine(
         match u with 
         | mk_zpstar au Hu => mk_zpstar 
-            (Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 1)) (Z.to_N p))) _ 
+            (Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 2)) (Z.to_N p)))
+            (mod_bound _ Hu) 
         end).
-      rewrite fermat_theorem; 
-      try (abstract nia). 
     Defined.
     
     (* Now I need to establish that it's a group *)
@@ -298,12 +327,13 @@ Module Zp.
   End ZpField.
 
 End Zp. 
+(* 
   Section VectorSpace.
 
 
   End VectorSpace.
 
 
-End Zp. 
+End Zp. *)
       
   
