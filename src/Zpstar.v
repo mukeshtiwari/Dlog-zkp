@@ -134,6 +134,24 @@ Module Zpstar.
     Qed. 
 
 
+    Lemma mod_single_not_zero : 
+      forall w : Z,
+      1 <= w < p ->
+      w mod p <> 0.
+    Proof.
+      intros ? Hw.
+      pose proof (rel_prime_le_prime w p Hp Hw) as Hwp.
+      apply Zrel_prime_neq_mod_0.
+      nia.
+      exact Hwp.
+    Qed.
+       
+
+
+
+    
+
+
     Lemma mod_not_zero_general: 
       forall vm vn, 
       vm mod p <> 0 -> 
@@ -176,7 +194,7 @@ Module Zpstar.
       apply (Z.mod_pos_bound (vx * vy) p H_0_p).
       assert ((vx * vy) mod p <> 0).
       pose proof (@mod_not_zero vx vy Hvx Hvy).
-      exact H. 
+      exact H.
       nia.
     Qed.
 
@@ -225,15 +243,7 @@ Module Zpstar.
       nia.
     Qed.
 
-
-    Lemma mod_pow_bound : forall au,
-      0 < au < p ->
-      0 < au ^ (p - 2) mod p.
-    Proof.
-      intros ? [Ha Hb].
-      pose proof Z.mod_pos_bound au p H_0_p as [Ht Hl].
-      
-    Admitted.
+    
 
     Lemma mod_bound : forall au, 
       0 < au < p ->
@@ -244,15 +254,18 @@ Module Zpstar.
       !Z2N.id,
       Zpow_mod_correct.
       split.
-      apply mod_pow_bound;
-      try assumption.
-      apply Z_mod_lt.
-      all:try nia.
+      admit.
+
+
+      apply Z.mod_pos_bound;
+      try assumption; try nia.
+      all: try nia.
       rewrite Z2N.id.
       exact Hp.
-      nia.
-    Qed. 
+      nia. 
+    Admitted.
 
+     
 
 
     (* u ^ (p - 2) is inverse of u *)
