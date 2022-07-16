@@ -10,5 +10,7 @@ src/Algebra/Ring.v
 src/Algebra/Integral_domain.v
 src/Algebra/Field.v
 src/Algebra/Vector_space.v
+src/Functions.v
+src/Fermat.v
 src/Elgamal.v
 src/Sigma.v

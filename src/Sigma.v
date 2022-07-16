@@ -634,12 +634,16 @@ Module Zkp.
 
     End Basic_sigma.
 
+  End DL.
+
     (* 
     Parallel Composition
     AND composition
     EQ Composition
     OR Composition  
+    Section And_Sigma.
     *)
+End Zkp.
 
 
-  Section And_Sigma.
+  
