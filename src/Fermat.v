@@ -1703,13 +1703,18 @@ Section Fermat_Little_Theorem.
     nia.
   Qed.
 
-    
+  Lemma fermat_bound : 
+    forall (a : Z) (p : Z),
+    prime p -> 
+    (0 < a < p)%Z -> 
+    (0 < Zpow_mod a (p - 2) p < p)%Z.
+  Proof.
+    intros ? ? Hp Ha.
+    split.
+    +  
+  Admitted.
 
-    
 
-
-
-    
     
    
 

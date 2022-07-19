@@ -243,7 +243,7 @@ Module Zpstar.
       nia.
     Qed.
 
-    
+
 
     Lemma mod_bound : forall au, 
       0 < au < p ->
@@ -251,20 +251,15 @@ Module Zpstar.
     Proof.
       intros ? Ha.
       rewrite zmod_nmod, 
-      !Z2N.id,
-      Zpow_mod_correct.
-      split.
-      admit.
-
-
-      apply Z.mod_pos_bound;
-      try assumption; try nia.
-      all: try nia.
+      !Z2N.id.
+      apply fermat_bound.
+      exact Hp.
+      all:try nia.
       rewrite Z2N.id.
       exact Hp.
-      nia. 
-    Admitted.
-
+      nia.
+    Qed.
+    
      
 
 
@@ -276,7 +271,7 @@ Module Zpstar.
             (Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 2)) (Z.to_N p)))
             (mod_bound _ Hu) 
         end).
-    Defined.
+    Defined.  
     
     (* Now I need to establish that it's a group *)
 
