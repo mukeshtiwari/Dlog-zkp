@@ -1736,19 +1736,17 @@ Section Fermat_Little_Theorem.
       nia.
   Qed.
 
-      
 
-
-
-  Lemma fermat_bound : 
-    forall (a : Z) (p : Z),
+  Lemma fermat_bound_gen : 
+    forall (a n p : Z),
     prime p -> 
+    (0 <= n)%Z -> 
     (0 < a < p)%Z -> 
-    (0 < Zpow_mod a (p - 2) p < p)%Z.
+    (0 < Zpow_mod a n p < p)%Z.
   Proof.
-    intros ? ? Hp Ha.
+    intros ? ? ? Hp Hn Ha.
     pose proof fermat_bound_nat 
-      (Z.to_nat (p - 2)) 
+      (Z.to_nat n) 
       (Z.to_nat a) (Z.to_nat p) as Hw.
     rewrite Z2Nat.id in Hw.
     specialize (Hw Hp).
@@ -1772,8 +1770,25 @@ Section Fermat_Little_Theorem.
     Unshelve.
     exact Hp.
   Qed.
-    
    
+      
+
+
+
+  Lemma fermat_bound : 
+    forall (a : Z) (p : Z),
+    prime p -> 
+    (0 < a < p)%Z -> 
+    (0 < Zpow_mod a (p - 2) p < p)%Z.
+  Proof.
+    intros ? ? Hp Ha.
+    apply fermat_bound_gen;
+    try assumption.
+    nia. 
+  Qed.
+    
+
+  
 
 End Fermat_Little_Theorem.    
     

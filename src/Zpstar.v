@@ -692,13 +692,52 @@ Module Zp.
   End ZpField.
 
 End Zp. 
-(* 
+Module Vspace.
+
   Section VectorSpace.
+
+   (* Note that there are two primes. One is for 
+    Zpstar (Group) and the other is for Zp (Field).
+    Right now, there is no constraint but when 
+    we would pass p = k * q + 1, it will
+    become Schnorr Group *)
+    Context 
+      {p q : Z}
+      {Hp : prime p}
+      {Hq : prime q}.
+
+    (* computes g ^ x 
+      Scalar multiplication of vector space 
+      p is the group modulus 
+      q is the field modulus
+    *)
+    Definition pow (g : @Zpstar.Zpstar p) (y : @Zp.Zp q) : 
+      @Zpstar.Zpstar p.
+      refine 
+        match g, y with 
+        | Zpstar.mk_zpstar gt Hgt, Zp.mk_zp yt Hyt => 
+            Zpstar.mk_zpstar  
+                (Z.of_N (Npow_mod (Z.to_N gt) (Z.to_N yt) (Z.to_N p))) 
+                _
+        end.
+        pose proof (@fermat_bound_gen gt yt p Hp) as Hwt.
+        destruct (proj2 (@mod_more_gen_bound q Hq yt) Hyt) as [Hl _].
+        specialize (Hwt Hl Hgt).
+        rewrite zmod_nmod,
+        !Z2N.id.
+        exact Hwt.
+        all:try (abstract nia).
+        rewrite Z2N.id.
+        exact Hp.
+        abstract nia.
+    Defined.
+
+    
 
 
   End VectorSpace.
 
 
-End Zp. *)
+End Vspace. 
       
   
