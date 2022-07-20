@@ -564,7 +564,18 @@ Module Zp.
       intros x y Hxy u v Huv; subst; reflexivity.
     Qed.
     
-    
+    Lemma zp_not_eq :
+      forall x y : Zp, 
+      x <> y -> v x <> v y.
+    Proof.
+      intros [x Hx] [y Hy] Hpp;
+      cbn.
+      intro Hf.
+      apply Hpp.
+      refine (construct_zp  _ _ _ _ _).
+      exact Hf.
+    Qed.
+
     Lemma zp_mul_comm : forall x y, zp_mul x y = zp_mul y x.
     Proof.
       intros [x Hx] [y Hy];
@@ -599,17 +610,16 @@ Module Zp.
       unfold zero in Hx.
       pose proof (proj2 (@mod_more_gen_bound p Hp v) Hv) as Htt.
       assert (Hvnz : v <> 0).
-      unfold not in Hx.
-      
-
-
-
+      pose proof (zp_not_eq _ _ Hx) as Hppw.
+      cbn in Hppw.
+      exact Hppw.
       all:try nia.
       pose proof @Hp_2_p p Hp.
       nia.
       pose proof @Hp_2_p p Hp.
       nia.
-      admit.
+      pose proof (proj2 (@mod_more_gen_bound p Hp v) Hv) as Htt.
+      nia.
       rewrite Z2N.id.
       pose proof @Hp_2_p p Hp.
       nia.
@@ -619,8 +629,8 @@ Module Zp.
       exact Hp.
       pose proof @Hp_2_p p Hp.
       nia.
-      
-    Admitted.
+    Qed.
+   
 
 
     Lemma zero_neq_one : zero <> one.
