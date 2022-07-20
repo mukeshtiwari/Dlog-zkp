@@ -5,7 +5,7 @@ Require Import Coq.PArith.PArith
   Sigma.Functions 
   Zpow_facts Sigma.Algebra.Hierarchy
   Sigma.Fermat
-  Sigma.Util.
+  Sigma.Util Coq.Classes.Morphisms.
 
 Module Zpstar.
 
@@ -130,11 +130,146 @@ Module Zpstar.
     
     (* Now I need to establish that it's a group *)
 
+    Lemma zpstar_mul_associative : 
+      forall x y z : Zpstar, 
+      mul_zpstar x (mul_zpstar y z) =  
+      mul_zpstar (mul_zpstar x y) z.
+    Proof.
+      pose proof @H_0_p p Hp.
+      intros ? ? ?; 
+      destruct x as [x Hx]; 
+      destruct y as [y Hy]; 
+      destruct z as [z Hz]; 
+      simpl in * |- *.
+      eapply construct_zpstar.
+      rewrite Z.mul_mod_idemp_l.
+      rewrite Z.mul_mod_idemp_r.
+      rewrite Z.mul_assoc. 
+      reflexivity.
+      all:nia.
+    Qed.
+
+    Lemma one_is_left_identity : 
+      forall x, mul_zpstar one x = x.
+    Proof.
+      intro x. 
+      unfold mul_zpstar, one.
+      destruct x as [x Hx]. 
+      refine(construct_zpstar _ _ _ _ _).
+      rewrite Z.mul_1_l. 
+      apply mod_not_zero_one. 
+      exact Hx.
+    Qed.
+
+    Lemma one_is_right_identity : 
+      forall x, mul_zpstar x one = x.
+    Proof.
+      intro x. 
+      unfold mul_zpstar, one.
+      destruct x as [x Hx]. 
+      refine(construct_zpstar _ _ _ _ _).
+      rewrite Z.mul_1_r. 
+      apply mod_not_zero_one. 
+      exact Hx.
+    Qed.
+
+  
+    Lemma zpstar_mul_commutative : 
+      forall x y : Zpstar, 
+      mul_zpstar x y =  mul_zpstar y x.
+    Proof.
+      destruct x as [x Hx]; 
+      destruct y as [y Hy]; simpl.
+      refine(construct_zpstar _ _ _ _ _).
+      rewrite Z.mul_comm.
+      reflexivity.
+    Qed.
+
+    Global Instance zpstar_mul_proper: Proper (eq ==> eq ==> eq) mul_zpstar.
+    Proof.
+      intros x y Hxy z u Hzu.
+      destruct x as [x Hx]; destruct y as [y Hy];
+      destruct z as [z Hz]; destruct u as [u Hu]; simpl in * |- *.
+      refine(construct_zpstar _ _ _ _ _).
+      inversion Hxy; inversion Hzu; subst; reflexivity.
+    Defined. 
+
+    Lemma zpstar_left_inv :
+      forall x, mul_zpstar (inv_zpstar x) x = one.
+    Proof.
+      intros ?.
+      unfold mul_zpstar, inv_zpstar, one.
+      destruct x as (v & Hv).
+      apply construct_zpstar.
+      rewrite Z.mul_comm.
+      rewrite zmod_nmod, Zpow_mod_correct.
+      rewrite !Z2N.id.
+      rewrite Zmult_mod_idemp_r.
+      pose proof @Hp_2_p p Hp.
+      assert (Hpp : p - 1 = 1 + (p - 2)).
+      nia. 
+      assert (Ht : v * v ^ (p - 2) = v ^ (p - 1)).
+      rewrite Hpp. 
+      rewrite Z.pow_add_r. 
+      all:try nia.
+      rewrite Ht.
+      rewrite <- Zpow_mod_correct.
+      apply fermat_little_ZZ.
+      exact Hp. 
+      exact Hv.
+      nia. 
+      rewrite Z2N.id.
+      exact Hp.
+      nia.
+    Qed.
+    
+    Lemma zpstar_right_inv :
+      forall x, mul_zpstar x (inv_zpstar x) = one.
+    Proof.
+      intros ?.
+      unfold mul_zpstar, inv_zpstar, one.
+      destruct x as (v & Hv).
+      apply construct_zpstar.
+      rewrite zmod_nmod, Zpow_mod_correct.
+      rewrite !Z2N.id.
+      rewrite Zmult_mod_idemp_r.
+      pose proof @Hp_2_p p Hp.
+      assert (Hpp : p - 1 = 1 + (p - 2)).
+      nia. 
+      assert (Ht : v * v ^ (p - 2) = v ^ (p - 1)).
+      rewrite Hpp. 
+      rewrite Z.pow_add_r. 
+      all:try nia.
+      rewrite Ht.
+      rewrite <- Zpow_mod_correct.
+      apply fermat_little_ZZ.
+      exact Hp. 
+      exact Hv.
+      nia. 
+      rewrite Z2N.id.
+      exact Hp.
+      nia. 
+    Qed.
+
+
     (* Zpstar is a commutative Group *)
     Global Instance zpstar_comm : @commutative_group 
       Zpstar (@eq Zpstar) mul_zpstar one inv_zpstar.
     Proof.
-    Admitted.
+      repeat econstructor.
+      + unfold is_associative; 
+        intros ? ? ?.
+        apply zpstar_mul_associative.
+      + intro x. apply one_is_left_identity.
+      + intro x. apply one_is_right_identity.
+      + apply zpstar_mul_proper.
+      + intros x y Hxy. rewrite Hxy. reflexivity.
+      + intros x y z Hxy Hyz. rewrite Hxy. exact Hyz.
+      + intro x. apply zpstar_left_inv.
+      + intro x. apply zpstar_right_inv.
+      + intros x y Hxy. rewrite Hxy. reflexivity.
+      + intros x y. apply zpstar_mul_commutative.
+    Qed. 
 
 
   End ZpstarGroup.
