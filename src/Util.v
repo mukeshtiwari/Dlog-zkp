@@ -312,6 +312,22 @@ Section Modutil.
     rewrite Hwp. nia. nia.
   Qed.
 
+  Lemma mod_more_gen_bound : 
+    forall w,
+    (0 <= w < p)%Z <-> Z.modulo w p = w.
+  Proof.
+    intros ?. split; intro Hw.
+    +
+    rewrite mod_eq_custom.
+    assert (Hwp: (w/p = 0)%Z).
+    apply Zdiv_small; nia.
+    rewrite Hwp. nia. nia.
+    + rewrite <-Hw.
+      apply Z_mod_lt.
+      pose proof (Hp_2_p).
+      nia. 
+  Qed.
+
 
   Lemma mod_not_eq_zero : 
     forall m, 

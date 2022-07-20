@@ -353,7 +353,331 @@ Module Zp.
     Definition zp_div (x y : Zp) : Zp :=
       zp_mul x (zp_inv y).
     
+    (* Proofs about field element *)
+
+    (*uniqueness of identity proof *)
+    Lemma zple_gen : 
+      forall v 
+      (H₁ H₂ : Z.modulo v p = v), 
+      H₁ = H₂.
+    Proof.
+      intros v ? ?.
+      apply UIP_dec, 
+      Z.eq_dec.
+    Qed.
+
+
+      
+    Lemma construct_zp : 
+      forall x y 
+      (Hx : Z.modulo x p = x) 
+      (Hy : Z.modulo y p = y), 
+      x = y -> 
+      mk_zp x Hx = mk_zp y Hy.
+    Proof.
+      intros; subst; f_equal.
+      apply zple_gen.
+    Qed. 
+      
+      
+    Lemma zp_dec: forall x y : Zp, {x = y} + {x <> y}.
+    Proof.
+      intros x y. destruct x as [x Hx]; destruct y as [y Hy]; simpl.
+      destruct (Z.eq_dec x y) as [Hl | Hr]. left.
+      refine(construct_zp _ _ _ _ Hl).
+      right. intro H; inversion H; contradiction.
+    Defined.
+
+    (* proof that opp x = sub 0 x (mod p) *)
+    Lemma zp_opp_sub : 
+      forall x, zp_opp x = zp_sub zero x.
+    Proof. 
+      intros [x Hx]; unfold zero, zp_opp, zp_sub; simpl.
+      refine(construct_zp _ _ _ _ _); reflexivity.
+    Qed.
+
+
+    Lemma zp_mul_inv_div : 
+    forall x y, zp_mul x (zp_inv y) = zp_div x y.
+    Proof.
+      intros [x Hx] [y Hy]; simpl.
+      refine(construct_zp _ _ _ _ _).
+      reflexivity.
+    Qed.
+
+    Lemma zp_add_assoc: 
+      forall x y z : Zp, 
+      zp_add x (zp_add y z) = zp_add (zp_add x y) z.
+    Proof.
+      pose (@H_0_p p Hp) as Hpp.
+      intros [x Hx] [y Hy] [z Hz]; simpl.
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.add_mod_idemp_l.
+      rewrite Z.add_mod_idemp_r.
+      rewrite Z.add_assoc. 
+      reflexivity.
+      all:nia.
+    Qed.
+      
+    Lemma zp_add_zero_left_identity : 
+      forall x, zp_add zero x = x.
+    Proof.
+      intros [x Hx]; simpl.
+      refine (construct_zp  _ _ _ _ _).
+      exact Hx.
+    Qed.
+
+
+    Lemma zp_add_zero_right_identity : 
+      forall x, zp_add x zero = x.
+    Proof.
+      intros [x Hx]; simpl.
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.add_0_r.
+      exact Hx.
+    Qed.
+
+    Global Instance zp_add_proper : Proper (eq ==> eq ==> eq) zp_add.
+    Proof.
+      intros x y Hxy u v Huv; subst; reflexivity.
+    Qed.
+
+    Global Instance eq_sym : @Symmetric Zp eq.
+    Proof. 
+      intros x y Hxy. subst; reflexivity.
+    Qed.
+
+    Global Instance eq_trans : @Transitive Zp eq.
+    Proof.
+      intros x y z Hxy Hyz; subst; reflexivity.
+    Qed.
+
+    Lemma zp_add_opp_left_inv : 
+      forall x, zp_add (zp_opp x) x = zero.
+    Proof.
+      intros [x Hx]; simpl.
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Zplus_mod_idemp_l.
+      rewrite Z.add_opp_diag_l.
+      rewrite Zmod_0_l; reflexivity.
+    Qed.
+
+    Lemma zp_add_opp_right_inv : 
+      forall x, zp_add x (zp_opp x) = zero.
+    Proof.
+      intros [x Hx]; simpl.
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Zplus_mod_idemp_r.
+      rewrite Z.add_opp_diag_r.
+      rewrite Zmod_0_l; reflexivity.
+    Qed.
+
+    Global Instance zp_opp_proper : Proper (eq ==> eq) zp_opp.
+    Proof.
+      intros x y Hx; subst; reflexivity.
+    Qed.
+
+    Lemma zp_add_comm : 
+      forall x y, zp_add x y = zp_add y x.
+    Proof.
+      intros [x Hx] [y Hy]; simpl; 
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.add_comm; reflexivity.
+    Qed.
+
+    Lemma zp_mul_assoc : 
+      forall x y z, 
+      zp_mul x (zp_mul y z) = zp_mul (zp_mul x y) z.
+    Proof.
+      pose (@H_0_p p Hp) as Hpp.
+      intros [x Hx] [y Hy] [z Hz]; simpl;
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.mul_mod_idemp_l.
+      rewrite Z.mul_mod_idemp_r.
+      rewrite Z.mul_assoc. reflexivity.
+      all:nia.
+    Qed.
+
+    Lemma zp_mul_one_left_id : 
+      forall x, zp_mul one x = x.
+    Proof.
+      intros [x Hx]; 
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.mul_1_l.
+      exact Hx.
+    Qed.
+
+    Lemma zp_mul_one_right_id : 
+      forall x, zp_mul x one = x.
+    Proof.
+      intros [x Hx]; 
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.mul_1_r; exact Hx.
+    Qed.
+
+
+    Global Instance zp_mul_proper: Proper (eq ==> eq ==> eq) zp_mul.
+    Proof.
+      intros x y Hxy u v Huv; subst; reflexivity.
+    Qed.
+
+    Lemma mul_dist_add_left : 
+      forall x y z, 
+      zp_mul x (zp_add y z) = zp_add (zp_mul x y) (zp_mul x z).
+    Proof.
+      pose (@H_0_p p Hp) as Hpp.
+      intros [x Hx] [y Hy] [z Hz];
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.mul_mod_idemp_r, 
+        Z.add_mod_idemp_l,
+        Z.add_mod_idemp_r,
+        Z.mul_add_distr_l; 
+        try reflexivity;
+        try nia.
+    Qed.
+
+    Lemma mul_dist_add_right : 
+      forall x y z, 
+      zp_mul (zp_add y z) x = zp_add (zp_mul y x) (zp_mul z x).
+    Proof.
+      pose (@H_0_p p Hp) as Hpp.
+      intros [x Hx] [y Hy] [z Hz];
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.mul_mod_idemp_l,
+      Z.add_mod_idemp_r,  Z.mul_add_distr_r, 
+      Zplus_mod_idemp_l;
+      try reflexivity; try nia.
+    Qed.
+    
+
+    Lemma zp_sub_add_opp : 
+      forall x y : Zp, zp_sub x y = zp_add x (zp_opp y).
+    Proof.
+      intros [x Hx] [y Hy]; simpl;
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Zplus_mod_idemp_r, Z.add_opp_r;
+      reflexivity.
+    Qed.
+    
+    Global Instance zp_sub_proper : Proper (eq ==> eq ==> eq) zp_sub.
+    Proof.
+      intros x y Hxy u v Huv; subst; reflexivity.
+    Qed.
+    
+    
+    Lemma zp_mul_comm : forall x y, zp_mul x y = zp_mul y x.
+    Proof.
+      intros [x Hx] [y Hy];
+      refine (construct_zp  _ _ _ _ _).
+      rewrite Z.mul_comm; reflexivity.
+    Qed.
+    
+    Lemma zp_mul_left_inv: 
+      forall x, x <> zero -> 
+      zp_mul (zp_inv x) x = one.
+    Proof.
+      intros x Hx.
+      unfold zp_mul, zp_inv.
+      destruct x as (v & Hv).
+      apply construct_zp.
+      rewrite Z.mul_comm.
+      rewrite zmod_nmod, Zpow_mod_correct.
+      rewrite !Z2N.id.
+      rewrite Zmod_mod.
+      rewrite Zmult_mod_idemp_r.
+      pose proof @Hp_2_p p Hp.
+      assert (Hpp : p - 1 = 1 + (p - 2)).
+      nia. 
+      assert (Ht : v * v ^ (p - 2) = v ^ (p - 1)).
+      rewrite Hpp. 
+      rewrite Z.pow_add_r. 
+      all:try nia.
+      rewrite Ht.
+      rewrite <- Zpow_mod_correct.
+      apply fermat_little_ZZ.
+      exact Hp.
+      unfold zero in Hx.
+      pose proof (proj2 (@mod_more_gen_bound p Hp v) Hv) as Htt.
+      assert (Hvnz : v <> 0).
+      unfold not in Hx.
+      
+
+
+
+      all:try nia.
+      pose proof @Hp_2_p p Hp.
+      nia.
+      pose proof @Hp_2_p p Hp.
+      nia.
+      admit.
+      rewrite Z2N.id.
+      pose proof @Hp_2_p p Hp.
+      nia.
+      pose proof @Hp_2_p p Hp.
+      nia.
+      rewrite Z2N.id.
+      exact Hp.
+      pose proof @Hp_2_p p Hp.
+      nia.
+      
+    Admitted.
+
+
+    Lemma zero_neq_one : zero <> one.
+    Proof.
+      intro Hx. 
+      unfold zero, one in Hx.
+      inversion Hx.
+    Qed.
+
+    Global Instance zp_inv_proper: Proper (eq ==> eq) zp_inv.
+    Proof.
+      intros x y Hxy; subst; reflexivity.
+    Qed.
+
+    Global Instance zp_div_proper : Proper (eq ==> eq ==> eq) zp_div.
+    Proof.
+      intros x y Hxy; subst; reflexivity.
+    Qed.
+
+
+
+      
+
+
     (* Now, I need to establish that it's a Field *)
+
+    Global Instance zp_field : @field Zp (@eq Zp) zero 
+      one zp_opp zp_add zp_sub zp_mul zp_inv zp_div.
+    Proof.
+      repeat constructor.
+      + intros x y z. apply zp_add_assoc.
+      + intro x. apply zp_add_zero_left_identity.
+      + intro x. apply zp_add_zero_right_identity.
+      + apply zp_add_proper.
+      + apply eq_sym.
+      + apply eq_trans.
+      + intros x. apply zp_add_opp_left_inv.
+      + intros x; apply zp_add_opp_right_inv.
+      + apply zp_opp_proper.
+      + intros x y; apply zp_add_comm.
+      + intros x y z; apply zp_mul_assoc.
+      + intro x; apply zp_mul_one_left_id.
+      + intro x; apply zp_mul_one_right_id.
+      + apply zp_mul_proper.
+      + apply eq_sym.
+      + apply eq_trans.
+      + intros x y z; apply mul_dist_add_left.
+      + intros x y z; apply mul_dist_add_right.
+      + intros x y; apply zp_sub_add_opp.
+      + apply zp_sub_proper.
+      + intros x y. apply zp_mul_comm.
+      + intros x y; apply zp_mul_left_inv; exact y.
+      + exact zero_neq_one.
+      + intros x y. symmetry. subst. exact eq_refl. 
+      + exact zp_div_proper.
+    Qed.
+    
 
   End ZpField.
 
