@@ -4,7 +4,8 @@ Require Import Coq.PArith.PArith
   Eqdep_dec Arith
   Sigma.Functions 
   Zpow_facts Sigma.Algebra.Hierarchy
-  Sigma.Fermat.
+  Sigma.Fermat
+  Sigma.Util.
 
 Module Zpstar.
 
@@ -14,25 +15,6 @@ Module Zpstar.
     Context 
       {p : Z}
       {Hp : prime p}.
-
-    
-    Fact Hp_2_p : 2 <= p.
-    Proof.
-      pose proof (prime_ge_2 p Hp) as Ht.
-      nia.
-    Qed.
-
-    Fact H_0_p : 0 < p.
-    Proof.
-      pose proof (prime_ge_2 p Hp).
-      nia.
-    Qed.
-    
-    Fact Hp_1_p : 1 < p.
-    Proof.
-      pose proof (prime_ge_2 p Hp).
-      nia.
-    Qed.
 
     
     Record Zpstar := 
@@ -87,134 +69,6 @@ Module Zpstar.
       abstract nia.
     Defined.
 
-
-
-    Lemma mod_not_eq_zero : 
-      forall m, 
-      m mod p <> 0 <-> 
-      exists k w, m = k * p + w /\ 1 <= w < p.
-    Proof.
-      intros ?; split; intros Hm.
-      exists (Z.div m p), (Zmod m p). 
-      split.
-      rewrite mod_eq_custom. nia.
-      apply H_0_p. 
-      remember (m mod p) as mp.
-      assert (Hpt : 0 <= mp < p)
-        by (rewrite Heqmp; 
-        apply Z.mod_pos_bound; apply H_0_p). 
-      nia.
-      destruct Hm as [k [w [Hk Hw]]].
-      rewrite Hk, Z.add_comm, Z.mod_add.
-      rewrite mod_eq_custom.
-      assert (Hwp: w / p = 0). 
-      apply Zdiv_small; nia.
-      intro. rewrite Hwp in H. nia.
-      apply H_0_p. pose Hp_2_p. nia.
-    Qed.
-
-   
-    Lemma mod_not_zero : 
-      forall w₁ w₂,  
-      1 <= w₁ < p ->  
-      1 <= w₂ < p -> 
-      (w₁ * w₂) mod p <> 0.
-    Proof.
-      intros ? ? Hw₁ Hw₂.
-      assert (Hwm: 1 <= w₁ * w₂ < p * p) by nia.
-      pose proof Hp_2_p.
-      pose proof (rel_prime_le_prime w₁ p Hp Hw₁) as Hwp1.
-      pose proof (rel_prime_le_prime w₂ p Hp Hw₂) as Hwp2.
-      apply rel_prime_sym in Hwp1; 
-      apply rel_prime_sym in Hwp2.
-      pose proof (rel_prime_mult _ _ _ Hwp1 Hwp2) as Hwpp.
-      apply rel_prime_sym in Hwpp.
-      apply Zrel_prime_neq_mod_0. 
-      nia. exact Hwpp.
-    Qed. 
-
-
-    Lemma mod_single_not_zero : 
-      forall w : Z,
-      1 <= w < p ->
-      w mod p <> 0.
-    Proof.
-      intros ? Hw.
-      pose proof (rel_prime_le_prime w p Hp Hw) as Hwp.
-      apply Zrel_prime_neq_mod_0.
-      nia.
-      exact Hwp.
-    Qed.
-       
-
-
-
-    
-
-
-    Lemma mod_not_zero_general: 
-      forall vm vn, 
-      vm mod p <> 0 -> 
-      vn mod p <> 0 -> 
-      ((vm * vn) mod p) mod p <> 0.
-    Proof.
-      intros ? ? Hvm Hvn. 
-      apply mod_not_eq_zero in Hvm.
-      apply mod_not_eq_zero in Hvn.
-      apply mod_not_eq_zero.
-      destruct Hvm as [k1 [w1 [Hk1 Hw1]]].
-      destruct Hvn as [k2 [w2 [Hk2 Hw2]]].
-      assert (Hvmn : (vn * vm) mod p = (w1 * w2) mod p).
-      rewrite Hk1, Hk2. 
-      rewrite Zmult_mod, Z.add_comm, 
-      Z.mod_add, Z.add_comm, Z.mod_add.
-      rewrite <-Zmult_mod, Z.mul_comm; 
-      reflexivity.
-      pose proof Hp_2_p. abstract nia.
-      pose proof Hp_2_p. abstract nia.
-      exists 0, ((w1 * w2) mod p).
-      split. simpl. rewrite Z.mul_comm, Hvmn; 
-      reflexivity.
-      assert (Hwt: 0 <= (w1 * w2) mod p < p) by 
-        apply (Z.mod_pos_bound (w1 * w2) p H_0_p).
-      assert ((w1 * w2) mod p <> 0).
-      pose proof (mod_not_zero w1 w2 Hw1 Hw2).
-      exact H. abstract nia.
-    Qed.
-
-    (* moved the proof as a lemma to avoid blowing of proof terms *)
-    Lemma znot_zero_mul_proof: 
-      forall vx vy, 
-      1 <= vx < p -> 
-      1 <= vy < p -> 
-      1 <= (vx * vy) mod p < p.
-    Proof.
-      intros ? ? Hvx Hvy.
-      assert (Hwt: 0 <= (vx * vy) mod p < p) by 
-      apply (Z.mod_pos_bound (vx * vy) p H_0_p).
-      assert ((vx * vy) mod p <> 0).
-      pose proof (@mod_not_zero vx vy Hvx Hvy).
-      exact H.
-      nia.
-    Qed.
-
-    Lemma multiplication_bound : 
-     forall vx vy, 
-      0 < vx < p -> 
-      0 < vy < p -> 
-      0 < (vx * vy) mod p < p.
-    Proof.
-      intros ? ? Ha Hb.
-      assert (Hc : 1 <= vx < p) by
-      nia.
-      assert (Hd : 1 <= vy < p) by 
-      nia.
-      pose proof (znot_zero_mul_proof _ _ Hc Hd) as He.
-      nia. 
-    Qed.
-
-
-
     
     (* multiplication *)
     Definition mul_zpstar (u v : Zpstar) : Zpstar.
@@ -223,12 +77,13 @@ Module Zpstar.
         | mk_zpstar au Hu, mk_zpstar av Hv => 
           mk_zpstar 
             (Z.modulo (au * av) p) 
-            (multiplication_bound _ _ Hu Hv)
+            (@multiplication_bound p Hp _ _ Hu Hv)
         end).
     Defined.
   
    
-    Lemma fermat_theorem : forall au, 
+    Lemma fermat_theorem : 
+      forall au, 
       0 < au < p ->
       Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 1)) (Z.to_N p)) = 1.
     Proof.

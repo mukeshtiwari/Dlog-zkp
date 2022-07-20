@@ -3,7 +3,9 @@ Require Import Coq.NArith.NArith
   Znumtheory Lia
   Zdiv Zpow_facts List
   Coq.Init.Peano
-  Coq.Arith.PeanoNat.
+  Coq.Arith.PeanoNat
+  Sigma.Util.
+
 Import ListNotations.
 
 Section Fermat_Little_Theorem.
@@ -1611,7 +1613,7 @@ Section Fermat_Little_Theorem.
     pose proof npow_mod_nat 
       (N.to_nat (p - 1)) (N.to_nat a)  (N.to_nat p).
     pose proof prime_ge_2 (Z.of_N p) Hp as Hf.
-    rewrite N_nat_Z in H.
+    rewrite !N_nat_Z in H.
     specialize (H Hp).
     repeat rewrite N2Nat.id in H.
     rewrite H.
@@ -1640,26 +1642,8 @@ Section Fermat_Little_Theorem.
     exact Hp.
   Qed.
 
- Lemma mod_eq_custom : 
-    forall (a b : Z), 
-    (0 < b)%Z -> 
-    Z.modulo a b = (a - b * (a / b))%Z.
-  Proof.
-    intros a b Hb.
-    rewrite Zmod_eq; nia.
-  Qed. 
-
-
-  Lemma mod_not_zero_one : 
-    forall w p, prime p -> 
-    (0 < w < p)%Z -> Z.modulo w p = w.
-  Proof.
-    intros ? ? Hp Hw.
-    rewrite mod_eq_custom.
-    assert (Hwp: (w/p = 0)%Z).
-    apply Zdiv_small; nia.
-    rewrite Hwp. nia. nia.
-  Qed.
+ 
+  
 
   Theorem fermat_little_ZZ : 
     forall (a : Z) (p : Z),
@@ -1697,11 +1681,19 @@ Section Fermat_Little_Theorem.
     nia. 
     rewrite !Z2N.id.
     intro Hf.
-    pose proof mod_not_zero_one a p Hp Ha as Hw.
-    nia. 
-    nia. 
-    nia.
+    pose proof @mod_not_zero_one p a Ha as Hw.
+    all:nia.
   Qed.
+
+
+  Lemma fermat_bound_nat : 
+    forall (n a p : nat),
+    prime (Z.of_nat p) ->
+    Nat.modulo a p <> 0 -> 
+    0 < Nat.modulo (Nat.pow a n) p < p.
+  Proof.
+    
+  Admitted.
 
   Lemma fermat_bound : 
     forall (a : Z) (p : Z),
@@ -1710,11 +1702,31 @@ Section Fermat_Little_Theorem.
     (0 < Zpow_mod a (p - 2) p < p)%Z.
   Proof.
     intros ? ? Hp Ha.
-    split.
-    +  
-  Admitted.
-
-
+    pose proof fermat_bound_nat 
+      (Z.to_nat (p - 2)) 
+      (Z.to_nat a) (Z.to_nat p) as Hw.
+    rewrite Z2Nat.id in Hw.
+    specialize (Hw Hp).
+    assert (Hv : (Z.modulo a p <> 0)%Z).
+    eapply mod_single_not_zero.
+    nia. 
+    assert (Hvt : Z.to_nat a mod Z.to_nat p <> 0).
+    rewrite <-Z2Nat.inj_mod.
+    intro Hf.
+    assert (Hff : 0 = Z.to_nat 0).
+    nia. rewrite Hff in Hf;
+    clear Hff.
+    apply Z2Nat.inj_iff in Hf.
+    nia.
+    apply Z_mod_nonneg_nonneg.
+    all:try nia.
+    specialize (Hw Hvt).
+    rewrite <-Z2Nat.inj_pow, <-Z2Nat.inj_mod in Hw.
+    rewrite Zpow_mod_correct.
+    all:try nia.
+    Unshelve.
+    exact Hp.
+  Qed.
     
    
 
