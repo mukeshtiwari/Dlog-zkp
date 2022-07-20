@@ -1692,8 +1692,53 @@ Section Fermat_Little_Theorem.
     Nat.modulo a p <> 0 -> 
     0 < Nat.modulo (Nat.pow a n) p < p.
   Proof.
-    
-  Admitted.
+    induction n;
+    intros ? ? Hp Ha.
+    pose proof @Hp_2_p (Z.of_nat p) Hp.
+    + cbn.
+      rewrite Nat.mod_1_l.
+      all:nia.
+    + cbn.
+      specialize (IHn a p Hp Ha).
+      remember (a^n) as b.
+      assert (Hvt : b mod p <> 0).
+      nia. 
+      pose proof @mod_not_eq_zero (Z.of_nat p) Hp (Z.of_nat a) as Ht.
+      assert (Hwt: (Z.of_nat a mod Z.of_nat p)%Z <> 0%Z).
+      intro Hf.
+      rewrite <-Nat2Z.inj_mod in Hf.
+      nia. 
+      destruct Ht as [Htl _].
+      destruct (Htl Hwt) as (k1 & w1 & H1 & H2).
+      pose proof @mod_not_eq_zero (Z.of_nat p) Hp (Z.of_nat b) as Htt.
+      assert (Hwtt: (Z.of_nat b mod Z.of_nat p)%Z <> 0%Z).
+      intro Hf.
+      rewrite <-Nat2Z.inj_mod in Hf.
+      nia.
+      destruct Htt as [Httl _].
+      destruct (Httl Hwtt) as (k2 & w2 & H3 & H4).
+      split.
+      eapply Nat2Z.inj_lt.
+      rewrite Nat2Z.inj_mod, Nat2Z.inj_mul.
+      rewrite H1, H3.
+      assert (Hab : (((k1 * Z.of_nat p + w1) * (k2 * Z.of_nat p + w2)) =
+        ((w1 * w2) + ((k1  * k2 * Z.of_nat p + k1 * w2 +
+          w1 * k2) * Z.of_nat p)))%Z).
+      nia.
+      rewrite Hab; clear Hab.
+      rewrite <-Zplus_mod_idemp_r.
+      rewrite Z_mod_mult.
+      rewrite Z.add_comm.
+      cbn.
+      pose proof @znot_zero_mul_proof (Z.of_nat p) Hp _ _ H2 H4 as Hf.
+      nia. 
+      apply Nat.mod_upper_bound.
+      nia.
+  Qed.
+
+      
+
+
 
   Lemma fermat_bound : 
     forall (a : Z) (p : Z),
