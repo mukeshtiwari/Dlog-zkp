@@ -290,7 +290,7 @@ Module Zp.
       mk_zp {v : Z; Hv : Z.modulo v p = v}.
 
     
-    Definition zp_zero : Zp. 
+    Definition zero : Zp. 
       refine (mk_zp 0 (Z.mod_0_l _ _)).
       pose proof prime_ge_2 _ Hp as Ht.
       abstract nia.
@@ -298,7 +298,7 @@ Module Zp.
 
 
 
-    Definition zp_one : Zp. 
+    Definition one : Zp. 
       refine(mk_zp 1 (Z.mod_1_l _ _ )).
       pose proof prime_ge_2 _ Hp as Ht.
       abstract nia.
@@ -309,18 +309,51 @@ Module Zp.
       refine (match x, y with
         | mk_zp ax _, mk_zp ay _ => mk_zp (Z.modulo (ax + ay) p) _ 
       end).
-
-    Admitted.
-
+      rewrite Zmod_mod.
+      exact eq_refl.
+    Defined.
+    
 
     Definition zp_sub (x y : Zp) : Zp.
       refine (match x, y with
-      | mk_zp ax _, mk_zp ay _ => mk_zp (N.modulo (ax - ay) p) _ 
+      | mk_zp ax _, mk_zp ay _ => mk_zp (Z.modulo (ax - ay) p) _ 
       end).
-    Admitted.
+      rewrite Zmod_mod.
+      exact eq_refl.
+    Defined.
+
+
+    Definition zp_opp (x : Zp) : Zp :=
+      zp_sub zero x.
+
+    
+        
+    Definition zp_mul (x y : Zp) : Zp.
+      refine (match x, y with
+        | mk_zp ax _, mk_zp ay _ => mk_zp (Z.modulo (ax * ay) p) _ 
+      end).
+      rewrite Zmod_mod.
+      exact eq_refl.
+    Defined.
 
 
 
+    Definition zp_inv (x : Zp) : Zp.
+      refine (match x with
+        | mk_zp ax Hu => mk_zp 
+          (Z.modulo 
+            (Z.of_N (Npow_mod (Z.to_N ax) (Z.to_N (p - 2)) (Z.to_N p)))
+            p) _ 
+      end).
+      rewrite Zmod_mod.
+      exact eq_refl.
+    Defined.
+
+
+    Definition zp_div (x y : Zp) : Zp :=
+      zp_mul x (zp_inv y).
+    
+    (* Now, I need to establish that it's a Field *)
 
   End ZpField.
 
