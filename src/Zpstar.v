@@ -774,10 +774,11 @@ Module Vspace.
     Proof.
       intros [g Hg] [u Hu] [v Hv].
       apply Zpgroup.construct_zpstar.
-      rewrite <-!npow_mod_exp_unary_binary_eqv.
-      f_equal.
-      rewrite N2Z.id,
-      !Z_N_nat.
+      rewrite !zmod_nmod, 
+      !Z2N.id, !Zpow_mod_correct.
+      (* Do I need to know p = k * q + 1 ? 
+         prime q is simply construting a Field. 
+      *)
       
     Admitted.
 
@@ -792,6 +793,8 @@ Module Vspace.
     Proof.
       intros [g Hg] [u Hu] [v Hv].
       apply Zpgroup.construct_zpstar.
+      rewrite !zmod_nmod, 
+      !Z2N.id, !Zpow_mod_correct.
     Admitted.
 
     (* pow (u * v ) r = pow u r *G pow v r *)
@@ -804,6 +807,8 @@ Module Vspace.
     Proof.
       intros [u Hu] [v Hv] [r Hr].
       apply Zpgroup.construct_zpstar.
+      rewrite !zmod_nmod, 
+      !Z2N.id, !Zpow_mod_correct.
 
     Admitted.
 
