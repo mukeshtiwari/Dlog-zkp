@@ -708,8 +708,8 @@ Module Vspace.
 
     (* computes g ^ x 
       Scalar multiplication of vector space 
-      p is the group modulus 
-      q is the field modulus
+      p is the Group modulus 
+      q is the Field modulus
     *)
     Definition pow (g : @Zpstar.Zpstar p) (y : @Zp.Zp q) : 
       @Zpstar.Zpstar p.
@@ -732,7 +732,23 @@ Module Vspace.
         abstract nia.
     Defined.
 
-    
+
+    Lemma is_field_one_proof : 
+      forall u, pow u (@Zp.one q Hq) = u.
+    Proof.
+      intros [u Hu].
+      unfold Zp.one, pow.
+      apply Zpstar.construct_zpstar.
+      cbn.
+      rewrite <-!Z2N.inj_mod,
+      Z2N.id.
+      apply (@mod_more_gen_bound p Hp u);
+      try assumption.
+      all:try nia. 
+      assert (Hut : 0 <= u). nia.
+      pose proof Z.mod_bound_pos u p Hut (@H_0_p p Hp).
+      nia. 
+    Qed. 
 
 
   End VectorSpace.
