@@ -5,9 +5,10 @@ Require Import Coq.PArith.PArith
   Sigma.Functions 
   Zpow_facts Sigma.Algebra.Hierarchy
   Sigma.Fermat
-  Sigma.Util Coq.Classes.Morphisms.
+  Sigma.Util Coq.Classes.Morphisms
+  Coq.NArith.NArith.
 
-Module Zpstar.
+Module Zpgroup.
 
   
   (* multiplicative Group *)
@@ -273,9 +274,9 @@ Module Zpstar.
 
 
   End ZpstarGroup.
-End Zpstar.
+End Zpgroup.
 
-Module Zp.
+Module Zpfield.
 
   (* Prime Field *)
   Section ZpField.
@@ -691,7 +692,7 @@ Module Zp.
 
   End ZpField.
 
-End Zp. 
+End Zpfield.
 Module Vspace.
 
   Section VectorSpace.
@@ -711,12 +712,12 @@ Module Vspace.
       p is the Group modulus 
       q is the Field modulus
     *)
-    Definition pow (g : @Zpstar.Zpstar p) (y : @Zp.Zp q) : 
-      @Zpstar.Zpstar p.
+    Definition pow (g : @Zpgroup.Zpstar p) 
+      (y : @Zpfield.Zp q) : @Zpgroup.Zpstar p.
       refine 
         match g, y with 
-        | Zpstar.mk_zpstar gt Hgt, Zp.mk_zp yt Hyt => 
-            Zpstar.mk_zpstar  
+        | Zpgroup.mk_zpstar gt Hgt, Zpfield.mk_zp yt Hyt => 
+            Zpgroup.mk_zpstar  
                 (Z.of_N (Npow_mod (Z.to_N gt) (Z.to_N yt) (Z.to_N p))) 
                 _
         end.
@@ -734,11 +735,12 @@ Module Vspace.
 
 
     Lemma is_field_one_proof : 
-      forall u, pow u (@Zp.one q Hq) = u.
+      forall (u : Zpgroup.Zpstar), 
+      pow u (@Zpfield.one q Hq) = u.
     Proof.
       intros [u Hu].
-      unfold Zp.one, pow.
-      apply Zpstar.construct_zpstar.
+      unfold Zpfield.one, pow.
+      apply Zpgroup.construct_zpstar.
       cbn.
       rewrite <-!Z2N.inj_mod,
       Z2N.id.
@@ -748,7 +750,68 @@ Module Vspace.
       assert (Hut : 0 <= u). nia.
       pose proof Z.mod_bound_pos u p Hut (@H_0_p p Hp).
       nia. 
-    Qed. 
+    Qed.
+
+
+
+    Lemma is_field_zero_proof : 
+      forall (u : Zpgroup.Zpstar), 
+      pow u (@Zpfield.zero q Hq) = @Zpgroup.one p Hp.
+    Proof.
+      intros [u Hu].
+      apply Zpgroup.construct_zpstar;
+      cbn.
+      exact eq_refl.
+    Qed.
+
+   
+    (* g ^ (x₁ * x₂) = (g^x₁)^x₂ *)
+    Lemma is_smul_associative_fmul_proof : 
+      forall 
+      (g : @Zpgroup.Zpstar p) 
+      (u v : @Zpfield.Zp q),
+      pow g (Zpfield.zp_mul u v) = pow (pow g u) v.
+    Proof.
+      intros [g Hg] [u Hu] [v Hv].
+      apply Zpgroup.construct_zpstar.
+      rewrite <-!npow_mod_exp_unary_binary_eqv.
+      f_equal.
+      rewrite N2Z.id,
+      !Z_N_nat.
+      
+    Admitted.
+
+
+    (* g ^ (u + v) = g^u . g^v *)
+    Lemma is_smul_distributive_fadd_proof : 
+      forall 
+      (g : @Zpgroup.Zpstar p) 
+      (u v : @Zpfield.Zp q),
+      pow g (Zpfield.zp_add u v) =
+      @Zpgroup.mul_zpstar p Hp (pow g u) (pow g v).
+    Proof.
+      intros [g Hg] [u Hu] [v Hv].
+      apply Zpgroup.construct_zpstar.
+    Admitted.
+
+    (* pow (u * v ) r = pow u r *G pow v r *)
+    Lemma is_smul_distributive_vadd_proof : 
+      forall 
+      (u v : @Zpgroup.Zpstar p)
+      (r : @Zpfield.Zp q),
+      pow (@Zpgroup.mul_zpstar p Hp u v) r = 
+      @Zpgroup.mul_zpstar p Hp (pow u r) (pow v r).
+    Proof.
+      intros [u Hu] [v Hv] [r Hr].
+      apply Zpgroup.construct_zpstar.
+
+    Admitted.
+
+
+
+
+
+
 
 
   End VectorSpace.
