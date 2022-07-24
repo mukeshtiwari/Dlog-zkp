@@ -1118,8 +1118,7 @@ Module Vspace.
         end.
     Defined.
 
-    (* Everything upto this point is good *)
-        
+    
   
 
 
@@ -1164,7 +1163,20 @@ Module Vspace.
       intros [g Hg] [u Hu] [v Hv].
       apply Schnorr.construct_schnorr_group.
       rewrite !zmod_nmod, 
-      !Z2N.id, !Zpow_mod_correct.
+      !Z2N.id, !Zpow_mod_correct,
+      <-Zpower_mod,
+      <-Z.pow_mul_r.
+      (* Proof idea: 
+        (u * v) mod q = k * q + w 
+        LHS: g ^ ((u * v) mod q) mod p = 
+        g ^ w mod p. 
+        
+        RHS: g ^ (u * v) mod p =
+         g^(k * q) * g ^ w mod p = 
+         (g^q)^k = 1 ^ k 
+         LHS = RHS
+      *)
+      
       
     Admitted.
 
