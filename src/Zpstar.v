@@ -1124,12 +1124,12 @@ Module Vspace.
 
 
     Lemma is_field_one_proof : 
-      forall (u : Zpgroup.Zpstar), 
+      forall (u : @Schnorr.Schnorr_group p q), 
       pow u (@Zpfield.one q Hq) = u.
     Proof.
       intros [u Hu].
       unfold Zpfield.one, pow.
-      apply Zpgroup.construct_zpstar.
+      apply Schnorr.construct_schnorr_group.
       cbn.
       rewrite <-!Z2N.inj_mod,
       Z2N.id.
@@ -1144,11 +1144,11 @@ Module Vspace.
 
 
     Lemma is_field_zero_proof : 
-      forall (u : Zpgroup.Zpstar), 
-      pow u (@Zpfield.zero q Hq) = @Zpgroup.one p Hp.
+      forall (u : @Schnorr.Schnorr_group p q), 
+      pow u (@Zpfield.zero q Hq) = @Schnorr.one p q Hp Hq.
     Proof.
       intros [u Hu].
-      apply Zpgroup.construct_zpstar;
+      apply Schnorr.construct_schnorr_group;
       cbn.
       exact eq_refl.
     Qed.
@@ -1157,19 +1157,14 @@ Module Vspace.
     (* g ^ (x₁ * x₂) = (g^x₁)^x₂ *)
     Lemma is_smul_associative_fmul_proof : 
       forall 
-      (g : @Zpgroup.Zpstar p) 
+      (g : @Schnorr.Schnorr_group p q) 
       (u v : @Zpfield.Zp q),
       pow g (Zpfield.zp_mul u v) = pow (pow g u) v.
     Proof.
       intros [g Hg] [u Hu] [v Hv].
-      apply Zpgroup.construct_zpstar.
+      apply Schnorr.construct_schnorr_group.
       rewrite !zmod_nmod, 
       !Z2N.id, !Zpow_mod_correct.
-      admit.
-      all: try nia.
-      (* Do I need to know p = k * q + 1 ? 
-         prime q is simply construting a Field. 
-      *)
       
     Admitted.
 
@@ -1177,38 +1172,45 @@ Module Vspace.
     (* g ^ (u + v) = g^u . g^v *)
     Lemma is_smul_distributive_fadd_proof : 
       forall 
-      (g : @Zpgroup.Zpstar p) 
+      (g : @Schnorr.Schnorr_group p q) 
       (u v : @Zpfield.Zp q),
       pow g (Zpfield.zp_add u v) =
-      @Zpgroup.mul_zpstar p Hp (pow g u) (pow g v).
+      @Schnorr.mul_schnorr_group p q Hp Hq (pow g u) (pow g v).
     Proof.
       intros [g Hg] [u Hu] [v Hv].
-      apply Zpgroup.construct_zpstar.
+      apply Schnorr.construct_schnorr_group.
       rewrite !zmod_nmod, 
       !Z2N.id, !Zpow_mod_correct.
+
     Admitted.
 
     (* pow (u * v ) r = pow u r *G pow v r *)
     Lemma is_smul_distributive_vadd_proof : 
       forall 
-      (u v : @Zpgroup.Zpstar p)
+      (u v : @Schnorr.Schnorr_group p q)
       (r : @Zpfield.Zp q),
-      pow (@Zpgroup.mul_zpstar p Hp u v) r = 
-      @Zpgroup.mul_zpstar p Hp (pow u r) (pow v r).
+      pow (@Schnorr.mul_schnorr_group p q Hp Hq u v) r = 
+      @Schnorr.mul_schnorr_group p q Hp Hq(pow u r) (pow v r).
     Proof.
-      intros [u Hu] [v Hv] [r Hr].
-      apply Zpgroup.construct_zpstar.
+      intros [u Hua Hub] [v Hva Hvb] [r Hr].
+      apply Schnorr.construct_schnorr_group.
       rewrite !zmod_nmod, 
-      !Z2N.id, !Zpow_mod_correct.
-
-    Admitted.
-
-
-
-
-
-
-
+      !Z2N.id, !Zpow_mod_correct,
+      <-Zpower_mod,
+      Z.pow_mul_l,
+      Zmult_mod;
+      try reflexivity.
+      all: try nia. 
+      eapply mod_more_gen_bound in Hr.
+      try nia.
+      pose proof @multiplication_bound p Hp u v Hua Hva.
+      try nia.
+      all: rewrite Z2N.id;
+      [exact Hp | nia].
+      Unshelve.
+      exact Hq.
+    Qed.
+    
 
   End VectorSpace.
 
