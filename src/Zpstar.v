@@ -1168,8 +1168,31 @@ Module Vspace.
       <-Z.pow_mul_r.
       destruct (@mod_exists q Hq (u * v)) as [k₁ [w₁ [Hl Hr]]].
       rewrite Hl.
-      
+      eapply mod_more_gen_bound in Hr.
+      replace (k₁ * q + w₁) with 
+      (w₁ + k₁ * q). 
+      rewrite Z_mod_plus_full, 
+      Hr,
+      Z.pow_add_r,
+      Zmult_mod.
+      replace (k₁ * q) with (q * k₁).
+      rewrite Z.pow_mul_r.
+      assert (Hw : (g ^ q) ^ k₁ mod p = 
+        (g ^ q mod p) ^ k₁ mod p).
+      rewrite Zpower_mod;
+      try reflexivity.
+      nia. 
+      rewrite Hw, Hb.
+      rewrite Z.pow_1_l,
+      Z.mod_1_l,
+      Z.mul_1_r, 
+      Zmod_mod;
+      try reflexivity.
+      all: try nia.
+      nia.
 
+      
+      
       (* Proof idea: 
         (u * v) mod q = k * q + w 
         LHS: g ^ ((u * v) mod q) mod p = 
