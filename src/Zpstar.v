@@ -700,7 +700,7 @@ End Zpfield.
 Module Schnorr.
 
   
-  (* multiplicative Group *)
+  (* Schnorr Group *)
   Section SchnorrGroup. 
     Context 
       {k p q : Z}
@@ -832,41 +832,35 @@ Module Schnorr.
     
 
     Lemma inv_schnorr_group_subproof_first : 
-      forall au,
-      au mod p = au ->
-      Z.of_N 
-      (Npow_mod 
-        (Z.to_N au) (Z.to_N (p - 2)) 
-        (Z.to_N p)) mod p =
+      forall au, 
+      0 < au < p ->
+      0 < 
+        Z.of_N 
+        (Npow_mod 
+          (Z.to_N au) 
+          (Z.to_N (p - 2)) 
+          (Z.to_N p)) < p.
+    Proof.
+      intros ? Ha.
+      rewrite zmod_nmod, 
+      !Z2N.id.
+      apply fermat_bound.
+      exact Hp.
+      all:try nia.
+      rewrite Z2N.id.
+      exact Hp.
+      nia.
+    Qed.
+
+
+    Lemma inv_schnorr_group_subproof_second : 
+      forall au, 
+      0 < au < p ->
+      au ^ q mod p = 1 ->
       Z.of_N 
       (Npow_mod 
         (Z.to_N au) 
-        (Z.to_N (p - 2)) (Z.to_N p)).
-    Proof.
-      intros au Hu.
-      pose proof @Hp_2_p p Hp as Ha.
-      pose proof @Hp_2_p q Hq as Hb.
-      rewrite zmod_nmod,
-      Zpow_mod_correct,
-      !Z2N.id, Zmod_mod.
-      exact eq_refl.
-      all:try (abstract nia).
-      eapply mod_more_gen_bound in Hu.
-      try (abstract nia).
-      rewrite !Z2N.id.
-      exact Hp.
-      abstract nia.
-      Unshelve.
-      exact Hp.
-    Qed.
-
-    Lemma inv_schnorr_group_subproof_second : 
-      forall au,
-      au mod p = au ->
-      au ^ q mod p = 1 ->
-      Z.of_N 
-      (Npow_mod  
-        (Z.to_N au) (Z.to_N (p - 2)) 
+        (Z.to_N (p - 2)) 
         (Z.to_N p)) ^ q mod p = 1.
     Proof.
       intros ? Hu Hv.
@@ -883,18 +877,14 @@ Module Schnorr.
       Hv, Z.pow_1_l,
       Z.mod_1_l;
       try reflexivity.
-      all: try (abstract nia).
-      eapply mod_more_gen_bound in Hu.
-      abstract nia. 
+      all: try (abstract nia). 
       rewrite !Z2N.id.
       exact Hp.
       abstract nia.
-      Unshelve.
-      all:exact Hp.
     Qed.
 
 
-
+    
 
     (* u ^ (p - 2) is inverse of u *)
     Definition inv_schnorr_group (u : Schnorr_group) : Schnorr_group.
@@ -902,17 +892,17 @@ Module Schnorr.
         match u with 
         | mk_schnorr au Hu Hv => mk_schnorr
             (Z.of_N (Npow_mod (Z.to_N au) (Z.to_N (p - 2)) (Z.to_N p)))
-            (inv_schnorr_group_subproof_first au Hu) 
+            (@inv_schnorr_group_subproof_first au Hu)
             (inv_schnorr_group_subproof_second au Hu Hv)
         end).
     Defined.
       
 
-    (* Proof upto this point *)
+    
     
     (* Now I need to establish that it's a group *)
 
-    Lemma zpstar_mul_associative : 
+    Lemma schnorr_mul_associative : 
       forall x y z : Schnorr_group,
       mul_schnorr_group x (mul_schnorr_group y z) =  
       mul_schnorr_group (mul_schnorr_group x y) z.
@@ -936,7 +926,8 @@ Module Schnorr.
       intros [x Hxa Hxb].
       unfold mul_schnorr_group, one.
       refine (construct_schnorr_group _ _ _ _ _ _ _).
-      rewrite Z.mul_1_l.  
+      rewrite Z.mul_1_l.
+      apply mod_not_zero_one.
       exact Hxa.
     Qed.
 
@@ -947,39 +938,39 @@ Module Schnorr.
       unfold mul_schnorr_group, one. 
       refine(construct_schnorr_group _ _ _ _ _ _ _).
       rewrite Z.mul_1_r. 
-      apply mod_not_zero_one.
-      eapply mod_more_gen_bound. 
-      exact Hx.
+      apply mod_not_zero_one. 
+      exact Hxa.
     Qed.
 
   
-    Lemma zpstar_mul_commutative : 
-      forall x y : Zpstar, 
-      mul_zpstar x y =  mul_zpstar y x.
+    Lemma schnorr_mul_commutative : 
+      forall x y : Schnorr_group,
+      mul_schnorr_group x y =  mul_schnorr_group y x.
     Proof.
       destruct x as [x Hx]; 
-      destruct y as [y Hy]; simpl.
-      refine(construct_zpstar _ _ _ _ _).
+      destruct y as [y Hy].
+      refine(construct_schnorr_group _ _ _ _ _ _ _).
       rewrite Z.mul_comm.
       reflexivity.
     Qed.
 
-    Global Instance zpstar_mul_proper: Proper (eq ==> eq ==> eq) mul_zpstar.
+    Global Instance schnorr_mul_proper : 
+      Proper (eq ==> eq ==> eq) mul_schnorr_group.
     Proof.
       intros x y Hxy z u Hzu.
       destruct x as [x Hx]; destruct y as [y Hy];
-      destruct z as [z Hz]; destruct u as [u Hu]; simpl in * |- *.
-      refine(construct_zpstar _ _ _ _ _).
+      destruct z as [z Hz]; destruct u as [u Hu].
+      refine(construct_schnorr_group _ _ _ _ _ _ _).
       inversion Hxy; inversion Hzu; subst; reflexivity.
     Defined. 
 
-    Lemma zpstar_left_inv :
-      forall x, mul_zpstar (inv_zpstar x) x = one.
+    Lemma schnorr_left_inv :
+      forall x, mul_schnorr_group (inv_schnorr_group x) x = one.
     Proof.
-      intros ?.
-      unfold mul_zpstar, inv_zpstar, one.
-      destruct x as (v & Hv).
-      apply construct_zpstar.
+      intros [x Hxa Hxb].
+      unfold mul_schnorr_group, 
+      inv_schnorr_group, one.
+      apply construct_schnorr_group.
       rewrite Z.mul_comm.
       rewrite zmod_nmod, Zpow_mod_correct.
       rewrite !Z2N.id.
@@ -987,7 +978,7 @@ Module Schnorr.
       pose proof @Hp_2_p p Hp.
       assert (Hpp : p - 1 = 1 + (p - 2)).
       nia. 
-      assert (Ht : v * v ^ (p - 2) = v ^ (p - 1)).
+      assert (Ht : x * x ^ (p - 2) = x ^ (p - 1)).
       rewrite Hpp. 
       rewrite Z.pow_add_r. 
       all:try nia.
@@ -995,76 +986,56 @@ Module Schnorr.
       rewrite <- Zpow_mod_correct.
       apply fermat_little_ZZ.
       exact Hp. 
-      exact Hv.
+      exact Hxa.
       nia. 
       rewrite Z2N.id.
       exact Hp.
       nia.
     Qed.
+
     
-    Lemma zpstar_right_inv :
-      forall x, mul_zpstar x (inv_zpstar x) = one.
+    Lemma schnorr_right_inv :
+      forall x, mul_schnorr_group x (inv_schnorr_group x) = one.
     Proof.
       intros ?.
-      unfold mul_zpstar, inv_zpstar, one.
-      destruct x as (v & Hv).
-      apply construct_zpstar.
-      rewrite zmod_nmod, Zpow_mod_correct.
-      rewrite !Z2N.id.
-      rewrite Zmult_mod_idemp_r.
-      pose proof @Hp_2_p p Hp.
-      assert (Hpp : p - 1 = 1 + (p - 2)).
-      nia. 
-      assert (Ht : v * v ^ (p - 2) = v ^ (p - 1)).
-      rewrite Hpp. 
-      rewrite Z.pow_add_r. 
-      all:try nia.
-      rewrite Ht.
-      rewrite <- Zpow_mod_correct.
-      apply fermat_little_ZZ.
-      exact Hp. 
-      exact Hv.
-      nia. 
-      rewrite Z2N.id.
-      exact Hp.
-      nia. 
+      rewrite schnorr_mul_commutative.
+      apply schnorr_left_inv.
     Qed.
 
 
-    (* Zpstar is a commutative Group *)
-    Global Instance zpstar_comm : @commutative_group 
-      Zpstar (@eq Zpstar) mul_zpstar one inv_zpstar.
+    (* Schnorr is a commutative Group *)
+    Global Instance schnorr_comm : @commutative_group 
+      Schnorr_group (@eq Schnorr_group) 
+      mul_schnorr_group one inv_schnorr_group.
     Proof.
       repeat econstructor.
       + unfold is_associative; 
         intros ? ? ?.
-        apply zpstar_mul_associative.
+        apply schnorr_mul_associative.
       + intro x. apply one_is_left_identity.
       + intro x. apply one_is_right_identity.
-      + apply zpstar_mul_proper.
+      + apply schnorr_mul_proper.
       + intros x y Hxy. rewrite Hxy. reflexivity.
       + intros x y z Hxy Hyz. rewrite Hxy. exact Hyz.
-      + intro x. apply zpstar_left_inv.
-      + intro x. apply zpstar_right_inv.
+      + intro x. apply schnorr_left_inv.
+      + intro x. apply schnorr_right_inv.
       + intros x y Hxy. rewrite Hxy. reflexivity.
-      + intros x y. apply zpstar_mul_commutative.
+      + intros x y. apply schnorr_mul_commutative.
     Qed. 
 
 
-  End ZpstarGroup.
-End Zpgroup.
+  End SchnorrGroup.
+End Schnorr.
+
 
 Module Vspace.
 
   Section VectorSpace.
 
-   (* Note that there are two primes. One is for 
-    Zpstar (Group) and the other is for Zp (Field).
-    Right now, there is no constraint but when 
-    we would pass p = k * q + 1, it will
-    become Schnorr Group *)
+
     Context 
-      {p q : Z}
+      {k p q : Z}
+      {Hk : p = k * q + 1}
       {Hp : prime p}
       {Hq : prime q}.
 
@@ -1073,26 +1044,83 @@ Module Vspace.
       p is the Group modulus 
       q is the Field modulus
     *)
-    Definition pow (g : @Zpgroup.Zpstar p) 
-      (y : @Zpfield.Zp q) : @Zpgroup.Zpstar p.
+    Lemma pow_subproof_first : 
+      forall au yt, 
+      0 < au < p ->
+      yt mod q = yt ->
+      0 < 
+        Z.of_N 
+        (Npow_mod 
+          (Z.to_N au) 
+          (Z.to_N yt) 
+          (Z.to_N p)) < p.
+    Proof.
+      intros ? ? Ha Hb.
+      eapply mod_more_gen_bound in Hb.
+      rewrite zmod_nmod, 
+      !Z2N.id.
+      apply fermat_bound_gen.
+      exact Hp.
+      all:try nia.
+      rewrite Z2N.id.
+      exact Hp.
+      nia.
+      Unshelve.
+      exact Hq.
+    Qed.
+
+
+    Lemma pow_subproof_second : 
+      forall au yt,
+      yt mod q = yt ->   
+      0 < au < p ->
+      au ^ q mod p = 1 ->
+      Z.of_N 
+      (Npow_mod 
+        (Z.to_N au) 
+        (Z.to_N yt) 
+        (Z.to_N p)) ^ q mod p = 1.
+    Proof.
+      intros ? ? Ht Hu Hv.
+      eapply mod_more_gen_bound in Ht.
+      pose proof @Hp_2_p p Hp as Ha.
+      pose proof @Hp_2_p q Hq as Hb.
+      rewrite zmod_nmod,
+      Zpow_mod_correct,
+      !Z2N.id,
+      <-Zpower_mod,
+      <-Z.pow_mul_r,
+      Z.mul_comm,
+      Z.pow_mul_r,
+      Zpower_mod,
+      Hv, Z.pow_1_l,
+      Z.mod_1_l;
+      try reflexivity.
+      all: try (abstract nia). 
+      rewrite !Z2N.id.
+      exact Hp.
+      abstract nia.
+      Unshelve.
+      exact Hq.
+    Qed.
+
+
+
+    Definition pow (g : @Schnorr.Schnorr_group p q) 
+      (y : @Zpfield.Zp q) : @Schnorr.Schnorr_group p q.
       refine 
         match g, y with 
-        | Zpgroup.mk_zpstar gt Hgt, Zpfield.mk_zp yt Hyt => 
-            Zpgroup.mk_zpstar  
+        | Schnorr.mk_schnorr gt Hgta Hgtb, Zpfield.mk_zp yt Hyt => 
+            Schnorr.mk_schnorr  
                 (Z.of_N (Npow_mod (Z.to_N gt) (Z.to_N yt) (Z.to_N p))) 
-                _
+                (pow_subproof_first gt yt Hgta Hyt)
+                (pow_subproof_second _ _  Hyt Hgta Hgtb)
         end.
-        pose proof (@fermat_bound_gen gt yt p Hp) as Hwt.
-        destruct (proj2 (@mod_more_gen_bound q Hq yt) Hyt) as [Hl _].
-        specialize (Hwt Hl Hgt).
-        rewrite zmod_nmod,
-        !Z2N.id.
-        exact Hwt.
-        all:try (abstract nia).
-        rewrite Z2N.id.
-        exact Hp.
-        abstract nia.
     Defined.
+
+    (* Everything upto this point is good *)
+        
+  
 
 
     Lemma is_field_one_proof : 
