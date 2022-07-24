@@ -353,6 +353,20 @@ Section Modutil.
     apply H_0_p. pose Hp_2_p. nia.
   Qed.
 
+
+  Lemma mod_exists : 
+    forall m,
+    exists k w, m = k * p + w /\ 0 <= w < p.
+  Proof.
+    intros ?.
+    exists (Z.div m p), (Zmod m p). 
+    split.
+    rewrite mod_eq_custom. nia.
+    apply H_0_p.
+    apply Z.mod_pos_bound.
+    apply H_0_p.
+  Qed.
+ 
   
   Lemma mod_not_zero : 
     forall w₁ w₂,  

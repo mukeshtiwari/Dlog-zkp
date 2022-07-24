@@ -1166,6 +1166,10 @@ Module Vspace.
       !Z2N.id, !Zpow_mod_correct,
       <-Zpower_mod,
       <-Z.pow_mul_r.
+      destruct (@mod_exists q Hq (u * v)) as [k₁ [w₁ [Hl Hr]]].
+      rewrite Hl.
+      
+
       (* Proof idea: 
         (u * v) mod q = k * q + w 
         LHS: g ^ ((u * v) mod q) mod p = 
