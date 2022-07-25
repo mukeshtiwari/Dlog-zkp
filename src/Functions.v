@@ -9,8 +9,10 @@ Section Fn.
   Fixpoint repeat_op_ntimes_rec (e : N) (n : positive) (w : N) : N :=
     match n with
     | xH => N.modulo e w
-    | xO p => let ret := repeat_op_ntimes_rec e p w in N.modulo (ret * ret) w
-    | xI p => let ret := repeat_op_ntimes_rec e p w in N.modulo (e * (ret * ret)) w 
+    | xO p => let ret := repeat_op_ntimes_rec e p w in 
+        N.modulo (ret * ret) w
+    | xI p => let ret := repeat_op_ntimes_rec e p w in 
+        N.modulo (e * (ret * ret)) w 
     end.
 
   Definition Npow_mod (e : N) (n w : N) :=
@@ -18,6 +20,70 @@ Section Fn.
     | N0 => Npos xH
     | Npos p => repeat_op_ntimes_rec e p w 
     end.
+
+
+  (* Npow_mod is an efficient function *)
+
+  (* Inducive Type to capture the complexity of  
+    repeat_op_ntimes_rec. This is suffices for 
+    our purpose because we will call this 
+    function for exponentiation. In sigma protocol, 
+    we need to demonstrate that it's efficient, i.e., 
+    linear in number of bits (complexity bounded by 
+    log). However, this won't scale for a bigger 
+    project because we can't compose the 
+    inductive datatype. Also see:
+    https://users.cs.northwestern.edu/~robby/publications/papers/flops2016-mfnff.pdf
+    https://dl.acm.org/doi/10.1145/3473585
+    https://dl.acm.org/doi/10.1145/3158124
+    https://www.cse.chalmers.se/~nad/publications/danielsson-popl2008.pdf 
+    *)
+  Inductive complexity_repeat_op_ntimes_rec 
+    (e t : N) : positive -> N -> N -> Prop :=
+  | xH_case : complexity_repeat_op_ntimes_rec e t xH 
+      (N.modulo e t) N0
+  | xO_case p ret w : 
+      complexity_repeat_op_ntimes_rec e t p ret w ->
+      complexity_repeat_op_ntimes_rec e t (xO p) 
+      (N.modulo (ret * ret) t) (N.succ w)
+  | xI_case p ret w : 
+      complexity_repeat_op_ntimes_rec e t p ret w ->
+      complexity_repeat_op_ntimes_rec e t (xI p) 
+      (N.modulo (e * (ret * ret)) t) (N.succ w).
+
+
+
+  Lemma correct_complexity_repeat_op_ntimes_rec : 
+    forall n e w, 
+    complexity_repeat_op_ntimes_rec e w n 
+      (repeat_op_ntimes_rec e n w)  (N.log2 (N.pos n)).
+  Proof.
+    induction n; 
+    intros e w.
+    + specialize (IHn e w).
+      assert (Hwt : ((N.pos n~1) = (2 * (N.pos n) + 1))%N).
+      cbn; nia.
+      rewrite Hwt; clear Hwt.
+      rewrite N.log2_succ_double.
+      remember ((N.log2 (N.pos n))) as p. 
+      cbn.
+      apply xI_case.
+      exact IHn.
+      nia. 
+    + specialize (IHn e w).
+      assert (Hwt : ((N.pos n~0) = (2 * (N.pos n)))%N).
+      cbn; nia.
+      rewrite Hwt; clear Hwt.
+      rewrite N.log2_double.
+      remember ((N.log2 (N.pos n))) as p. 
+      cbn.
+      apply xO_case.
+      exact IHn.
+      nia.
+    + cbn; apply xH_case.
+  Qed.
+  
+  (* end of the proof efficient funtion *)
 
 
   (* slow function, will be used to prove that this slow function is 
@@ -30,7 +96,8 @@ Section Fn.
 
 
   (* acc is accumulator, for efficient reduction of terms *)
-  Fixpoint repeat_op_ntimes_acc (e : N) (n : positive) (w acc : N) : N :=
+  Fixpoint repeat_op_ntimes_acc 
+    (e : N) (n : positive) (w acc : N) : N :=
     match n with
     | xH => N.modulo (e * acc) w
     | xO p => let ee := (N.modulo (e * e) w) in repeat_op_ntimes_acc ee p w acc 
@@ -39,9 +106,11 @@ Section Fn.
               repeat_op_ntimes_acc ee p w ea  
     end.
 
-  Lemma op_pushes_out : forall n e w, prime (Z.of_N w) -> 
+  Lemma op_pushes_out : 
+    forall n e w, prime (Z.of_N w) -> 
     repeat_op_ntimes_rec ((e * e) mod w) n w = 
-    N.modulo ((repeat_op_ntimes_rec e n w * repeat_op_ntimes_rec e n w)) w.
+    N.modulo (
+      (repeat_op_ntimes_rec e n w * repeat_op_ntimes_rec e n w)) w.
   Proof.
     induction n.
     - simpl; intros ? ? Hw.
@@ -72,7 +141,9 @@ Section Fn.
   Qed.
 
 
-  Lemma positive_mul_group_acc_rec_connection : forall n e w acc, prime (Z.of_N w) ->
+  Lemma positive_mul_group_acc_rec_connection : 
+    forall n e w acc, 
+    prime (Z.of_N w) ->
     repeat_op_ntimes_acc e n w acc = N.modulo (acc * repeat_op_ntimes_rec e n w) w.
   Proof.
     induction n.
@@ -111,7 +182,9 @@ Section Fn.
     end.
 
   
-  Lemma npow_mod_npow_constant_eqv : forall n e w, prime (Z.of_N w) ->
+  Lemma npow_mod_npow_constant_eqv : 
+    forall n e w, 
+    prime (Z.of_N w) ->
     Npow_mod e n w = Npow_mod_constant_space e n w.
   Proof.
     destruct n; simpl; intros ? ? Hw.
@@ -125,7 +198,8 @@ Section Fn.
 
 
   Lemma Npow_mod_unary_bound : 
-    forall (n : nat) (e w : N), prime (Z.of_N w) -> 
+    forall (n : nat) (e w : N), 
+    prime (Z.of_N w) -> 
     (Npow_mod_unary e n w < w)%N.
   Proof.
     induction n.
@@ -144,7 +218,9 @@ Section Fn.
     induction n; try lia.
   Qed.
 
-  Theorem Npow_mod_add_mul : forall n m e w, prime (Z.of_N w) ->
+  Theorem Npow_mod_add_mul : 
+    forall n m e w, 
+    prime (Z.of_N w) ->
     Npow_mod_unary e (n + m) w = N.modulo (Npow_mod_unary e n w * 
     Npow_mod_unary e m w) w.
   Proof.
@@ -175,7 +251,8 @@ Section Fn.
 
 
 
-  Lemma binnat_odd : forall (p : positive) (n : nat), 
+  Lemma binnat_odd : 
+    forall (p : positive) (n : nat), 
     N.pos (xI p) = N.of_nat n -> 
     exists k,  n = (2 * k + 1)%nat /\  (N.pos p) = (N.of_nat k).
   Proof.
