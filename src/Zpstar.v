@@ -1154,6 +1154,9 @@ Module Vspace.
     Qed.
 
    
+
+
+
     (* g ^ (x₁ * x₂) = (g^x₁)^x₂ *)
     Lemma is_smul_associative_fmul_proof : 
       forall 
@@ -1233,12 +1236,58 @@ Module Vspace.
       intros [g Hg] [u Hu] [v Hv].
       apply Schnorr.construct_schnorr_group.
       rewrite !zmod_nmod, 
-      !Z2N.id, !Zpow_mod_correct.
+      !Z2N.id, !Zpow_mod_correct,
+      <-Zmult_mod,
+      <-Z.pow_add_r.
+      eapply mod_more_gen_bound in Hu, Hv.
+      assert (Htt : 0 <= u +  v) by nia.
+      destruct (@mod_exists_pos q Hq (u +  v) Htt) as 
+      [k₁ [w₁ [Hl [Hr Hw]]]].
+      rewrite Hl.
+      eapply mod_more_gen_bound in Hr.
+      replace (k₁ * q + w₁) with 
+      (w₁ + k₁ * q). 
+      rewrite Z_mod_plus_full, 
+      Hr,
+      Z.pow_add_r,
+      Zmult_mod.
+      replace (k₁ * q) with (q * k₁).
+      rewrite Z.pow_mul_r.
+      assert (Hvt : (g ^ q) ^ k₁ mod p = 
+        (g ^ q mod p) ^ k₁ mod p).
+      rewrite Zpower_mod;
+      try reflexivity.
+      nia. 
+      rewrite Hvt, Hb.
+      rewrite Z.pow_1_l,
+      Z.mod_1_l,
+      Z.mul_1_r, 
+      Zmod_mod;
+      try reflexivity.
+      all: try nia.
+      eapply mod_more_gen_bound in Hr;
+      try nia.
+      try (eapply mod_more_gen_bound in Hu;
+      try nia). 
+      all : (eapply mod_more_gen_bound in Hv;
+      try nia).
+      eapply mod_more_gen_bound in Hu;
+      try nia.
+      all: eapply mod_more_gen_bound in Hu, Hv; try nia.
+      all: try rewrite Z2N.id;
+        try nia; try (exact Hp).
+      eapply mod_more_gen_bound in Hu, Hv;
+      eapply Z_mod_nonneg_nonneg;
+      try nia. 
+      eapply mod_more_gen_bound in Hu.
+      nia. 
+      Unshelve.
+      all: try (exact Hp); try (exact Hq).
+    Qed.
 
-    Admitted.
 
 
-    
+
     (* pow (u * v ) r = pow u r *G pow v r *)
     Lemma is_smul_distributive_vadd_proof : 
       forall 
@@ -1266,6 +1315,47 @@ Module Vspace.
       exact Hq.
     Qed.
     
+
+    
+    (* Proof that it's Vector Space *)
+
+    Global Instance pow_vspace : 
+      @vector_space 
+        (* Field *)
+        (@Zpfield.Zp q) 
+        (@eq (@Zpfield.Zp q))
+        (@Zpfield.zero q Hq) 
+        (@Zpfield.one q Hq)
+        (@Zpfield.zp_add q)
+        (@Zpfield.zp_mul q)
+        (@Zpfield.zp_sub q)
+        (@Zpfield.zp_div q)
+        (@Zpfield.zp_opp q Hq)
+        (@Zpfield.zp_inv q)
+        (* Vector *)
+        (@Schnorr.Schnorr_group p q)
+        (@eq (@Schnorr.Schnorr_group p q))
+        (@Schnorr.one p q Hp Hq)
+        (@Schnorr.inv_schnorr_group k p q Hk Hp Hq)
+        (@Schnorr.mul_schnorr_group p q Hp Hq)
+        pow.
+    Proof.
+      econstructor.
+      + apply Schnorr.schnorr_comm.
+      + apply Zpfield.zp_field.
+      + intros ?; apply is_field_one_proof.
+      + intros ?; apply is_field_zero_proof.
+      + intros ? ? ?;
+        apply is_smul_associative_fmul_proof.
+      + intros ? ? ?;
+        apply is_smul_distributive_fadd_proof.
+      + intros ? ? ?;
+        apply is_smul_distributive_vadd_proof.
+      + intros x y Heq u v Huv.
+        subst. reflexivity.  
+    Qed.
+
+
 
   End VectorSpace.
 
