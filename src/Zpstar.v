@@ -1142,6 +1142,7 @@ Module Vspace.
 
 
 
+
     Lemma is_field_zero_proof : 
       forall (u : @Schnorr.Schnorr_group p q), 
       pow u (@Zpfield.zero q Hq) = @Schnorr.one p q Hp Hq.
@@ -1166,7 +1167,10 @@ Module Vspace.
       !Z2N.id, !Zpow_mod_correct,
       <-Zpower_mod,
       <-Z.pow_mul_r.
-      destruct (@mod_exists q Hq (u * v)) as [k₁ [w₁ [Hl Hr]]].
+      eapply mod_more_gen_bound in Hu, Hv.
+      assert (Htt : 0 <= u * v) by nia.
+      destruct (@mod_exists_pos q Hq (u * v) Htt) as 
+      [k₁ [w₁ [Hl [Hr Hw]]]].
       rewrite Hl.
       eapply mod_more_gen_bound in Hr.
       replace (k₁ * q + w₁) with 
@@ -1177,35 +1181,45 @@ Module Vspace.
       Zmult_mod.
       replace (k₁ * q) with (q * k₁).
       rewrite Z.pow_mul_r.
-      assert (Hw : (g ^ q) ^ k₁ mod p = 
+      assert (Hvt : (g ^ q) ^ k₁ mod p = 
         (g ^ q mod p) ^ k₁ mod p).
       rewrite Zpower_mod;
       try reflexivity.
       nia. 
-      rewrite Hw, Hb.
+      rewrite Hvt, Hb.
       rewrite Z.pow_1_l,
       Z.mod_1_l,
       Z.mul_1_r, 
       Zmod_mod;
       try reflexivity.
       all: try nia.
-      nia.
+      eapply mod_more_gen_bound in Hr;
+      try nia.
+      try (eapply mod_more_gen_bound in Hu;
+      try nia). 
+      all : (eapply mod_more_gen_bound in Hv;
+      try nia).
+      eapply mod_more_gen_bound in Hu;
+      try nia.
+      rewrite Z2N.id.
+      eapply mod_more_gen_bound in Hu.
+      destruct Hu as [Hul Hur].
+      pose proof fermat_bound_gen 
+        g u p Hp Hul Hg. 
+      nia. 
+      eapply mod_more_gen_bound in Hu;
+      try nia.
+      eapply Z_mod_nonneg_nonneg;
+      try nia.
+      eapply mod_more_gen_bound in Hu.
+      try nia.
+      all: rewrite Z2N.id;
+        try nia; exact Hp.
+      Unshelve.
+      all: try (exact Hp); try (exact Hq).
+    Qed.
 
-      
-      
-      (* Proof idea: 
-        (u * v) mod q = k * q + w 
-        LHS: g ^ ((u * v) mod q) mod p = 
-        g ^ w mod p. 
-        
-        RHS: g ^ (u * v) mod p =
-         g^(k * q) * g ^ w mod p = 
-         (g^q)^k = 1 ^ k 
-         LHS = RHS
-      *)
-      
-      
-    Admitted.
+
 
 
     (* g ^ (u + v) = g^u . g^v *)
@@ -1223,6 +1237,8 @@ Module Vspace.
 
     Admitted.
 
+
+    
     (* pow (u * v ) r = pow u r *G pow v r *)
     Lemma is_smul_distributive_vadd_proof : 
       forall 
