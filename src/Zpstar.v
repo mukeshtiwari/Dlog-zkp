@@ -1294,7 +1294,7 @@ Module Vspace.
       (u v : @Schnorr.Schnorr_group p q)
       (r : @Zpfield.Zp q),
       pow (@Schnorr.mul_schnorr_group p q Hp Hq u v) r = 
-      @Schnorr.mul_schnorr_group p q Hp Hq(pow u r) (pow v r).
+      @Schnorr.mul_schnorr_group p q Hp Hq (pow u r) (pow v r).
     Proof.
       intros [u Hua Hub] [v Hva Hvb] [r Hr].
       apply Schnorr.construct_schnorr_group.
@@ -1316,7 +1316,7 @@ Module Vspace.
     Qed.
     
 
-    
+
     (* Proof that it's Vector Space *)
 
     Global Instance pow_vspace : 
@@ -1360,6 +1360,6 @@ Module Vspace.
   End VectorSpace.
 
 
-End Vspace. 
+End Vspace.
       
   

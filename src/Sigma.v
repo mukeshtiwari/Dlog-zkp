@@ -87,7 +87,7 @@ Module Zkp.
       log_{g} h = x. We will turn this into NIZK by Fiat-Shamir transform 
       (careful )*)
    
-    Record sigma_proto {n m r : nat}:= 
+    Record sigma_proto {n m r : nat} := 
       mk_sigma 
       {
         announcement : Vector.t G n; (* prover announcement*)
@@ -633,6 +633,10 @@ Module Zkp.
     *)
 
     End Basic_sigma.
+
+
+
+    
 
   End DL.
 
