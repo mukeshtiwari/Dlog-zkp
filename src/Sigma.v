@@ -634,6 +634,24 @@ Module Zkp.
 
     End Basic_sigma.
 
+    Section Parallel.
+
+
+
+    End Parallel.
+
+    Section And.
+
+
+
+    End And.
+
+
+    Section Or.
+
+
+    End Or.
+
 
 
     
