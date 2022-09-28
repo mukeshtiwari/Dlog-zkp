@@ -97,7 +97,7 @@ Module Zkp.
      
 
     
-    Notation "( a ; c ; r )" := 
+    Local Notation "( a ; c ; r )" := 
       (@mk_sigma _ _ _ a c r).
 
     
@@ -634,10 +634,72 @@ Module Zkp.
 
     End Basic_sigma.
 
+
     Section Parallel.
 
+      Section Def.
+        
+        Context 
+          {g h : G}.
+
+        (* instantiate n = 1, m = 1, r = 1 with to get 
+          a normal instance
+          Advantage of this method is that we can 
+          compose an arbitrary sigma protocols.
+
+        These all sigma protocols are for the 
+        relation  ∃ x : h = g ^ x 
+        *)
+        Definition parallel_sigma {n : nat} : 
+            @sigma_proto 1 1 1 ->
+            @sigma_proto n n n ->
+            @sigma_proto (1 + n) (1 + n) (1 + n).
+          refine (fun p₁ p₂ =>
+            match p₁, p₂ with 
+            | (a₁; c₁; r₁), (a₂; c₂; r₂) => 
+              ((hd a₁ :: a₂); (hd c₁ :: c₂); (hd r₁ :: r₂))
+            end).
+        Defined.
+
+        
+        Definition generalised_accepting_conversations : 
+          forall {n : nat}, 
+          @sigma_proto n n n -> bool.
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun p => true
+            | S n' => fun p => 
+              match p with 
+              | (a; c ; r) => _ 
+              end 
+            end).
+          destruct (vector_inv_S a) as (ah & atl & _).
+          destruct (vector_inv_S c) as (ch & ctl & _).
+          destruct (vector_inv_S r) as (rh & rtl & _).
+          exact ((@accepting_conversation g h ([ah]; [ch]; [rh])) &&
+            (Fn _ (atl; ctl; rtl))).
+        Defined.
 
 
+      End Def.
+
+      Section Proofs. 
+
+        Context 
+          (x : F) (* secret witness *)
+          (g h : G) (* public values *) 
+          (key_rel : h = g ^ x). (* relation that 
+          prover trying to establish, or convince a verifier*)
+
+        
+
+
+
+      End Proofs.
+
+
+    
     End Parallel.
 
     Section And.
