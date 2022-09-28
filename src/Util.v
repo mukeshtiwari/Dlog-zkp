@@ -1,5 +1,5 @@
 Require Import Vector 
-  Fin Coq.Bool.Bool.
+  Fin Coq.Bool.Bool Coq.Unicode.Utf8.
 
 Import VectorNotations.
 
@@ -169,11 +169,22 @@ Section Vect.
     end.
 
   
-  Definition two_challenge_vectors_disjoint 
-    {n : nat} (u v : Vector.t R n) :=
-    Vector.fold_right (fun x y => x && y)
-      (zip_with (fun x y => negb (eq_bool x y)) u v) true.
-    
+  Definition two_challenge_vectors_disjoint_pointwise :
+    ∀ {n : nat}, 
+    Vector.t R (S n) -> Vector.t R (S n) -> bool.
+  Proof.
+    refine(fix Fn n {struct n} := 
+      match n with 
+      | 0 => fun u v => _ 
+      | S n' => fun u v => _ 
+      end).
+    + exact (negb (eq_bool (hd u) (hd v))).
+    + exact ((negb (eq_bool (hd u) (hd v))) && 
+      (Fn _ (tl u) (tl v))).
+  Defined.
+
+
+  
   Lemma dec_true : forall x y, 
     (if Hdec x y then true else false) = true <-> x = y.
   Proof.
@@ -206,12 +217,12 @@ Section Vect.
   (* Two vectors are pointwise not equal *)
   Lemma two_challenge_vectors_disjoint_true : 
     forall n (u v : Vector.t R (S n)), 
-    two_challenge_vectors_disjoint u v = true ->
+    two_challenge_vectors_disjoint_pointwise u v = true ->
     forall m : Fin.t (S n), 
     Vector.nth u m <> Vector.nth v m. 
   Proof.
     induction n. 
-    + unfold two_challenge_vectors_disjoint;
+    + unfold two_challenge_vectors_disjoint_pointwise;
       intros ? ? Ha ?.
       destruct (vector_inv_S u) as (uh & ut & Hu).
       destruct (vector_inv_S v) as (vh & vt & Hv).
@@ -221,7 +232,6 @@ Section Vect.
       rewrite Hvn in Hv.
       rewrite Hu, Hv in Ha |- *.
       simpl in Ha |- *.
-      rewrite andb_true_r in Ha.
       apply negb_true_iff in Ha.
       destruct (fin_inv_S _ m) as [Hb | (b & Hb)];
       subst; cbn.
@@ -229,7 +239,7 @@ Section Vect.
       rewrite dec_false in Ha.
       exact Ha.
       destruct (fin_inv_0 b).
-    + unfold two_challenge_vectors_disjoint;
+    + unfold two_challenge_vectors_disjoint_pointwise;
       intros ? ? Ha ?.
       destruct (vector_inv_S u) as (uh & ut & Hu).
       destruct (vector_inv_S v) as (vh & vt & Hv).
@@ -250,6 +260,64 @@ Section Vect.
       apply IHn.
       exact Hb.
   Qed.
+
+
+  (* two vectors are disjoint when they don't match at 
+    at least one one point *)
+  Definition two_challenge_vectors_disjoint_for_one_element :
+    ∀ {n : nat}, 
+    Vector.t R (S n) -> Vector.t R (S n) -> bool.
+  Proof.
+    refine(fix Fn n {struct n} := 
+      match n with 
+      | 0 => fun u v => negb (eq_bool (hd u) (hd v))
+      | S n' => fun u v => (negb (eq_bool (hd u) (hd v))) ||
+        (Fn _ (tl u) (tl v))
+      end).
+  Defined.
+
+
+   Lemma two_challenge_vectors_disjoint_for_one_element_true : 
+    forall n (u v : Vector.t R (S n)), 
+    two_challenge_vectors_disjoint_for_one_element u v = true ->
+    exists m : Fin.t (S n), 
+    Vector.nth u m <> Vector.nth v m. 
+  Proof.
+    induction n. 
+    + unfold two_challenge_vectors_disjoint_for_one_element;
+      intros ? ? Ha.
+      destruct (vector_inv_S u) as (uh & ut & Hu).
+      destruct (vector_inv_S v) as (vh & vt & Hv).
+      exists F1.
+      pose proof (vector_inv_0 ut) as Hun.
+      pose proof (vector_inv_0 vt) as Hvn.
+      rewrite Hun in Hu.
+      rewrite Hvn in Hv.
+      rewrite Hu, Hv in Ha |- *.
+      simpl in Ha |- *.
+      apply negb_true_iff in Ha.
+      unfold eq_bool in Ha.
+      destruct (Hdec uh vh) as [H | H].
+      ++ congruence.
+      ++ exact H. 
+    + unfold two_challenge_vectors_disjoint_for_one_element;
+      intros ? ? Ha.
+      destruct (vector_inv_S u) as (uh & ut & Hu).
+      destruct (vector_inv_S v) as (vh & vt & Hv).
+      rewrite Hu, Hv in Ha.
+      simpl in Ha.
+      apply orb_true_iff in Ha.
+      destruct Ha as [Ha | Ha].
+      apply negb_true_iff in Ha.
+      unfold eq_bool in Ha.
+      destruct (Hdec uh vh) as [H | H].
+      congruence.
+      exists F1.
+      rewrite Hu, Hv;
+      cbn; exact H.
+      (* inductive case *)
+    Admitted.
+
 
 
 
