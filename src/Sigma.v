@@ -249,39 +249,20 @@ Module Zkp.
         same randomness r, i.e., same announcement, 
         then exatractor can extract a witness 
       *)
+    
       Lemma special_soundness_berry : 
         forall a c₁ r₁ c₂ r₂, 
-        @two_challenge_vectors_disjoint F Fdec _ c₁ c₂ = true ->  (* Todo: Change this into a notation c₁ <|> c₂. *)
-        accepting_conversation g h (a; c₁; r₁) = true -> (* and it's accepting *) 
-        accepting_conversation g h (a; c₂; r₂) = true -> (* and it's accepting *)
+        c₁ <> c₂ ->  (* Todo: Change this into a notation c₁ <|> c₂. *)
+        accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
+        accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
       Proof.
-        clear key_rel.
-        intros * Ha Hb Hc.
-        pose proof (@two_challenge_vectors_disjoint_true _ Fdec
-        0 c₁ c₂ Ha Fin.F1) as Hfin.
+        clear key_rel. (* remove the assumption, otherwise it's trivial :)*)
+        intros ? ? ? ? ? Ha Hb Hc.
         apply gdec_true in Hb, Hc.
-        simpl in * |- .
-        rename a into att.
-        destruct (vector_inv_S att) as (a & ah & Haa).
-        rewrite Haa in Hb, Hc.
-        rename c₁ into ct₁.
-        destruct (vector_inv_S ct₁) as (c₁ & ch₁ & Hc₁).
-        rewrite Hc₁ in Ha, Hb, Hfin.
-        rename c₂ into ct₂.
-        destruct (vector_inv_S ct₂) as (c₂ & ch₂ & Hc₂).
-        rewrite Hc₂ in Ha, Hc, Hfin.
-        rename r₁ into rt₁.
-        destruct (vector_inv_S rt₁) as (r₁ & rh₁ & Hr₁).
-        rewrite Hr₁ in Hb.
-        rename r₂ into rt₂.
-        destruct (vector_inv_S rt₂) as (r₂ & rh₂ & Hr₂).
-        rewrite Hr₂ in Hc.
-        simpl in Ha, Hb, Hc, Hfin.
-        clear Ha Haa Hc₁ Hc₂ Hr₁ Hr₂
-        ah ch₁ ch₂ rh₁ rh₂.
-        (* actual proof starts here *)
-        exists ((r₁ - r₂) * inv (c₁ - c₂)). (* Witness *)
+        simpl in Hb, Hc.
+        (* produce a witness *)
+        exists ((r₁ - r₂) * inv (c₁ - c₂)).
         eapply f_equal with (f := ginv) in Hc.
         rewrite connection_between_vopp_and_fopp in Hc.
         rewrite group_inv_flip  in Hc.
@@ -322,16 +303,13 @@ Module Zkp.
         rewrite <-ring_sub_definition in Hcom.
         exact Hcom.
         intros Hf.
-        pose proof ring_neq_sub_neq_zero c₁ c₂ Hfin as Hw.
+        pose proof ring_neq_sub_neq_zero c₁ c₂ Ha as Hw.
         apply Hw.
         rewrite ring_sub_definition.
         exact Hf.
         all:typeclasses eauto.
       Qed.
-        
 
-    
-      
 
 
       (* https://www.win.tue.nl/~berry/2WC13/LectureNotes.pdf 

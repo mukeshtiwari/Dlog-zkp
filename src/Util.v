@@ -215,7 +215,7 @@ Section Vect.
 
 
   (* Two vectors are pointwise not equal *)
-  Lemma two_challenge_vectors_disjoint_true : 
+  Lemma two_challenge_vectors_disjoint_pointwise_true : 
     forall n (u v : Vector.t R (S n)), 
     two_challenge_vectors_disjoint_pointwise u v = true ->
     forall m : Fin.t (S n), 
