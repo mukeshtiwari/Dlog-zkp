@@ -304,27 +304,26 @@ Section Vect.
       intros ? ? Ha.
       destruct (vector_inv_S u) as (uh & ut & Hu).
       destruct (vector_inv_S v) as (vh & vt & Hv).
-      rewrite Hu, Hv in Ha.
+      rewrite Hu, Hv in Ha |- *.
       simpl in Ha.
-      apply orb_true_iff in Ha.
-      destruct Ha as [Ha | Ha].
-      apply negb_true_iff in Ha.
-      unfold eq_bool in Ha.
+      case (negb (eq_bool uh vh)) eqn:Heq.
+      simpl in Ha.
+      rewrite negb_true_iff in Heq.
+      exists F1; simpl.
+      unfold eq_bool in Heq.
       destruct (Hdec uh vh) as [H | H].
       congruence.
-      exists F1.
-      rewrite Hu, Hv;
-      cbn; exact H.
+      exact H.
       (* inductive case *)
-    Admitted.
+      simpl in Ha.
+      destruct (IHn ut vt Ha) as [m Hm].
+      apply negb_false_iff in Heq.
+      exists (FS m); simpl.
+      exact Hm.
+  Qed.
 
 
-
-
-      
-      
-      
-
+  (* Write Ltac *)
 
 End Vect. 
 
