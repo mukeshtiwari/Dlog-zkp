@@ -117,7 +117,7 @@ Module Zkp.
         Context 
           (x : F) (* secret witness *) 
           (g h : G) (* public values *)
-          (key_rel : h = g^x). (* relation that prover trying to 
+          (R : h = g^x). (* relation that prover trying to 
             establish, or convince a verifier*)
 
         (* Sigma protocol is correct.
@@ -132,7 +132,7 @@ Module Zkp.
           accepting_conversation;
           simpl.
           intros ? ?.
-          rewrite key_rel.
+          rewrite R.
           assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
           rewrite smul_pow_up. 
           reflexivity.
@@ -220,7 +220,7 @@ Module Zkp.
         accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
         ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
       Proof.
-        clear key_rel. (* remove the assumption, otherwise it's trivial :)*)
+        clear R. (* remove the assumption, otherwise it's trivial :)*)
         intros ? ? ? ? ? Ha Hb Hc.
         apply (@dec_true _ Gdec) in Hb, Hc. 
         simpl in Hb, Hc.
@@ -453,7 +453,7 @@ Module Zkp.
           destruct a as (a, b);
           simpl.
           f_equal.
-          rewrite key_rel.
+          rewrite R.
           assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
           rewrite smul_pow_up. 
           reflexivity.
@@ -630,10 +630,49 @@ Module Zkp.
         Context 
           (x : F) (* secret witness *)
           (g h : G) (* public values *) 
-          (key_rel : h = g ^ x). (* relation that 
+          (R : h = g ^ x). (* relation that 
           prover trying to establish, or convince a verifier*)
 
-        
+        (* 
+          If you give me two valid Sigma Protocols, 
+          then Parallel Composition constructs another 
+          Sigma Protocol.
+        *)
+        Lemma parallel_sigma_completeness : 
+          ∀ (n : nat) (a : @sigma_proto 1 1 1) 
+          (b : @sigma_proto n n n), 
+          @accepting_conversation g h a = true ->
+          @generalised_accepting_conversations g h n b = true ->
+          @generalised_accepting_conversations g h (1 + n)
+            (parallel_sigma a b) = true.
+        Proof.
+          intros ? ? ? Ha Hb;
+          cbn.
+          unfold parallel_sigma.
+          refine
+          (match a as a' return a = a' -> _ with 
+          | (a₁; c₁; r₁)  => _ 
+          end eq_refl); intros Hc;
+          refine
+          (match b as b' return b = b' -> _ with 
+          | (a₂; c₂; r₂) => _ 
+          end eq_refl); intros Hd;
+          cbn.
+          eapply andb_true_iff; 
+          split.
+          +
+            rewrite Hc in Ha;
+            exact Ha.
+          +
+            rewrite <-Hd;
+            exact Hb.
+        Qed.
+           
+
+
+
+            
+      
 
 
 
