@@ -43,36 +43,7 @@ Module Zkp.
         div opp inv G (@eq G) gid ginv gop gpow}
       {Gdec : forall x y : G, {x = y} + {x <> y}}. 
       (* decidable equality on G *)
-    
-    Lemma gdec_true : forall x y, 
-      (if Gdec x y then true else false) = true <-> x = y.
-    Proof.
-      intros ? ?.
-      destruct (Gdec x y); split; 
-      intro H; auto.
-      inversion H.
-    Qed.
-
-    Lemma gdec_false : forall x y, 
-      (if Gdec x y then true else false) = false <-> x <> y.
-    Proof.
-      intros ? ?.
-      destruct (Gdec x y); split; 
-      intro H; auto.
-      inversion H. 
-      congruence.
-    Qed.
-
-    Lemma gdec_eq_true : forall x, 
-      (if Gdec x x then true else false) = true.
-    Proof.
-      intros ?.
-      destruct (Gdec x x).
-      reflexivity.
-      congruence.
-    Qed.
-
-    
+     
 
     Local Infix "^" := gpow.
     Local Infix "*" := mul.
@@ -125,7 +96,6 @@ Module Zkp.
           ([gop (g^u) (h^(opp c))]; [c]; [u]).
 
         (* 
-          
           This function checks if a conversation (a; c; r) 
           is accepting or not. It checks if g^r = a * h^c
         *)
@@ -204,7 +174,7 @@ Module Zkp.
           unfold accepting_conversation, 
             schnorr_simulator; 
           intros ? ?; simpl.
-          rewrite gdec_true.
+          rewrite (@dec_true _ Gdec).
           rewrite <-associative.
           rewrite <-(@vector_space_smul_distributive_fadd F (@eq F) 
             zero one add mul sub div 
@@ -234,14 +204,7 @@ Module Zkp.
 
 
             
-      Lemma rewrite_gop : 
-        forall a b c d : G, 
-        a = b -> c = d -> gop a c = gop b d.
-      Proof.
-        intros * Hab Hcd.
-        subst.
-        reflexivity.
-      Qed.
+     
       
   
 
@@ -259,7 +222,7 @@ Module Zkp.
       Proof.
         clear key_rel. (* remove the assumption, otherwise it's trivial :)*)
         intros ? ? ? ? ? Ha Hb Hc.
-        apply gdec_true in Hb, Hc.
+        apply (@dec_true _ Gdec) in Hb, Hc. 
         simpl in Hb, Hc.
         (* produce a witness *)
         exists ((r₁ - r₂) * inv (c₁ - c₂)).
@@ -267,7 +230,7 @@ Module Zkp.
         rewrite connection_between_vopp_and_fopp in Hc.
         rewrite group_inv_flip  in Hc.
         rewrite commutative in Hc.
-        pose proof (rewrite_gop _ _ _ _ Hb Hc) as Hcom.
+        pose proof (@rewrite_gop G gop _ _ _ _ Hb Hc) as Hcom.
         rewrite <-(@vector_space_smul_distributive_fadd 
           F (@eq F) zero one add mul sub div 
           opp inv G (@eq G) gid ginv gop gpow) in Hcom.
@@ -564,7 +527,7 @@ Module Zkp.
           clear Ht.
           rewrite (@commutative_group_is_commutative F 
           (@eq F) add zero opp).
-          rewrite !gdec_eq_true.
+          rewrite !dec_eq_true.
           reflexivity.
           typeclasses eauto.
           typeclasses eauto.

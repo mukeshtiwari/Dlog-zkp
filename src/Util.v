@@ -549,4 +549,13 @@ Section Modutil.
     nia. 
   Qed.
 
+  Lemma rewrite_gop {G : Type} (gop : G -> G -> G) : 
+    forall a b c d : G, 
+    a = b -> c = d -> gop a c = gop b d.
+  Proof.
+    intros * Hab Hcd;
+    subst;
+    reflexivity.
+  Qed.
+
 End Modutil. 
