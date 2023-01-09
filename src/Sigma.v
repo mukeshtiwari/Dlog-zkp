@@ -653,21 +653,22 @@ Module Zkp.
           unfold accepting_conversation.
         Admitted.
           
-        (* When we n accepting conversations, then 
+        (* When we have an accepting conversations, then 
         generalised_accepting accepts it *)
         Lemma generalised_accepting_conversations_correctness_backward : 
-          forall (n : nat) (s : @sigma_proto n n n) (f : Fin.t n), 
-          (match s with 
-          | (a; c; r) => 
-            @accepting_conversation g h 
-              (mk_sigma 1 1 1
-                [(nth a f)] [(nth c f)] [(nth r f)]) = true 
-          end) -> 
+          forall (n : nat) (s : @sigma_proto n n n), 
+          (forall (f : Fin.t n),
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation g h 
+                (mk_sigma 1 1 1
+                  [(nth a f)] [(nth c f)] [(nth r f)]) = true 
+            end) -> 
           @generalised_accepting_conversations g h n s = true.
         Proof.
           unfold accepting_conversation.
+          intros.
         Admitted.
-          
          
 
           
