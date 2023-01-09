@@ -633,6 +633,45 @@ Module Zkp.
           (R : h = g ^ x). (* relation that 
           prover trying to establish, or convince a verifier*)
 
+       
+        (* 
+          when generalised_accepting_conversations return true 
+          then every individual sigma protocol is an 
+          accepting conversations.
+        *)
+        Lemma generalised_accepting_conversations_correctness_forward : 
+          forall (n : nat) (s : @sigma_proto n n n),
+          @generalised_accepting_conversations g h n s = true ->
+          ∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation g h 
+              (mk_sigma 1 1 1
+                [(nth a f)] [(nth c f)] [(nth r f)]) = true
+          end.
+        Proof.
+          unfold accepting_conversation.
+        Admitted.
+          
+        (* When we n accepting conversations, then 
+        generalised_accepting accepts it *)
+        Lemma generalised_accepting_conversations_correctness_backward : 
+          forall (n : nat) (s : @sigma_proto n n n) (f : Fin.t n), 
+          (match s with 
+          | (a; c; r) => 
+            @accepting_conversation g h 
+              (mk_sigma 1 1 1
+                [(nth a f)] [(nth c f)] [(nth r f)]) = true 
+          end) -> 
+          @generalised_accepting_conversations g h n s = true.
+        Proof.
+          unfold accepting_conversation.
+        Admitted.
+          
+         
+
+          
+
         (* 
           If you give me two valid Sigma Protocols, 
           then Parallel Composition constructs another 
@@ -672,9 +711,7 @@ Module Zkp.
 
 
             
-      
-
-
+  
 
       End Proofs.
 

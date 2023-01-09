@@ -3,12 +3,62 @@ Require Import Vector
 
 Import VectorNotations.
 
+Section Dec.
+
+  Context 
+    {R : Type}
+    {Hdec : forall x y : R, {x = y} + {x <> y}}.
+
+  Lemma dec_true : forall x y, 
+    (if Hdec x y then true else false) = true <-> x = y.
+  Proof.
+    intros ? ?.
+    destruct (Hdec x y); split; 
+    intro H; auto.
+    inversion H.
+  Qed.
+
+
+  Lemma dec_false : forall x y, 
+    (if Hdec x y then true else false) = false <-> x <> y.
+  Proof.
+    intros ? ?.
+    destruct (Hdec x y); split; 
+    intro H; auto.
+    inversion H.
+    congruence.
+  Qed.
+
+  Lemma dec_eq_true : forall x, 
+    (if Hdec x x then true else false) = true.
+  Proof.
+    intros ?.
+    destruct (Hdec x x).
+    reflexivity.
+    congruence.
+  Qed.
+
+   
+  Definition eq_bool (x y : R) : bool :=
+    match Hdec x y with 
+    | left _ => true 
+    | right _ => false
+    end.
+
+
+End Dec.
+
+
 Section Vect.
 
 
   Context 
     {R : Type}
     {Hdec : forall x y : R, {x = y} + {x <> y}}.
+
+
+  
+
 
   Lemma vector_inv_0 (v : Vector.t R 0) :
     v = @Vector.nil R.
@@ -161,167 +211,31 @@ Section Vect.
     exact (zip_with _ f tu tv).
   Defined.
   
+ 
   
-  Definition eq_bool (x y : R) : bool :=
-    match Hdec x y with 
-    | left _ => true 
-    | right _ => false
-    end.
-
+  (* Two challenge vectors are same pointwise *)
+  Definition two_challenge_vectors_same_everyelem {n : nat} :
+    Vector.t R n -> Vector.t R n -> Prop :=
+    fun u v => ∀ (f : Fin.t n),
+    nth u f = nth v f.
   
-  Definition two_challenge_vectors_disjoint_pointwise :
-    ∀ {n : nat}, 
-    Vector.t R (S n) -> Vector.t R (S n) -> bool.
-  Proof.
-    refine(fix Fn n {struct n} := 
-      match n with 
-      | 0 => fun u v => _ 
-      | S n' => fun u v => _ 
-      end).
-    + exact (negb (eq_bool (hd u) (hd v))).
-    + exact ((negb (eq_bool (hd u) (hd v))) && 
-      (Fn _ (tl u) (tl v))).
-  Defined.
-
-
+  (* Two challenge vectors differs at atleast one point *)
+  Definition two_challenge_vectors_disjoint_someelem {n : nat} :
+     Vector.t R n -> Vector.t R n -> Prop :=
+    fun u v => ∃ (f : Fin.t n),
+    nth u f <> nth v f.
+    
+  (* Two challenge vectors are different pointwise *)
+  Definition two_challenge_vectors_different_everyelem {n : nat} :
+    Vector.t R n -> Vector.t R n -> Prop :=
+    fun u v => ∀ (f : Fin.t n),
+    nth u f <> nth v f.
   
-  Lemma dec_true : forall x y, 
-    (if Hdec x y then true else false) = true <-> x = y.
-  Proof.
-    intros ? ?.
-    destruct (Hdec x y); split; 
-    intro H; auto.
-    inversion H.
-  Qed.
-
-  Lemma dec_false : forall x y, 
-    (if Hdec x y then true else false) = false <-> x <> y.
-  Proof.
-    intros ? ?.
-    destruct (Hdec x y); split; 
-    intro H; auto.
-    inversion H.
-    congruence.
-  Qed.
-
-  Lemma dec_eq_true : forall x, 
-    (if Hdec x x then true else false) = true.
-  Proof.
-    intros ?.
-    destruct (Hdec x x).
-    reflexivity.
-    congruence.
-  Qed.
-
-
-  (* Two vectors are pointwise not equal *)
-  Lemma two_challenge_vectors_disjoint_pointwise_true : 
-    forall n (u v : Vector.t R (S n)), 
-    two_challenge_vectors_disjoint_pointwise u v = true ->
-    forall m : Fin.t (S n), 
-    Vector.nth u m <> Vector.nth v m. 
-  Proof.
-    induction n. 
-    + unfold two_challenge_vectors_disjoint_pointwise;
-      intros ? ? Ha ?.
-      destruct (vector_inv_S u) as (uh & ut & Hu).
-      destruct (vector_inv_S v) as (vh & vt & Hv).
-      pose proof (vector_inv_0 ut) as Hun.
-      pose proof (vector_inv_0 vt) as Hvn.
-      rewrite Hun in Hu.
-      rewrite Hvn in Hv.
-      rewrite Hu, Hv in Ha |- *.
-      simpl in Ha |- *.
-      apply negb_true_iff in Ha.
-      destruct (fin_inv_S _ m) as [Hb | (b & Hb)];
-      subst; cbn.
-      unfold eq_bool in Ha.
-      rewrite dec_false in Ha.
-      exact Ha.
-      destruct (fin_inv_0 b).
-    + unfold two_challenge_vectors_disjoint_pointwise;
-      intros ? ? Ha ?.
-      destruct (vector_inv_S u) as (uh & ut & Hu).
-      destruct (vector_inv_S v) as (vh & vt & Hv).
-      rewrite Hu, Hv in Ha.
-      simpl in Ha.
-      apply andb_true_iff in Ha.
-      destruct Ha as [Ha Hb].
-      rewrite Hu, Hv;
-      simpl.
-      destruct (fin_inv_S _ m) as [Hc | (c & Hc)].
-      subst; cbn.
-      apply negb_true_iff in Ha.
-      unfold eq_bool in Ha.
-      apply dec_false in Ha.
-      exact Ha.
-      (* indcution case *)
-      subst; cbn.
-      apply IHn.
-      exact Hb.
-  Qed.
-
-
-  (* two vectors are disjoint when they don't match at 
-    at least one one point *)
-  Definition two_challenge_vectors_disjoint_for_one_element :
-    ∀ {n : nat}, 
-    Vector.t R (S n) -> Vector.t R (S n) -> bool.
-  Proof.
-    refine(fix Fn n {struct n} := 
-      match n with 
-      | 0 => fun u v => negb (eq_bool (hd u) (hd v))
-      | S n' => fun u v => (negb (eq_bool (hd u) (hd v))) ||
-        (Fn _ (tl u) (tl v))
-      end).
-  Defined.
-
-
-   Lemma two_challenge_vectors_disjoint_for_one_element_true : 
-    forall n (u v : Vector.t R (S n)), 
-    two_challenge_vectors_disjoint_for_one_element u v = true ->
-    exists m : Fin.t (S n), 
-    Vector.nth u m <> Vector.nth v m. 
-  Proof.
-    induction n. 
-    + unfold two_challenge_vectors_disjoint_for_one_element;
-      intros ? ? Ha.
-      destruct (vector_inv_S u) as (uh & ut & Hu).
-      destruct (vector_inv_S v) as (vh & vt & Hv).
-      exists F1.
-      pose proof (vector_inv_0 ut) as Hun.
-      pose proof (vector_inv_0 vt) as Hvn.
-      rewrite Hun in Hu.
-      rewrite Hvn in Hv.
-      rewrite Hu, Hv in Ha |- *.
-      simpl in Ha |- *.
-      apply negb_true_iff in Ha.
-      unfold eq_bool in Ha.
-      destruct (Hdec uh vh) as [H | H].
-      ++ congruence.
-      ++ exact H. 
-    + unfold two_challenge_vectors_disjoint_for_one_element;
-      intros ? ? Ha.
-      destruct (vector_inv_S u) as (uh & ut & Hu).
-      destruct (vector_inv_S v) as (vh & vt & Hv).
-      rewrite Hu, Hv in Ha |- *.
-      simpl in Ha.
-      case (negb (eq_bool uh vh)) eqn:Heq.
-      simpl in Ha.
-      rewrite negb_true_iff in Heq.
-      exists F1; simpl.
-      unfold eq_bool in Heq.
-      destruct (Hdec uh vh) as [H | H].
-      congruence.
-      exact H.
-      (* inductive case *)
-      simpl in Ha.
-      destruct (IHn ut vt Ha) as [m Hm].
-      apply negb_false_iff in Heq.
-      exists (FS m); simpl.
-      exact Hm.
-  Qed.
-
+  (* Two challenge vectors same at some point *)
+  Definition two_challenge_vectors_same_someelem {n : nat} :
+     Vector.t R n -> Vector.t R n -> Prop :=
+    fun u v => ∃ (f : Fin.t n),
+    nth u f = nth v f.
 
   (* Write Ltac *)
 
