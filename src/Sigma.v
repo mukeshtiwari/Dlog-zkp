@@ -651,10 +651,37 @@ Module Zkp.
           end.
         Proof.
           unfold accepting_conversation.
-        Admitted.
+          induction n as [|n IHn];
+          simpl.
+          +  
+            intros ? Ha f.
+            refine (match f with end).
+          +
+            intros ? Ha f.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun Hc => _  
+            end eq_refl).
+            rewrite Hc in Ha.
+            destruct (vector_inv_S a) as (ha & ta & Hd).
+            destruct (vector_inv_S c) as (hc & tc & He).
+            destruct (vector_inv_S r) as (hr & tr & Hf).
+            destruct (fin_inv_S _ f) as [hf | (hf & Hg)].
+            subst; simpl.
+            eapply andb_true_iff in Ha. 
+            destruct Ha as (Ha & _).
+            rewrite Ha; reflexivity.
+            subst; simpl.
+            eapply andb_true_iff in Ha.
+            destruct Ha as (_ & Ha).
+            exact (IHn _ Ha hf).
+        Qed.
           
         (* When we have an accepting conversations, then 
-        generalised_accepting accepts it *)
+        generalised_accepting accepts it.
+        This one is more like completeness!
+        *)
         Lemma generalised_accepting_conversations_correctness_backward : 
           forall (n : nat) (s : @sigma_proto n n n), 
           (forall (f : Fin.t n),
@@ -667,8 +694,29 @@ Module Zkp.
           @generalised_accepting_conversations g h n s = true.
         Proof.
           unfold accepting_conversation.
-          intros.
-        Admitted.
+          induction n as [|n IHn];
+          simpl.
+          +
+            intros ? Ha.
+            reflexivity.
+          +
+            intros ? Ha.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun Hb => _  
+            end eq_refl).
+            destruct (vector_inv_S a) as (ha & ta & Hc).
+            destruct (vector_inv_S c) as (hc & tc & Hd).
+            destruct (vector_inv_S r) as (hr & tr & He).
+            subst.
+            eapply andb_true_iff; split.
+            exact (Ha Fin.F1).
+            eapply IHn; 
+            intros fz.
+            exact (Ha (Fin.FS fz)).
+        Qed.
+
          
 
           
