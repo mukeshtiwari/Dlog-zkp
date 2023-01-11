@@ -475,7 +475,7 @@ Section Modutil.
 End Modutil. 
 
 
-Section SmallInversion.
+Section Vecinvert.
 
   Context 
     {R : Type}.
@@ -500,33 +500,50 @@ Section SmallInversion.
     | r :: v => vec_shape_S_intro r v
     end.
 
- 
+  
+End Vecinvert.
+
+Section Fininvert.
+
 
   Inductive fin_shape_0 : Fin.t 0 -> Type :=.
 
-  Inductive fin_shape_1 : Fin.t 1 -> Type :=
-  | fin_shape_1_intro : fin_shape_1 F1.
+  Inductive fin_shape_S {n : nat} : Fin.t (S n) -> Type :=
+  | fin_shape_S_fst : fin_shape_S F1 
+  | fin_shape_S_nxt s : fin_shape_S (FS s).
 
-  Inductive fin_shape_S {n : nat} : Fin.t (S (S n)) -> Type :=
-  | fin_shape_S_intro s : fin_shape_S (FS s).
-
-  
   Definition fin_invert_t {n : nat} : Fin.t n -> Type :=
     match n with 
     | O => fin_shape_0
-    | S O => fin_shape_1 
-    | S (S n') => fin_shape_S
+    | (S n') => fin_shape_S
     end.
+  
 
-  (*
-  Fail Definition fin_invert 
+  Definition fin_invert 
     {n : nat} (f : Fin.t n) : fin_invert_t f :=
     match f with 
-    | F1 => fin_shape_1_intro 
-    | FS s => fin_shape_S_intro s 
+    | F1 => fin_shape_S_fst 
+    | FS s => fin_shape_S_nxt s 
     end.
-  *)
-End SmallInversion.
+
+  Definition fin_O_rect X (i : Fin.t 0) : X :=
+    match fin_invert i with end.
+
+  Variables (n : nat)
+            (P : Fin.t (S n) → Type)
+            (P_0 : P F1)
+            (P_S : ∀i, P (FS i)).
+
+  Definition fin_S_rect i : P i :=
+    match fin_invert i with
+      | fin_shape_S_fst => P_0
+      | fin_shape_S_nxt i => P_S i
+    end.
+
+End Fininvert.
+
+
+
 
 Section Hvect.
 
