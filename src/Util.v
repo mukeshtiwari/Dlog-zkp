@@ -473,3 +473,146 @@ Section Modutil.
   Qed.
 
 End Modutil. 
+
+
+Section SmallInversion.
+
+  Context 
+    {R : Type}.
+
+
+  Inductive vec_shape_O : Vector.t R 0 -> Type :=
+  | vec_shape_O_intro : vec_shape_O [].
+
+  Inductive vec_shape_S {n : nat} : Vector.t R (1 + n) -> Type :=
+  | vec_shape_S_intro r v : vec_shape_S (r :: v).
+
+  Definition vec_invert_t {n : nat} : Vector.t R n -> Type :=
+    match n with 
+    | O  => vec_shape_O 
+    | S n => @vec_shape_S n
+    end.
+    
+  Definition vec_invert 
+    {n : nat}  (v : Vector.t R n) : vec_invert_t v  :=
+    match v with 
+    | [] => vec_shape_O_intro  
+    | r :: v => vec_shape_S_intro r v
+    end.
+
+ 
+
+  Inductive fin_shape_0 : Fin.t 0 -> Type :=.
+
+  Inductive fin_shape_1 : Fin.t 1 -> Type :=
+  | fin_shape_1_intro : fin_shape_1 F1.
+
+  Inductive fin_shape_S {n : nat} : Fin.t (S (S n)) -> Type :=
+  | fin_shape_S_intro s : fin_shape_S (FS s).
+
+  
+  Definition fin_invert_t {n : nat} : Fin.t n -> Type :=
+    match n with 
+    | O => fin_shape_0
+    | S O => fin_shape_1 
+    | S (S n') => fin_shape_S
+    end.
+
+  (*
+  Fail Definition fin_invert 
+    {n : nat} (f : Fin.t n) : fin_invert_t f :=
+    match f with 
+    | F1 => fin_shape_1_intro 
+    | FS s => fin_shape_S_intro s 
+    end.
+  *)
+End SmallInversion.
+
+Section Hvect.
+
+  (* Hetrogeneous Vector *)
+  Inductive Hvect : ∀ {n : nat}, Vector.t Type n -> Type :=
+  | Hnil : @Hvect 0 []
+  | Hcon {A : Type} {n : nat} {v : Vector.t Type n} : 
+      A -> @Hvect n v -> @Hvect (1 + n) (A :: v).
+
+  
+  (*
+    Check [nat; nat; bool].
+    Check [Vector.t nat 1; Vector.t nat 1; Vector.t bool 1].
+    Check Hcon 1 (Hcon 2 (Hcon true Hnil)).
+    Check Hcon [1] (Hcon [2] (Hcon [true] Hnil)).
+  *)
+
+
+  Inductive hvec_shape_0 : Hvect [] -> Type  :=
+  | hvec_shape_0_intro : hvec_shape_0 Hnil.
+
+  Inductive hvec_shape_S {n X V} : @Hvect (S n) (X :: V) -> Type  :=
+  | hvec_shape_S_intro r v : hvec_shape_S (Hcon r v).
+
+  Definition hvec_invert_t {n : nat} {v : Vector.t Type n} 
+    : @Hvect n v -> Type :=
+    match v with 
+    | [] => hvec_shape_0
+    | X :: V => hvec_shape_S 
+    end.
+  
+  Definition hvec_invert {n v} (w : @Hvect n v) : hvec_invert_t w :=
+    match w with 
+    | Hnil => hvec_shape_0_intro 
+    | Hcon r v => hvec_shape_S_intro r v 
+    end.
+
+  (*
+    This function takes a (hetrogeneous)
+    vector of n elements and returns 
+    a (hetrogeneous) vector of n unit lenght 
+    vector.   
+  *)
+  Definition sigma_proto :
+    forall {n : nat} {r : Vector.t Type n},
+    @Hvect n r -> @Hvect n
+      (Vector.map (fun x => Vector.t x 1) r).
+  Proof.
+    induction n as [|n IHn];
+    intros V W.
+    +
+     destruct (vec_invert V);
+     cbn; exact W.
+    +
+      destruct (vec_invert V) as (hv & tv).
+      destruct (hvec_invert W) as (hw & tw).
+      cbn.
+      refine (Hcon [hw] (IHn _ tw)).
+  Defined.
+
+  (* 
+  Eval compute in sigma_protocol 
+    (Hcon 1 (Hcon 2 (Hcon true Hnil))).
+  *)
+  (* same as sigma_proto function *)
+  Theorem sigma_protocol :
+    forall {n : nat} {r : Vector.t Type n},  
+    @Hvect n r -> @Hvect n 
+      (Vector.map (fun x => Vector.t x 1) r).
+  Proof.
+    intros ? ? X.
+    induction X as [|A n v x w IHn]; cbn;
+    [exact Hnil |
+    refine (Hcon [x] IHn)].
+  Defined.
+
+  (* For example, three move can be 
+    encoded as follows:*)
+  Definition three_move_sigma 
+    {A B C : Type} (com : A) 
+    (cha : B) (res : C) : 
+    @Hvect 3 [Vector.t A 1; Vector.t B 1; Vector.t C 1] :=
+    sigma_proto (Hcon com (Hcon cha (Hcon res Hnil))).
+
+  
+End Hvect.
+
+
+  
