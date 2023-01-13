@@ -13,3 +13,6 @@ Here is my plan to proceed:
 4. Formalise others, e.g., AND, OR sigma protocol
 5. Formalise some vote counting method where we can use our 
    sigma protocol library to demonstrate usability. 
+
+
+The end goal is verify all the crypto primitives of [SwissPost](https://gitlab.com/swisspost-evoting/crypto-primitives/crypto-primitives/) in Coq.
