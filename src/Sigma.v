@@ -708,13 +708,13 @@ Module Zkp.
             end eq_refl).
             destruct (vector_inv_S a) as (ha & ta & Hc).
             destruct (vector_inv_S c) as (hc & tc & Hd).
-            destruct (vector_inv_S r) as (hr & tr & He).
+            destruct (vector_inv_S r) as (hr & tr & He);
             subst.
-            eapply andb_true_iff; split.
-            exact (Ha Fin.F1).
+            eapply andb_true_iff; split;
+            [exact (Ha Fin.F1) |
             eapply IHn; 
-            intros fz.
-            exact (Ha (Fin.FS fz)).
+            intros fz;
+            exact (Ha (Fin.FS fz))].
         Qed.
 
          
@@ -747,21 +747,17 @@ Module Zkp.
           end eq_refl); intros Hd;
           cbn.
           eapply andb_true_iff; 
-          split.
-          +
-            rewrite Hc in Ha;
-            exact Ha.
-          +
+          split;
+          [rewrite Hc in Ha;
+            exact Ha |
             rewrite <-Hd;
-            exact Hb.
+            exact Hb].
         Qed.
            
 
 
 
-            
-  
-
+      
       End Proofs.
 
 
