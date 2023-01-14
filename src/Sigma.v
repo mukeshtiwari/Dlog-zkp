@@ -612,16 +612,16 @@ Module Zkp.
         Proof.
           refine(fix Fn n {struct n} := 
           match n with 
-          | 0 => fun x g u c => _
-          | S n' => fun x g u c  => _
+          | 0 => fun x g us cs => _
+          | S n' => fun x g us cs  => _
           end).
           + refine (mk_sigma _ _ _ [] [] []).
           + 
-            destruct (vector_inv_S u) as (uh & utl & _).
-            destruct (vector_inv_S c) as (ch & ctl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            destruct (vector_inv_S cs) as (csh & cstl & _).
             exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
-              (schnorr_protocol x g uh ch)
-              (Fn _ x g utl ctl)).
+              (schnorr_protocol x g ush csh)
+              (Fn _ x g ustl cstl)).
         Defined.
 
 
@@ -632,16 +632,16 @@ Module Zkp.
         Proof.
           refine(fix Fn n {struct n} := 
           match n with 
-          | 0 => fun g h u c => _
-          | S n' => fun g h u c  => _
+          | 0 => fun g h us cs => _
+          | S n' => fun g h us cs  => _
           end).
           + refine (mk_sigma _ _ _ [] [] []).
           + 
-            destruct (vector_inv_S u) as (uh & utl & _).
-            destruct (vector_inv_S c) as (ch & ctl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            destruct (vector_inv_S cs) as (csh & cstl & _).
             exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
-              (schnorr_simulator g h uh ch)
-              (Fn _ g h utl ctl)).
+              (schnorr_simulator g h ush csh)
+              (Fn _ g h ustl cstl)).
         Defined.
 
 
@@ -778,8 +778,21 @@ Module Zkp.
         Qed.
 
         (* completeness *)
+        Lemma construct_parallel_conversations_schnorr_completeness : 
+          forall (n : nat) (us cs : Vector.t F n),
+          @generalised_parallel_accepting_conversations n g h
+            (@construct_parallel_conversations_schnorr n x g us cs) = true.
+        Proof.
+        Admitted.
 
-        
+        Lemma construct_parallel_conversations_simulator_completeness : 
+          forall (n : nat) (us cs : Vector.t F n),
+          @generalised_parallel_accepting_conversations n g h
+            (@construct_parallel_conversations_simulator n g h us cs) = true.
+        Proof.
+        Admitted.
+
+
            
         (* soundness *)
         Lemma generalise_parallel_sigma_soundenss : 
@@ -818,6 +831,49 @@ Module Zkp.
 
       Section Def.
          
+
+        Definition construct_and_conversations_schnorr :
+          forall {n : nat}, 
+          Vector.t F n -> Vector.t G n -> Vector.t F n -> 
+          F -> @sigma_proto n n n.
+        Proof.
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun xs gs us c => _
+          | S n' => fun xs gs us c  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          +
+            destruct (vector_inv_S xs) as (xsh & xstl & _).
+            destruct (vector_inv_S gs) as (gsh & gstl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+              (schnorr_protocol xsh gsh ush c)
+              (Fn _ xstl gstl ustl c)).
+        Defined.
+
+
+        (* Does not involve the secret x *)
+        Definition construct_and_conversations_simulator :
+          forall {n : nat}, 
+          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
+          F -> @sigma_proto n n n.
+        Proof.
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun gs hs us c => _
+          | S n' => fun gs hs us c  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            destruct (vector_inv_S gs) as (gsh & gstl & _).
+            destruct (vector_inv_S hs) as (hsh & hstl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+              (schnorr_simulator gsh hsh ush c)
+              (Fn _ gstl hstl ustl c)).
+        Defined.
+
         Definition generalised_and_accepting_conversations : 
           forall {n : nat}
           (g h : Vector.t G n),
