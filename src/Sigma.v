@@ -762,21 +762,22 @@ Module Zkp.
             exact Hb].
         Qed.
            
-        (* soundness*)
+        (* soundness *)
         Lemma generalise_parallel_sigma_soundenss : 
           ∀ (n : nat) 
-          (s₁ s₂ : @sigma_proto n n n),
+          (s₁ s₂ : @sigma_proto (2 + n) (2 + n) (2 + n)),
           (match s₁, s₂ with 
           | (a₁ ; c₁; _), (a₂ ; c₂; _) => 
           two_challenge_vectors_disjoint_someelem c₁ c₂ ->
           two_challenge_vectors_same_everyelem a₁ a₂ ->
           (* accepting conversatation*)
-          @generalised_accepting_conversations g h n s₁ = true -> 
+          @generalised_accepting_conversations g h _ s₁ = true -> 
           (* accepting conversatation*)
-          @generalised_accepting_conversations g h n s₂ = true ->
+          @generalised_accepting_conversations g h _ s₂ = true ->
           ∃ y : F, g^y = h
           end).
         Proof.
+
         Admitted.
 
         (* zero-knowledge-proof *)
