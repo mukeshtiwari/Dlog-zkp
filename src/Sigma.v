@@ -83,16 +83,15 @@ Module Zkp.
       Section Def.
       
         (* x is a secret *)
-        Context (x : F) (g h : G). 
         (* h = g^x *)
       
 
         (* Real transcript, using randomness u and (secret) witness x *)
-        Definition schnorr_protocol (u c : F) : sigma_proto  :=  
+        Definition schnorr_protocol (x : F) (g : G) (u c : F) : @sigma_proto 1 1 1 :=  
           ([g^u]; [c]; [u + c * x]).
 
         (* Fake transcript (without the witness x) *)
-        Definition schnorr_simulator (u c : F) : sigma_proto := 
+        Definition schnorr_simulator (g h : G) (u c : F) : @sigma_proto 1 1 1 := 
           ([gop (g^u) (h^(opp c))]; [c]; [u]).
 
         (* 
@@ -100,6 +99,7 @@ Module Zkp.
           is accepting or not. It checks if g^r = a * h^c
         *)
         Definition accepting_conversation 
+          (g h : G)
           (v : @sigma_proto 1 1 1) : bool :=
           match v with
           | (a; c; r) =>  
@@ -584,9 +584,68 @@ Module Zkp.
     In this section, we generalise it and compose n nontrivial Σ-protocol
     for a relation R.
     *)
+
+    Section Compose.
+
+      Definition compose_two_sigma_protocols {n m r u v w : nat} 
+      (s₁ : @sigma_proto n m r) (s₂ : @sigma_proto u v w) :
+      @sigma_proto (n + u) (m + v) (r + w) :=
+      match s₁, s₂ with 
+      |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ c₂ r₂) =>
+        mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
+      end.
+
+    End Compose.
+    
     Section Parallel.
 
       Section Def.
+
+        (*
+          Construct parallel Sigma protocol for a relation R 
+
+          h + g^x
+        *)
+        Definition construct_parallel_conversations_schnorr :
+          forall {n : nat}, 
+          F -> G ->  Vector.t F n -> Vector.t F n -> @sigma_proto n n n.
+        Proof.
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun x g u c => _
+          | S n' => fun x g u c  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            destruct (vector_inv_S u) as (uh & utl & _).
+            destruct (vector_inv_S c) as (ch & ctl & _).
+            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+              (schnorr_protocol x g uh ch)
+              (Fn _ x g utl ctl)).
+        Defined.
+
+
+        (* Does not involve the secret x *)
+        Definition construct_parallel_conversations_simulator :
+          forall {n : nat}, 
+          G ->  G -> Vector.t F n -> Vector.t F n -> @sigma_proto n n n.
+        Proof.
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun g h u c => _
+          | S n' => fun g h u c  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            destruct (vector_inv_S u) as (uh & utl & _).
+            destruct (vector_inv_S c) as (ch & ctl & _).
+            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+              (schnorr_simulator g h uh ch)
+              (Fn _ g h utl ctl)).
+        Defined.
+
+
+
       
         Definition generalised_parallel_accepting_conversations : 
           forall {n : nat} (g h : G),
@@ -624,7 +683,7 @@ Module Zkp.
           then every individual sigma protocol is an 
           accepting conversations.
         *)
-        Lemma generalised_accepting_conversations_correctness_forward : 
+        Lemma generalised_parallel_accepting_conversations_correctness_forward : 
           forall (n : nat) (s : @sigma_proto n n n),
           @generalised_parallel_accepting_conversations n g h s = true ->
           ∀ (f : Fin.t n), 
@@ -665,9 +724,8 @@ Module Zkp.
           
         (* When we have an accepting conversations, then 
         generalised_accepting accepts it.
-        This one is more like completeness!
         *)
-        Lemma generalised_accepting_conversations_correctness_backward : 
+        Lemma generalised_parallel_accepting_conversations_correctness_backward : 
           forall (n : nat) (s : @sigma_proto n n n), 
           (forall (f : Fin.t n),
             match s with 
@@ -702,6 +760,26 @@ Module Zkp.
             exact (Ha (Fin.FS fz))].
         Qed.
 
+
+        Lemma generalised_parallel_accepting_conversations_correctness : 
+          forall (n : nat) (s : @sigma_proto n n n), 
+          (forall (f : Fin.t n),
+            match s with 
+            | (a; c; r) => 
+              @accepting_conversation g h 
+                (mk_sigma 1 1 1
+                  [(nth a f)] [(nth c f)] [(nth r f)]) = true 
+            end) <-> 
+          @generalised_parallel_accepting_conversations n g h s = true.
+        Proof.
+          split;
+          [apply generalised_parallel_accepting_conversations_correctness_backward |
+          apply generalised_parallel_accepting_conversations_correctness_forward].
+        Qed.
+
+        (* completeness *)
+
+        
            
         (* soundness *)
         Lemma generalise_parallel_sigma_soundenss : 
@@ -765,6 +843,19 @@ Module Zkp.
       End Def.
 
       Section Proofs.
+
+        (*
+        
+          ∃ x₁ : g₁ = h₁^x ..... 
+        *)
+        Context
+          {n : nat}
+          (xs : Vector.t F n)
+          (gs hs : Vector.t G n)
+          (H : forall (f : Fin.t n), 
+            (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
+
+        
 
 
       End Proofs.
