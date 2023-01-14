@@ -587,38 +587,15 @@ Module Zkp.
     Section Parallel.
 
       Section Def.
-        
-        Context 
-          {g h : G}.
-
-        (* instantiate n = 1, m = 1, r = 1 with to get 
-          a normal instance
-          Advantage of this method is that we can 
-          compose an arbitrary sigma protocols.
-
-        These all sigma protocols are for the 
-        relation  ∃ x : h = g ^ x 
-        *)
-        Definition parallel_sigma {n : nat} : 
-            @sigma_proto 1 1 1 ->
-            @sigma_proto n n n ->
-            @sigma_proto (1 + n) (1 + n) (1 + n).
-          refine (fun p₁ p₂ =>
-            match p₁, p₂ with 
-            | (a₁; c₁; r₁), (a₂; c₂; r₂) => 
-              ((hd a₁ :: a₂); (hd c₁ :: c₂); (hd r₁ :: r₂))
-            end).
-        Defined.
-
-        
-        Definition generalised_accepting_conversations : 
-          forall {n : nat}, 
+      
+        Definition generalised_parallel_accepting_conversations : 
+          forall {n : nat} (g h : G),
           @sigma_proto n n n -> bool.
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
-            | 0 => fun p => true
-            | S n' => fun p => 
+            | 0 => fun _ _ p => true
+            | S n' => fun g h p => 
               match p with 
               | (a; c ; r) => _ 
               end 
@@ -627,7 +604,7 @@ Module Zkp.
           destruct (vector_inv_S c) as (ch & ctl & _).
           destruct (vector_inv_S r) as (rh & rtl & _).
           exact ((@accepting_conversation g h ([ah]; [ch]; [rh])) &&
-            (Fn _ (atl; ctl; rtl))).
+            (Fn _ g h (atl; ctl; rtl))).
         Defined.
 
 
@@ -649,7 +626,7 @@ Module Zkp.
         *)
         Lemma generalised_accepting_conversations_correctness_forward : 
           forall (n : nat) (s : @sigma_proto n n n),
-          @generalised_accepting_conversations g h n s = true ->
+          @generalised_parallel_accepting_conversations n g h s = true ->
           ∀ (f : Fin.t n), 
           match s with 
           | (a; c; r) => 
@@ -699,7 +676,7 @@ Module Zkp.
                 (mk_sigma 1 1 1
                   [(nth a f)] [(nth c f)] [(nth r f)]) = true 
             end) -> 
-          @generalised_accepting_conversations g h n s = true.
+          @generalised_parallel_accepting_conversations n g h s = true.
         Proof.
           unfold accepting_conversation.
           induction n as [|n IHn];
@@ -725,42 +702,6 @@ Module Zkp.
             exact (Ha (Fin.FS fz))].
         Qed.
 
-         
-
-          
-
-        (* 
-          If you give me two valid Sigma Protocols, 
-          then Parallel Composition constructs another 
-          Sigma Protocol.
-        *)
-        Lemma parallel_sigma_completeness : 
-          ∀ (n : nat) (a : @sigma_proto 1 1 1) 
-          (b : @sigma_proto n n n), 
-          @accepting_conversation g h a = true ->
-          @generalised_accepting_conversations g h n b = true ->
-          @generalised_accepting_conversations g h (1 + n)
-            (parallel_sigma a b) = true.
-        Proof.
-          intros ? ? ? Ha Hb;
-          cbn.
-          unfold parallel_sigma.
-          refine
-          (match a as a' return a = a' -> _ with 
-          | (a₁; c₁; r₁)  => _ 
-          end eq_refl); intros Hc;
-          refine
-          (match b as b' return b = b' -> _ with 
-          | (a₂; c₂; r₂) => _ 
-          end eq_refl); intros Hd;
-          cbn.
-          eapply andb_true_iff; 
-          split;
-          [rewrite Hc in Ha;
-            exact Ha |
-            rewrite <-Hd;
-            exact Hb].
-        Qed.
            
         (* soundness *)
         Lemma generalise_parallel_sigma_soundenss : 
@@ -771,9 +712,9 @@ Module Zkp.
           two_challenge_vectors_disjoint_someelem c₁ c₂ ->
           two_challenge_vectors_same_everyelem a₁ a₂ ->
           (* accepting conversatation*)
-          @generalised_accepting_conversations g h _ s₁ = true -> 
+          @generalised_parallel_accepting_conversations _ g h s₁ = true -> 
           (* accepting conversatation*)
-          @generalised_accepting_conversations g h _ s₂ = true ->
+          @generalised_parallel_accepting_conversations _ g h s₂ = true ->
           ∃ y : F, g^y = h
           end).
         Proof.
@@ -797,9 +738,43 @@ Module Zkp.
 
     Section And.
 
+      Section Def.
+         
+        Definition generalised_and_accepting_conversations : 
+          forall {n : nat}
+          (g h : Vector.t G n),
+          @sigma_proto n 1 n -> bool.
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun _ _ p => true
+            | S n' => fun g h p => 
+              match p with 
+              | (a; c ; r) => _ 
+              end 
+            end).
+          destruct (vector_inv_S a) as (ah & atl & _).
+          destruct (vector_inv_S c) as (ch & ctl & _).
+          destruct (vector_inv_S r) as (rh & rtl & _).
+          destruct (vector_inv_S g) as (gh & gtl & _).
+          destruct (vector_inv_S h) as (hh & htl & _).
+          exact ((@accepting_conversation gh hh ([ah]; [ch]; [rh])) &&
+            (Fn _ gtl htl (atl; c; rtl))).
+        Defined.
 
+      End Def.
+
+      Section Proofs.
+
+
+      End Proofs.
+          
 
     End And.
+
+    Section EQ.
+
+    End EQ.
 
 
     Section Or.
