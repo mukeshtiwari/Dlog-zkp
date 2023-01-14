@@ -576,6 +576,14 @@ Module Zkp.
     End Basic_sigma.
 
 
+    (*
+    Running two instances of a nontrivial Σ-protocol for relation 
+    R in parallel results in a Σ-protocol for R with a larger 
+    challenge space.
+
+    In this section, we generalise it and compose n nontrivial Σ-protocol
+    for a relation R.
+    *)
     Section Parallel.
 
       Section Def.
@@ -754,10 +762,28 @@ Module Zkp.
             exact Hb].
         Qed.
            
+        (* soundness and Zkp *)
+
+        Lemma generalise_parallel_sigma_soundenss : 
+          ∀ (n : nat) (a₁ a₂ : Vector.t G n) 
+          (c₁ c₂ : Vector.t F n) (r₁ r₂ : Vector.t F n)
+          (s₁ s₂ : @sigma_proto n n n),
+          two_challenge_vectors_disjoint_someelem c₁ c₂ -> (* *)
+          two_challenge_vectors_same_everyelem a₁ a₂ -> 
+          (a₁ ; c₁; r₁) = s₂->
+          (a₂ ; c₂; r₂) = s₂ ->
+          @generalised_accepting_conversations g h n s₁ = true ->
+          @generalised_accepting_conversations g h n s₂ = true ->
+          ∃ y : F, g^y = h.
+        Proof.
+        Admitted.
+        
+        
 
 
 
-      
+
+
       End Proofs.
 
 
