@@ -240,7 +240,7 @@ Module Zkp.
       
         Lemma special_soundness_berry : 
           forall a c₁ r₁ c₂ r₂, 
-          c₁ <> c₂ ->  (* Todo: Change this into a notation c₁ <|> c₂. *)
+          c₁ <> c₂ -> 
           accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
           accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
           ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
@@ -781,38 +781,135 @@ Module Zkp.
           apply generalised_parallel_accepting_conversations_correctness_forward].
         Qed.
 
+
         (* completeness *)
         Lemma construct_parallel_conversations_schnorr_completeness : 
           forall (n : nat) (us cs : Vector.t F n),
           @generalised_parallel_accepting_conversations n g h
             (@construct_parallel_conversations_schnorr n x g us cs) = true.
         Proof.
-        Admitted.
+          induction n as [|n IHn];
+          [intros ? ?;
+          reflexivity | intros ? ? ].
+          destruct (vector_inv_S us) as (hus & tus & Ha).
+          destruct (vector_inv_S cs) as (hcs & tcs & Hb).
+          rewrite Ha, Hb.
+          specialize (IHn tus tcs).
+          pose proof 
+          generalised_parallel_accepting_conversations_correctness_forward
+          _ _ IHn as Hc.
+          eapply 
+          generalised_parallel_accepting_conversations_correctness_backward.
+          intros ?; cbn.
+          remember (construct_parallel_conversations_schnorr x g tus tcs) as s.
+          refine
+          (match s as s'
+          return s = s' -> _ with 
+          |(a; c; r) => fun Hb => _  
+          end eq_refl).
+          destruct (fin_inv_S _ f) as [hd | (hd & Hf)].
+          +
+            rewrite hd; cbn.
+            (* by schnorr completeness *)
+            now eapply schnorr_completeness.
+          +
+            rewrite Hf; cbn.
+            specialize (Hc hd);
+            rewrite Hb in Hc;
+            exact Hc.
+        Qed.
+        
 
         Lemma construct_parallel_conversations_simulator_completeness : 
           forall (n : nat) (us cs : Vector.t F n),
           @generalised_parallel_accepting_conversations n g h
             (@construct_parallel_conversations_simulator n g h us cs) = true.
         Proof.
-        Admitted.
+          induction n as [|n IHn];
+          [intros ? ?;
+          reflexivity | intros ? ? ].
+          destruct (vector_inv_S us) as (hus & tus & Ha).
+          destruct (vector_inv_S cs) as (hcs & tcs & Hb).
+          rewrite Ha, Hb.
+          specialize (IHn tus tcs).
+          pose proof 
+          generalised_parallel_accepting_conversations_correctness_forward
+          _ _ IHn as Hc.
+          eapply 
+          generalised_parallel_accepting_conversations_correctness_backward.
+          intros ?; cbn.
+          remember (construct_parallel_conversations_simulator g h tus tcs) as s.
+          refine
+          (match s as s'
+          return s = s' -> _ with 
+          |(a; c; r) => fun Hb => _  
+          end eq_refl).
+          destruct (fin_inv_S _ f) as [hd | (hd & Hf)].
+          +
+            rewrite hd; cbn.
+            (* by simulator completeness *)
+            now eapply simulator_completeness.
+          +
+            rewrite Hf; cbn.
+            specialize (Hc hd);
+            rewrite Hb in Hc;
+            exact Hc.
+        Qed.
 
 
            
         (* soundness *)
         Lemma generalise_parallel_sigma_soundenss : 
           ∀ (n : nat) 
-          (s₁ s₂ : @sigma_proto (2 + n) (2 + n) (2 + n)),
+          (s₁ s₂ : @sigma_proto (S (S n)) (S (S n)) (S (S n))),
           (match s₁, s₂ with 
           | (a₁ ; c₁; _), (a₂ ; c₂; _) => 
-          two_challenge_vectors_disjoint_someelem c₁ c₂ ->
           two_challenge_vectors_same_everyelem a₁ a₂ ->
+          two_challenge_vectors_disjoint_someelem c₁ c₂ ->
           (* accepting conversatation*)
-          @generalised_parallel_accepting_conversations _ g h s₁ = true -> 
+          generalised_parallel_accepting_conversations g h s₁ = true -> 
           (* accepting conversatation*)
-          @generalised_parallel_accepting_conversations _ g h s₂ = true ->
+          generalised_parallel_accepting_conversations g h s₂ = true ->
           ∃ y : F, g^y = h
           end).
         Proof.
+          clear R. (* otherwise, it's trivial :) *)
+          induction n as [|n IHn].
+          +
+            intros ? ?.
+            refine 
+            (match s₁ as s'
+            return s₁ = s' -> _ with 
+            |(a₁; c₁; r₁) => fun Ha => _  
+            end eq_refl).
+            refine 
+            (match s₂ as s'
+            return s₂ = s' -> _ with 
+            |(a₂; c₂; r₂) => fun Hb => _  
+            end eq_refl).
+            intros Hc Hd He Hf.
+            unfold two_challenge_vectors_same_everyelem in Hc.
+            destruct Hd as [f Hd].
+            
+
+
+
+
+          +
+            intros ? ?.
+            refine 
+            (match s₁ as s'
+            return s₁ = s' -> _ with 
+            |(a₁; c₁; r₁) => fun Ha => _  
+            end eq_refl).
+            refine 
+            (match s₂ as s'
+            return s₂ = s' -> _ with 
+            |(a₂; c₂; r₂) => fun Hb => _  
+            end eq_refl).
+            intros Hc Hd He.
+            unfold two_challenge_vectors_disjoint_someelem in Hc.
+
 
         Admitted.
 
