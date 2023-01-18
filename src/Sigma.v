@@ -151,7 +151,8 @@ Module Zkp.
           (schnorr_protocol x g r c) returns 
           an accepting conversation.
         *)
-        Lemma schnorr_completeness : forall r c,
+        Lemma schnorr_completeness :
+          forall r c,
            accepting_conversation g h (schnorr_protocol x g r c) = true.
         Proof.
           unfold schnorr_protocol, 
@@ -175,8 +176,6 @@ Module Zkp.
           + congruence.
           + typeclasses eauto.
         Qed.
-        
-        
 
 
         (* it's same as above but more clear. 
@@ -198,7 +197,7 @@ Module Zkp.
         Lemma simulator_completeness : forall r c, 
           accepting_conversation g h 
             (schnorr_simulator g h r c) = true.
-        Proof.
+        Proof using -(x R).
           clear x R. (* Without the secret x *)
           unfold accepting_conversation, 
             schnorr_simulator; 
@@ -215,7 +214,6 @@ Module Zkp.
           typeclasses eauto.
          Qed.
         
-        
         (* it's same as above but more clear. 
            It explicitly binds the accepting 
            conversation of simulator 
@@ -225,7 +223,7 @@ Module Zkp.
           forall r c a₁ c₁ r₁,
           (a₁; c₁; r₁) = (schnorr_simulator g h r c) ->
           accepting_conversation g h (a₁; c₁; r₁) = true.
-        Proof.
+        Proof using -(x R).
           clear x R.
           intros * Ha.
           rewrite Ha.
@@ -245,7 +243,7 @@ Module Zkp.
           accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
           accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
           ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
-        Proof.
+        Proof using -(x R).
           clear x R. (* remove the assumption, otherwise it's trivial :) *)
           intros ? ? ? ? ? Ha Hb Hc.
           apply (@dec_true _ Gdec) in Hb, Hc. 
@@ -698,7 +696,7 @@ Module Zkp.
               (mk_sigma 1 1 1
                 [(nth a f)] [(nth c f)] [(nth r f)]) = true
           end.
-        Proof.
+        Proof using -(x R).
           clear x R. (* This is not needed in this proof 
           and therefore I remove it to make this lemma 
           more generic *)
@@ -744,7 +742,7 @@ Module Zkp.
                   [(nth a f)] [(nth c f)] [(nth r f)]) = true 
             end) -> 
           @generalised_parallel_accepting_conversations n g h s = true.
-        Proof.
+        Proof using -(x R).
           clear x R.
           unfold accepting_conversation.
           induction n as [|n IHn];
@@ -781,7 +779,7 @@ Module Zkp.
                   [(nth a f)] [(nth c f)] [(nth r f)]) = true 
             end) <-> 
           @generalised_parallel_accepting_conversations n g h s = true.
-        Proof.
+        Proof using -(x R).
           clear x R.
           split;
           [apply generalised_parallel_accepting_conversations_correctness_backward |
@@ -831,7 +829,7 @@ Module Zkp.
           forall (n : nat) (us cs : Vector.t F n),
           @generalised_parallel_accepting_conversations n g h
             (@construct_parallel_conversations_simulator n g h us cs) = true.
-        Proof.
+        Proof using -(x R).
           clear x R. (* clear the relation *)
           induction n as [|n IHn];
           [intros ? ?;
@@ -880,7 +878,7 @@ Module Zkp.
           generalised_parallel_accepting_conversations g h s₂ = true ->
           ∃ y : F, g^y = h
           end).
-        Proof.
+        Proof using -(x R).
           clear x R. (* otherwise, it's trivial :) *)
           induction n as [|n IHn].
           +
