@@ -861,7 +861,7 @@ Module Zkp.
         (* soundness *)
         Lemma generalise_parallel_sigma_soundenss : 
           ∀ (n : nat) 
-          (s₁ s₂ : @sigma_proto (S (S n)) (S (S n)) (S (S n))),
+          (s₁ s₂ : @sigma_proto ((S n)) ((S n)) ((S n))),
           (match s₁, s₂ with 
           | (a₁ ; c₁; _), (a₂ ; c₂; _) => 
           two_challenge_vectors_same_everyelem a₁ a₂ ->
@@ -890,11 +890,39 @@ Module Zkp.
             intros Hc Hd He Hf.
             unfold two_challenge_vectors_same_everyelem in Hc.
             destruct Hd as [f Hd].
-            
-
-
-
-
+            destruct (vector_inv_S a₁) as (ha₁ & ta₁ & Hg).
+            destruct (vector_inv_S c₁) as (hc₁ & tc₁ & Hh).
+            destruct (vector_inv_S r₁) as (hr₁ & tr₁ & Hi).
+            rewrite Hg, Hh, Hi in He;
+            cbn in He.
+            destruct (vector_inv_S a₂) as (ha₂ & ta₂ & Hj).
+            destruct (vector_inv_S c₂) as (hc₂ & tc₂ & Hk).
+            destruct (vector_inv_S r₂) as (hr₂ & tr₂ & Hl).
+            rewrite Hj, Hk, Hl in Hf;
+            cbn in Hf.
+            (* using the special soundness 
+              of Schonorr protocol as 
+              base case 
+            *)
+            apply special_soundness_berry with 
+            (a := ha₁) (c₁ := hc₁) (r₁ := hr₁)
+            (c₂ := hc₂) (r₂ := hr₂).
+            rewrite Hh, Hk in Hd.
+            destruct (fin_inv_S _ f) as [hf | (hf & Hm)];
+            [rewrite hf in Hd;
+            cbn in Hd; exact Hd |
+            inversion hf].
+            apply andb_true_iff in He;
+            cbn; exact (proj1 He).
+            apply andb_true_iff in Hf;
+            cbn.
+            rewrite Hg, Hj in Hc.
+            specialize (Hc f).
+            destruct (fin_inv_S _ f) as [hf | (hf & Hm)].
+            rewrite hf in Hc;
+            cbn in Hc; rewrite Hc.
+            exact (proj1 Hf).
+            inversion hf.
           +
             intros ? ?.
             refine 
@@ -907,9 +935,10 @@ Module Zkp.
             return s₂ = s' -> _ with 
             |(a₂; c₂; r₂) => fun Hb => _  
             end eq_refl).
-            intros Hc Hd He.
-            unfold two_challenge_vectors_disjoint_someelem in Hc.
+            intros Hc Hd He Hf.
+            
 
+          
 
         Admitted.
 
