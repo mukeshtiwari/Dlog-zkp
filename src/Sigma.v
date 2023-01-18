@@ -138,6 +138,7 @@ Module Zkp.
 
       Section Proofs.
 
+        Set Suggest Proof Using.
         (* available in global context *)
         Context 
           (x : F) (* secret witness *) 
@@ -174,6 +175,8 @@ Module Zkp.
           + congruence.
           + typeclasses eauto.
         Qed.
+        
+        
 
 
         (* it's same as above but more clear. 
@@ -196,6 +199,7 @@ Module Zkp.
           accepting_conversation g h 
             (schnorr_simulator g h r c) = true.
         Proof.
+          clear x R. (* Without the secret x *)
           unfold accepting_conversation, 
             schnorr_simulator; 
           intros ? ?; simpl.
@@ -222,16 +226,13 @@ Module Zkp.
           (a₁; c₁; r₁) = (schnorr_simulator g h r c) ->
           accepting_conversation g h (a₁; c₁; r₁) = true.
         Proof.
+          clear x R.
           intros * Ha.
           rewrite Ha.
           apply simulator_completeness.
         Qed.
 
 
-            
-     
-      
-  
 
         (* special soundness: if the prover replies two challenge with 
           same randomness r, i.e., same announcement, 
@@ -245,7 +246,7 @@ Module Zkp.
           accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
           ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
         Proof.
-          clear R. (* remove the assumption, otherwise it's trivial :)*)
+          clear x R. (* remove the assumption, otherwise it's trivial :) *)
           intros ? ? ? ? ? Ha Hb Hc.
           apply (@dec_true _ Gdec) in Hb, Hc. 
           simpl in Hb, Hc.
@@ -675,7 +676,7 @@ Module Zkp.
 
       Section Proofs. 
 
-        Context 
+        Context
           (x : F) (* secret witness *)
           (g h : G) (* public values *) 
           (R : h = g ^ x). (* relation that 
@@ -698,6 +699,9 @@ Module Zkp.
                 [(nth a f)] [(nth c f)] [(nth r f)]) = true
           end.
         Proof.
+          clear x R. (* This is not needed in this proof 
+          and therefore I remove it to make this lemma 
+          more generic *)
           unfold accepting_conversation.
           induction n as [|n IHn];
           simpl.
@@ -720,11 +724,12 @@ Module Zkp.
             eapply andb_true_iff in Ha. 
             destruct Ha as (Ha & _).
             rewrite Ha; reflexivity.
-            subst; simpl.
+            subst ; simpl.
             eapply andb_true_iff in Ha.
             destruct Ha as (_ & Ha).
             exact (IHn _ Ha hf).
         Qed.
+     
           
         (* When we have an accepting conversations, then 
         generalised_accepting accepts it.
@@ -740,6 +745,7 @@ Module Zkp.
             end) -> 
           @generalised_parallel_accepting_conversations n g h s = true.
         Proof.
+          clear x R.
           unfold accepting_conversation.
           induction n as [|n IHn];
           simpl.
@@ -776,6 +782,7 @@ Module Zkp.
             end) <-> 
           @generalised_parallel_accepting_conversations n g h s = true.
         Proof.
+          clear x R.
           split;
           [apply generalised_parallel_accepting_conversations_correctness_backward |
           apply generalised_parallel_accepting_conversations_correctness_forward].
@@ -825,6 +832,7 @@ Module Zkp.
           @generalised_parallel_accepting_conversations n g h
             (@construct_parallel_conversations_simulator n g h us cs) = true.
         Proof.
+          clear x R. (* clear the relation *)
           induction n as [|n IHn];
           [intros ? ?;
           reflexivity | intros ? ? ].
@@ -873,7 +881,7 @@ Module Zkp.
           ∃ y : F, g^y = h
           end).
         Proof.
-          clear R. (* otherwise, it's trivial :) *)
+          clear x R. (* otherwise, it's trivial :) *)
           induction n as [|n IHn].
           +
             intros ? ?.
@@ -907,6 +915,7 @@ Module Zkp.
             apply special_soundness_berry with 
             (a := ha₁) (c₁ := hc₁) (r₁ := hr₁)
             (c₂ := hc₂) (r₂ := hr₂).
+            
             rewrite Hh, Hk in Hd.
             destruct (fin_inv_S _ f) as [hf | (hf & Hm)];
             [rewrite hf in Hd;
@@ -936,7 +945,17 @@ Module Zkp.
             |(a₂; c₂; r₂) => fun Hb => _  
             end eq_refl).
             intros Hc Hd He Hf.
-            
+            destruct (vector_inv_S a₁) as (ha₁ & ta₁ & Hg).
+            destruct (vector_inv_S c₁) as (hc₁ & tc₁ & Hh).
+            destruct (vector_inv_S r₁) as (hr₁ & tr₁ & Hi).
+            destruct (vector_inv_S a₂) as (ha₂ & ta₂ & Hj).
+            destruct (vector_inv_S c₂) as (hc₂ & tc₂ & Hk).
+            destruct (vector_inv_S r₂) as (hr₂ & tr₂ & Hl).
+            rewrite Hg, Hj in Hc.
+            rewrite Hh, Hk in Hd.
+            rewrite Hg, Hh, Hi in He.
+            rewrite Hj, Hk, Hl in Hf.
+
 
           
 
