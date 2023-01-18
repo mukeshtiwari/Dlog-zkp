@@ -943,6 +943,9 @@ Module Zkp.
             |(a₂; c₂; r₂) => fun Hb => _  
             end eq_refl).
             intros Hc Hd He Hf.
+            (* interesting way to control the 
+            normalisation! *)
+            remember (S n) as sn.
             destruct (vector_inv_S a₁) as (ha₁ & ta₁ & Hg).
             destruct (vector_inv_S c₁) as (hc₁ & tc₁ & Hh).
             destruct (vector_inv_S r₁) as (hr₁ & tr₁ & Hi).
@@ -953,11 +956,47 @@ Module Zkp.
             rewrite Hh, Hk in Hd.
             rewrite Hg, Hh, Hi in He.
             rewrite Hj, Hk, Hl in Hf.
-
-
-          
-
-        Admitted.
+            cbn in He, Hf.
+            apply andb_true_iff in He, Hf.
+            destruct He as [Hel Her].
+            destruct Hf as [Hfl Hfr].
+            destruct Hd as [f Hm].
+            destruct (fin_inv_S _ f) as [hf | (hf & Hn)].
+            rewrite hf in Hm;
+            cbn in Hm.
+             (* using the special soundness 
+              of Schonorr protocol as 
+              base case 
+            *)
+            apply special_soundness_berry with 
+            (a := ha₁) (c₁ := hc₁) (r₁ := hr₁)
+            (c₂ := hc₂) (r₂ := hr₂).
+            exact Hm.
+            exact Hel.
+            cbn.
+            pose proof (Hc f) as Hn;
+            rewrite hf in Hn;
+            cbn in Hn;
+            rewrite Hn;
+            exact Hfl.
+            (* 
+              induction case
+            *)
+            specialize (IHn (ta₁; tc₁; tr₁)
+            (ta₂; tc₂; tr₂));
+            cbn in IHn.
+            assert (Ho : two_challenge_vectors_same_everyelem ta₁ ta₂).
+            intro Ho;
+            pose proof (Hc (Fin.FS Ho)) as Hp;
+            cbn in Hp;
+            exact Hp.
+            assert (Hp : two_challenge_vectors_disjoint_someelem tc₁ tc₂).
+            exists hf;
+            rewrite Hn in Hm;
+            cbn in Hm; exact Hm.
+            eapply IHn; try assumption.
+        Qed.
+            
 
         (* zero-knowledge-proof *)
 
