@@ -138,7 +138,7 @@ Module Zkp.
 
       Section Proofs.
 
-        Set Suggest Proof Using.
+        
         (* available in global context *)
         Context 
           (x : F) (* secret witness *) 
@@ -964,7 +964,8 @@ Module Zkp.
             destruct (fin_inv_S _ f) as [hf | (hf & Hn)].
             rewrite hf in Hm;
             cbn in Hm.
-             (* using the special soundness 
+            (* 
+              using the special soundness 
               of Schonorr protocol as 
               base case 
             *)
@@ -994,11 +995,14 @@ Module Zkp.
             exists hf;
             rewrite Hn in Hm;
             cbn in Hm; exact Hm.
-            eapply IHn; try assumption.
+            eapply IHn; 
+            try assumption.
         Qed.
             
 
         (* zero-knowledge-proof *)
+
+        (* I don't know how to write the probability distribution, yet*)
 
         
         
@@ -1087,7 +1091,6 @@ Module Zkp.
       Section Proofs.
 
         (*
-        
           ∃ x₁ : g₁ = h₁^x ..... 
         *)
         Context
@@ -1096,6 +1099,9 @@ Module Zkp.
           (gs hs : Vector.t G n)
           (H : forall (f : Fin.t n), 
             (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
+
+
+        
 
         
 
@@ -1107,14 +1113,60 @@ Module Zkp.
 
     Section EQ.
 
+      (* Common witness w for 2 or more relations 
+        ∃ w : F, R₁ x w ∧ R₂ x w 
+      
+      *)
+      Section Def.
+
+      End Def.
+
+
+      Section Proofs.
+
+         Context
+          {n : nat}
+          (x : F)
+          (gs hs : Vector.t G n)
+          (H : forall (f : Fin.t n), 
+            (Vector.nth gs f)^x = Vector.nth hs f).
+
+
+
+      End Proofs.
+
     End EQ.
 
 
     Section Or.
 
+      Section Def.
+
+      End Def.
+
+
+      Section Proofs.
+
+
+      End Proofs.
+
 
     End Or.
 
+
+    Section NEQ.
+
+      Section Def.
+
+      End Def.
+
+
+      Section Proofs.
+
+
+      End Proofs.
+
+    End NEQ.
 
 
     
