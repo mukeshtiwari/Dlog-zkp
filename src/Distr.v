@@ -1068,6 +1068,42 @@ Section Event.
 
 End Event.
 
+
+Section MultiDraw.
+
+   Context 
+    {A : Type}.
+  
+  Fixpoint uniform_with_replacement_multidraw (lf : list A) 
+    (Hlf : lf <> []) (n : nat) : dist (list A) := 
+  match n with 
+  | 0 =>   (@ret _ _ (list A) [])
+  | S n' => 
+    Bind (uniform_with_replacement lf Hlf) (fun u => 
+      Bind (uniform_with_replacement_multidraw lf Hlf n')
+      (fun v => Ret (u :: v)))
+  end.
+
+
+  Lemma uniform_probability_multidraw : 
+    forall (n : nat) (lf : list A)  (Hlf : lf <> []) a b, 
+    In (a, b) (uniform_with_replacement_multidraw lf Hlf n) ->
+    b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+  Proof.
+    induction n as [|n IHn];
+    cbn; intros ? Ha ? ? Hb.
+    +
+      destruct Hb as [Hb | Hb];
+      try (inversion Hb).
+      subst; reflexivity.
+    +
+      admit.
+  Admitted.
+
+
+
+End MultiDraw.
+
 Section Example.
 
     Export MonadNotation.
@@ -1165,97 +1201,31 @@ Section Example.
       reflexivity.
     Qed.
 
+    Eval compute in uniform_with_replacement_multidraw [1; 2; 3; 4] Hneq 2.
+
+    (*
+      [([1; 1], {| num := 1; denum := 16 |});
+        ([1; 2], {| num := 1; denum := 16 |});
+        ([1; 3], {| num := 1; denum := 16 |});
+        ([1; 4], {| num := 1; denum := 16 |});
+        ([2; 1], {| num := 1; denum := 16 |});
+        ([2; 2], {| num := 1; denum := 16 |});
+        ([2; 3], {| num := 1; denum := 16 |});
+        ([2; 4], {| num := 1; denum := 16 |});
+        ([3; 1], {| num := 1; denum := 16 |});
+        ([3; 2], {| num := 1; denum := 16 |});
+        ([3; 3], {| num := 1; denum := 16 |});
+        ([3; 4], {| num := 1; denum := 16 |});
+        ([4; 1], {| num := 1; denum := 16 |});
+        ([4; 2], {| num := 1; denum := 16 |});
+        ([4; 3], {| num := 1; denum := 16 |});
+        ([4; 4], {| num := 1; denum := 16 |})]
+     : dist (list nat)
+
+    
+    *)
+
 End Example.
-
-(* Not need for my crypto project but it's fun to 
-  formalise *)
-Section Uniform_Without_Replacement.
-
-  (* uniform without replacement *)
-  Theorem uniform_without_replacement {A : Type} : 
-    forall (l : list A), l <> [] -> dist A.
-  Proof.
-   induction l.
-   + intro Hf; unfold not in Hf; 
-     specialize (Hf eq_refl); inversion Hf.
-   + intro Hal. destruct l as [| hd tl].
-    ++ (* one element case *) exact [(a, mk_prob 1 1)].
-    ++ (* inductive case *)
-       assert (Hne: hd :: tl <> []). 
-       intro Hf; inversion Hf.
-       remember (Pos.of_nat (List.length (a :: hd :: tl))) as hdl.
-       exact ((a, mk_prob 1 hdl) :: (IHl Hne)).
-  Defined.
-
-
-  Theorem list_not_empty : forall (A : Type) 
-    (l tl: list A) (h : A), l = h :: tl -> l <> [].
-  Proof.
-    intros ? ? ? ? ? H; 
-    subst; 
-    inversion H.
-  Qed.
-
-  (* The probability of the first element is same in both cases *)
-  Theorem uniform_prop : forall (A : Type) 
-    (l tl: list A) (h : A) (H : l = h :: tl), 
-    List.hd_error (uniform_with_replacement l (list_not_empty A l tl h H)) =
-    List.hd_error (uniform_without_replacement l (list_not_empty A l tl h H)).
-  Proof.
-    intros ? ? ? ? ?; 
-    subst; simpl.
-    destruct tl; simpl. 
-    all: reflexivity.
-  Qed.
-
-
-  (* We can simulate without replacement with replacement by 
-    computing the distribution and deleting the elements *)
-  Theorem multi_uniform_with_replacement {A : Type} : 
-    forall (l : list A), l <> [] -> dist A.
-  Proof.
-    induction l.
-    + intro H; 
-      unfold not in H; 
-      specialize (H eq_refl); 
-      inversion H.
-    + destruct l.
-      ++ intro H. 
-         exact (uniform_with_replacement [a] H).
-      ++ (* induction case *)
-         assert (Ht : a0 :: l <> []). 
-         intro H; 
-         inversion H.
-         intro H. 
-         exact ((List.hd (a, mk_prob 0 xH) 
-          (uniform_with_replacement (a :: a0 :: l) H)) :: (IHl Ht)).
-  Defined.
-
-  Lemma connection_mult_uniform_with_replacement_uniform_without_replacement :
-    forall (A : Type)  (l : list A) (H : l <> []),
-    multi_uniform_with_replacement l H = uniform_without_replacement l H.
-  Proof.
-    intros ?. 
-    induction l.
-    + intro H. 
-      unfold not in H. 
-      refine (match H with
-        | _ => _ 
-      end ); specialize (f eq_refl); 
-      inversion f.
-    + intro H; 
-      unfold not in H.
-      destruct l.
-      ++ simpl. 
-         unfold uniform_with_replacement. 
-         simpl; reflexivity.
-      ++ assert (Ht : a0 :: l <> []). 
-         intro Hw; inversion Hw.
-         specialize (IHl Ht). 
-        simpl. f_equal.
-  Qed.
-
-End Uniform_Without_Replacement.
 
 
 
