@@ -1074,33 +1074,28 @@ Section MultiDraw.
    Context 
     {A : Type}.
   
-  Fixpoint uniform_with_replacement_multidraw (lf : list A) 
-    (Hlf : lf <> []) (n : nat) : dist (list A) := 
+  Fixpoint uniform_with_replacement_multidraw (d : dist A) 
+    (n : nat) : dist (list A) := 
   match n with 
-  | 0 =>   (@ret _ _ (list A) [])
+  | 0 => (@ret _ _ (list A) [])
   | S n' => 
-    Bind (uniform_with_replacement lf Hlf) (fun u => 
-      Bind (uniform_with_replacement_multidraw lf Hlf n')
+    Bind d (fun u => 
+      Bind (uniform_with_replacement_multidraw d n')
       (fun v => Ret (u :: v)))
   end.
 
-
+  (* 
+    Let's assume d is a uniform and non-empty distribution.
+  *)
   Lemma uniform_probability_multidraw : 
-    forall (n : nat) (lf : list A)  (Hlf : lf <> []) a b, 
-    In (a, b) (uniform_with_replacement_multidraw lf Hlf n) ->
-    b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+    forall (n : nat) (d d' : dist A) a b p q,
+    d = (p, mk_prob 1 q) :: d' -> 
+    (forall x y, In (x, y) d -> forall u v, 
+      In (u, v) d -> y = v) ->
+    In (a, b) (uniform_with_replacement_multidraw d n) ->
+    b = mk_prob 1 (Pos.of_nat (Nat.pow (Pos.to_nat q) n)).
   Proof.
-    induction n as [|n IHn];
-    cbn; intros ? Ha ? ? Hb.
-    +
-      destruct Hb as [Hb | Hb];
-      try (inversion Hb).
-      subst; reflexivity.
-    +
-      admit.
   Admitted.
-
-
 
 End MultiDraw.
 
@@ -1201,8 +1196,11 @@ Section Example.
       reflexivity.
     Qed.
 
-    Eval compute in uniform_with_replacement_multidraw [1; 2; 3; 4] Hneq 2.
+    Eval compute in 
+      (uniform_with_replacement_multidraw 
+        (uniform_with_replacement [1; 2; 3; 4] Hneq) 2).
 
+   
     (*
       [([1; 1], {| num := 1; denum := 16 |});
         ([1; 2], {| num := 1; denum := 16 |});
