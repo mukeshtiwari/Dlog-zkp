@@ -24,13 +24,12 @@ Section Distr.
   Definition dist (A : Type) :=  list (A * prob).
     
   (* Equality on probability distributions. Two probability 
-    distributions are equal when they are same list but 
-    in different order.
+    distributions are equal when they are Permutation of 
+    each other.
   *)
+
   Definition dist_equiv {A : Type} : relation (dist A) := 
-    fun xs ys => 
-    (∀ x, In x xs <-> In x ys) ∧ 
-    (List.length xs = List.length ys).
+    fun xs ys => Permutation xs ys.
 
    
   Local Infix "=r=" := dist_equiv 
@@ -41,26 +40,34 @@ Section Distr.
   Global Instance dist_refl {A : Type} : 
     Reflexive (@dist_equiv A).
   Proof.
-    unfold dist_equiv, Reflexive.
-    firstorder.
+    unfold dist_equiv, 
+    Reflexive.
+    eauto.
   Qed.
+
 
   Global Instance dist_sym {A : Type} : 
     Symmetric (@dist_equiv A).
   Proof.
-    unfold dist_equiv, Symmetric.
-    intros * [Hx Hy].
-    split; 
-    [firstorder |
-    nia].
+    unfold dist_equiv, 
+    Symmetric.
+    intros * Ha.
+    eapply Permutation_sym; 
+    assumption.
   Qed.
+   
+  
 
   Global Instance dist_trans {A : Type} : 
     Transitive (@dist_equiv A).
   Proof.
-    unfold dist_equiv, Transitive;
-    try firstorder; try nia.
+    unfold dist_equiv, 
+    Transitive.
+    intros * Ha Hb.
+    eapply Permutation_trans;
+    [exact Ha | exact Hb].
   Qed.
+
 
   Global Instance dist_Equiv {A : Type} : 
     Equivalence (@dist_equiv A).
@@ -74,83 +81,35 @@ Section Distr.
   (* end of equivalence relation *) 
   
 
-  (* Needed for rewriting *)
   Global Instance cons_proper {A : Type} (d : A * prob) 
     : Proper (dist_equiv ==> dist_equiv) (cons d).
   Proof.
     intros x y Hxy.
-    unfold dist_equiv in Hxy.
-    destruct Hxy as [Hl Hr].
-    unfold dist_equiv.
-    split; 
-    try firstorder.
-    simpl.
-    f_equal; 
-    assumption.
+    unfold dist_equiv in * |- *.
+    eapply Permutation_cons;
+    [exact eq_refl | exact Hxy].
   Qed.
   
-  
+
+
   Global Instance app_proper {A : Type} (ys : dist A) : 
     Proper (dist_equiv ==> dist_equiv) (fun xs => xs ++ ys).
   Proof.
     intros x y Hxy. 
     unfold dist_equiv in * |- *.
-    split.
-    + 
-      intros xt; 
-      split; 
-      intros H.
-      apply in_app_iff in H; 
-      apply in_app_iff.
-      destruct H as [Hl | Hr].
-      destruct Hxy as [Hxy Hrr].
-      specialize (proj1 (Hxy xt) Hl); 
-      intros Hx.
-      left; exact Hx. 
-      right; exact Hr.
-      apply in_app_iff in H; 
-      apply in_app_iff.
-      destruct H as [Hl | Hr].
-      destruct Hxy as [Hxy Hrr].
-      specialize (proj2 (Hxy xt) Hl); 
-      intros Hx.
-      left; exact Hx. 
-      right; exact Hr.
-    + 
-      destruct Hxy as [_ Hxy].
-      repeat (rewrite app_length).
-      nia.
+    eapply Permutation_app_tail; 
+    assumption.
   Qed.
 
-
+  
   Global Instance app_end_proper {A : Type} (ys : dist A) : 
     Proper (dist_equiv ==> dist_equiv) (fun xs => ys ++ xs).
   Proof.
     intros x y Hxy. 
     unfold dist_equiv in * |- *.
-    destruct Hxy as [Hxy Hrr].
-    split.
-    + 
-    intros xt; split; 
-    intros H.
-    apply in_app_iff in H; 
-    apply in_app_iff.
-    destruct H as [Hl | Hr].
-    left. exact Hl.
-    specialize (proj1 (Hxy xt) Hr); 
-    intros Hx.
-    right; exact Hx.
-    apply in_app_iff in H; 
-    apply in_app_iff.
-    destruct H as [Hl | Hr].
-    left; exact Hl.
-    specialize (proj2 (Hxy xt) Hr); 
-    intros Hx.
-    right; exact Hx.
-  + repeat (rewrite app_length).
-    nia.
+    eapply Permutation_app;
+    [eapply Permutation_refl | exact Hxy].
   Qed.
-
 
 
   Lemma dist_equiv_inv_perm {A : Type} : 
@@ -158,20 +117,12 @@ Section Distr.
     cons a xs =r= ys ++ [a].
   Proof.
     unfold dist_equiv.
-    intros ? ? ? [Hl Hr]; split. 
-    split; intros Hb.
-    destruct Hb as [Hbl | Hbr].
-    apply in_app_iff. 
-    right; firstorder.
-    apply Hl in Hbr. 
-    apply in_app_iff;
-    firstorder.
-    apply in_app_iff in Hb;
-    firstorder.
-    repeat (rewrite app_length);
-    simpl.
-    nia.
+    intros * Ha.
+    pose proof (@Permutation_elt _ [] xs ys [] a) as Hb.
+    rewrite app_nil_r, app_nil_l in Hb.
+    exact (Hb Ha).
   Qed.
+    
 
 
   Lemma dist_equiv_first_last {A : Type} : 
@@ -183,25 +134,16 @@ Section Distr.
     exact (dist_equiv_inv_perm xs xs a Ht).
   Qed.
 
+ 
 
   Lemma dist_equiv_inv_comm {A : Type} : 
     forall (xs ys : dist A), xs ++ ys =r= ys ++ xs.
   Proof.
     unfold dist_equiv.
-    intros ? ?. split.
-    intros ?.
-    split; intro Hl.
-    apply List.in_app_iff.
-    apply List.in_app_iff in Hl.
-    firstorder.
-    apply List.in_app_iff.
-    apply List.in_app_iff in Hl.
-    firstorder.
-    repeat (rewrite app_length);
-    simpl.
-    nia.
+    intros ? ?.
+    eapply Permutation_app_comm.
   Qed.
-
+  
 
   (* Probability Monad *)
   Definition Ret {A : Type} (x : A) : dist A := [(x, one)].
@@ -403,7 +345,8 @@ Section Distr.
   Qed.
 
 
-  Definition prop_Eqdec : forall p q : prob, {p =p= q} + {~(p =p= q)}.
+  Definition prop_Eqdec : 
+    forall p q : prob, {p =p= q} + {~(p =p= q)}.
   Proof.
     intros [px qx] [py qy]; 
     unfold add_prob, prob_equiv, prob_eq in * |- *.
@@ -413,7 +356,8 @@ Section Distr.
   Defined.
 
 
-  Lemma one_prob : forall a b, mk_prob a b =p= one <-> a = Pos.to_nat b.
+  Lemma one_prob : 
+    forall a b, mk_prob a b =p= one <-> a = Pos.to_nat b.
   Proof.
     intros ? ?; simpl; split; intro H.
     unfold one in H.
@@ -425,7 +369,8 @@ Section Distr.
     nia.
   Qed.
 
-  Lemma eq_prob : forall p, p =p= one <-> num p = Pos.to_nat (denum p).
+  Lemma eq_prob : 
+    forall p, p =p= one <-> num p = Pos.to_nat (denum p).
   Proof.
     intros [ap bp]; simpl; split; intro H.
     apply one_prob in H. nia.
@@ -564,78 +509,7 @@ Section Distr.
          exact H.
   Qed.
 
-
-  Lemma list_uniform_dist : ∀ (A : Type) 
-    (la lb : list A)  (H₁ : la <> []) (H₂ : lb <> []), 
-    List.length la = List.length lb -> 
-    (∀ x : A, In x la ↔ In x lb) <-> 
-    uniform_with_replacement la H₁ =r=  
-    uniform_with_replacement lb H₂.
-  Proof.
-    intros ? ? ? ? ? Hl; 
-    split; intro Hin.
-    unfold uniform_with_replacement, dist_equiv.
-    split.
-    intros [xa pa]; 
-    split; intro Hf.
-    apply prob_list. 
-    apply prob_list in Hf.
-    rewrite <-Hl; firstorder.
-    apply prob_list. 
-    apply prob_list in Hf.
-    rewrite Hl. 
-    firstorder.
-    repeat rewrite map_length;
-    assumption.
-    unfold uniform_with_replacement, 
-    dist_equiv in Hin.
-    intros ?; split; intros Hf.
-    remember (length lb) as lv.
-    assert (Hlv : 0 < lv).
-      destruct lb. 
-      simpl in Heqlv.
-      congruence. 
-      simpl in Heqlv.
-      nia.
-    remember (Pos.of_nat lv) as plv.
-    rewrite Hl in Hin.
-    rewrite <- Heqplv in Hin.
-    remember (mk_prob 1 plv) as pf.
-    apply inject_in_list with pf.
-    apply Hin, inject_in_list.
-    assumption.
-    remember (length lb) as lv.
-    assert (Hlv : 0 < lv).
-      destruct lb. simpl in Heqlv.
-      congruence. simpl in Heqlv.
-      nia.
-    remember (Pos.of_nat lv) as plv.
-    rewrite Hl in Hin.
-    rewrite <- Heqplv in Hin.
-    remember (mk_prob 1 plv) as pf.
-    apply inject_in_list with pf.
-    apply Hin. apply inject_in_list.
-    assumption.
-  Qed.
-
-
-  (* If two lists are permutation of each other, 
-    they induce the same distribution *)
-  Lemma uniform_dist_inv_permutation : ∀ (A : Type) 
-    (la lb : list A) (H₁ : la <> []) (H₂ : lb <> []), 
-    Permutation la lb -> 
-    uniform_with_replacement la H₁ =r= 
-    uniform_with_replacement lb H₂.
-  Proof.
-    intros * Hp.
-    eapply list_uniform_dist.
-    apply Permutation_length; 
-    assumption.
-    pose proof perm_membership _ la lb 
-      Hp as [Ha _].
-    exact Ha.
-  Qed.
-
+  
 
   Global Instance proper_fn {A : Type} : 
     Proper (eq ==> @dist_equiv A) (fun x => Ret x).
@@ -1063,21 +937,10 @@ Section Event.
   Qed.
 
 
-
-
-
-End Event.
-
-
-Section MultiDraw.
-
-   Context 
-    {A : Type}.
-  
   Fixpoint uniform_with_replacement_multidraw (d : dist A) 
     (n : nat) : dist (list A) := 
   match n with 
-  | 0 => (@ret _ _ (list A) [])
+  | 0 => (Ret [])
   | S n' => 
     Bind d (fun u => 
       Bind (uniform_with_replacement_multidraw d n')
@@ -1089,15 +952,27 @@ Section MultiDraw.
   *)
   Lemma uniform_probability_multidraw : 
     forall (n : nat) (d d' : dist A) a b p q,
-    d = (p, mk_prob 1 q) :: d' -> 
-    (forall x y, In (x, y) d -> forall u v, 
-      In (u, v) d -> y = v) ->
+    d = (p, mk_prob 1 q) :: d' -> (* non-empty d *)
+    (forall x y, In (x, y) d -> y = mk_prob 1 q) -> (* uniform *)
     In (a, b) (uniform_with_replacement_multidraw d n) ->
     b = mk_prob 1 (Pos.of_nat (Nat.pow (Pos.to_nat q) n)).
   Proof.
+    induction n as [|n IHn];
+    intros * Ha Hb Hc.
+    +
+      cbn in * |- *.
+      destruct Hc as [Hc | Hc];
+      inversion Hc; subst; 
+      reflexivity.
+    +
+      cbn in Hc.
+      rewrite PeanoNat.Nat.pow_succ_r.
+      
+      
+      
   Admitted.
 
-End MultiDraw.
+End Event.
 
 Section Example.
 
@@ -1198,7 +1073,7 @@ Section Example.
 
     Eval compute in 
       (uniform_with_replacement_multidraw 
-        (uniform_with_replacement [1; 2; 3; 4] Hneq) 2).
+        (uniform_with_replacement [1; 2; 3; 4] Hneq) 1).
 
    
     (*
