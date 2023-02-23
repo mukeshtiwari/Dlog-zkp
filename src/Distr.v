@@ -1086,11 +1086,13 @@ Section Event.
         eauto.
     Qed.
 
+
+    
         
   (* 
     Let's assume d is a uniform and non-empty distribution.
   *)
-  Lemma uniform_probability_multidraw : 
+  Lemma uniform_probability_multidraw_gen : 
     forall (n : nat) (d d' : dist A) (a : list A)
     (b : prob) (p : A) (q : positive),
     d = (p, mk_prob 1 q) :: d' -> 
@@ -1156,8 +1158,74 @@ Section Event.
   Qed.
 
 
+  Lemma uniform_probability_multidraw_length : 
+    forall (n : nat) (d : dist A) (a : list A)
+    (b : prob),
+    d <> [] -> In (a, b) (repeat_dist_ntimes d n) ->
+    List.length a = n.
+  Proof.
+    induction n.
+    +
+      intros * Ha Hb.
+      cbn in Hb.
+      destruct Hb as [Hb | Hb];
+      inversion Hb; subst;
+      reflexivity.
+    +
+      intros * Ha Hb.
+      cbn in Hb.
+      remember ((repeat_dist_ntimes d n)) as ds.
+      (* Auxilary lemma *)
+  Admitted.
 
-  
+
+
+
+  Lemma uniform_probability_multidraw :
+    forall n lf a b (Hlf : lf <> []), 
+    In (a, b) (repeat_dist_ntimes 
+      (uniform_with_replacement lf Hlf) n) ->
+    b = mk_prob 1 (Pos.of_nat 
+      (Nat.pow (List.length lf) n)).
+  Proof.
+    intros * Ha.
+    assert (Hb : (length lf) = 
+    Pos.to_nat (Pos.of_nat (length lf))).
+    rewrite Nat2Pos.id. reflexivity.
+    destruct lf; 
+    [congruence | cbn; nia].
+    rewrite Hb; clear Hb.
+    assert (Hb : ∃ lfh lft, lf = lfh :: lft).
+    destruct lf as [|lfh lft];
+    [congruence | exists lfh, lft; reflexivity].
+    destruct Hb as (lfh & lft & Hb); subst.
+    eapply uniform_probability_multidraw_gen with 
+    (d := (uniform_with_replacement (lfh :: lft) Hlf)) 
+    (p := lfh) (d' := map
+    (λ x : A,
+       (x, {|
+          num := 1;
+          denum :=
+            match length lft with
+            | 0%nat => 1
+            | S _ => Pos.succ (Pos.of_nat (length lft))
+            end
+        |})) lft).
+    unfold uniform_with_replacement; cbn.
+    reflexivity.
+    eapply uniform_probability.
+    exact Ha.
+  Qed.
+
+
+
+
+
+
+
+
+
+
 End Event.
 
 Section Example.
