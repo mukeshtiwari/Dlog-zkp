@@ -422,6 +422,7 @@ Module Zkp.
             exact Hwb.
         Qed.
 
+
         (* Every elements in @simulator_distribution 
           has probability 1/ (List.length lf) where 
           lf the list of Field element from which the 
@@ -606,8 +607,7 @@ Module Zkp.
       Section Def.
 
         (*
-          Construct parallel Sigma protocol for a relation R
-          h + g^x
+          Construct parallel Sigma protocol for a relation R : h = g^x
         *)
         Definition construct_parallel_conversations_schnorr :
           forall {n : nat}, 
@@ -669,6 +669,75 @@ Module Zkp.
             (Fn _ g h (atl; ctl; rtl))).
         Defined.
 
+
+      
+
+        Definition generalised_parallel_schnorr_distribution  
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (x : F) (g : G) 
+          (cs : Vector.t F n) : dist (@sigma_proto n n n).
+        Proof.
+          remember ((uniform_with_replacement lf Hlfn)) as d.
+          remember ((repeat_dist_ntimes d n)) as ds.
+          refine 
+            (Bind ds (fun us =>
+              let vs := Vector.of_list us in 
+              let pf : length us = n := _ in 
+              Ret (construct_parallel_conversations_schnorr x g 
+                (eq_rect (length us) _ vs n pf) cs))).
+        Admitted.
+
+                
+
+
+        (* 
+        Definition generalised_parallel_schnorr_distribution  
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (x : F) (g : G) 
+          (cs : Vector.t F n) : dist (@sigma_proto n n n).
+          us <- repeat_dist_ntimes (uniform_with_replacement lf Hlfn) n ;;
+          let vs := Vector.of_list us in 
+          let pf : length us = n := _ in 
+          Ret (construct_parallel_conversations_schnorr x g vs cs).
+        *)
+
+        
+        
+        (* without secret *)
+        Definition generalised_parallelsimulator_distribution 
+          {n : nat} (lf : list F) (Hlfn : lf <> List.nil) (g h : G) 
+          (cs : Vector.t F n) : 
+          dist (@sigma_proto n n n).
+        Proof.
+          remember ((uniform_with_replacement lf Hlfn)) as d.
+          remember ((repeat_dist_ntimes d n)) as ds.
+          refine 
+            (Bind ds (fun us =>
+              let vs := Vector.of_list us in 
+              let pf : length us = n := _ in 
+              Ret (construct_parallel_conversations_simulator g h 
+                (eq_rect (length us) _ vs n pf) cs))).
+          (* Now I need to prove lenght us n *)
+        Admitted.
+
+        (* 
+
+          us <- repeat_dist_ntimes (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_parallel_conversations_simulator g h us cs).
+        *)
+        
+      (* 
+        Lemma special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (cs : F), 
+            List.map (fun '(a, p) => 
+              (generalised_parallel_accepting_conversations g h a, p))
+              (@sgeneralised_parallel_schnorr_distribution  lf Hlfn x g cs) = 
+            List.map (fun '(a, p) => 
+              (generalised_parallel_accepting_conversations g h a, p))
+              (@generalised_parallelsimulator_distribution  lf Hlfn g h cs).
+      *)
+
+        
 
       End Def.
 
@@ -1002,14 +1071,8 @@ Module Zkp.
 
         (* zero-knowledge-proof *)
 
-        (* I don't know how to write the probability distribution, yet*)
-
+      
         
-        
-
-
-
-
 
       End Proofs.
 
@@ -1064,6 +1127,7 @@ Module Zkp.
               (Fn _ gstl hstl ustl c)).
         Defined.
 
+        
         Definition generalised_and_accepting_conversations : 
           forall {n : nat}
           (g h : Vector.t G n),
