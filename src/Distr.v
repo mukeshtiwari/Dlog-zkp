@@ -13,7 +13,7 @@ Require Import
   Coq.Sorting.Permutation
   Coq.Relations.Relation_Definitions
   Coq.Logic.FunctionalExtensionality 
-  Sigma.Prob.
+  Sigma.Prob Sigma.Util.
 
 Import ListNotations.
 Section Distr.
@@ -21,7 +21,8 @@ Section Distr.
 
 
   (* Probability Distribution on a type A *)
-  Definition dist (A : Type) :=  list (A * prob).
+  Definition dist (A : Type) : Type := list (A * prob).
+
     
   (* Equality on probability distributions. Two probability 
     distributions are equal when they are Permutation of 
@@ -607,6 +608,462 @@ Section Distr.
     + apply fmap_compose.
   Defined. 
 
+
+  Fixpoint repeat_dist_ntimes {A : Type} (d : dist A) 
+    (n : nat) : dist (list A) := 
+  match n with 
+  | 0 => (Ret [])
+  | S n' => 
+    Bind d (fun u => 
+      Bind (repeat_dist_ntimes d n')
+      (fun v => Ret (u :: v)))
+  end.
+
+
+
+
+  Lemma repeat_dist_ntimes_nonempty {A : Type} :
+    forall (n : nat) (d : dist A), 
+    d <> [] -> 
+    repeat_dist_ntimes d n <> [].
+  Proof.
+    induction n;
+    intros * Ha Hb; cbn.
+    +
+      cbv in Hb.
+      congruence.
+    +
+      cbn in Hb.
+      eapply IHn with d;
+      try assumption.
+      specialize (IHn d Ha).
+      remember (repeat_dist_ntimes d n) as ds.
+      assert (Hc : ∃ d' ds', ds = d' :: ds').
+      destruct ds as [|dw dws];
+      [congruence| exists dw, dws; exact eq_refl].
+      destruct Hc as (d' & ds' & Hd).
+      rewrite Hd in Hb; clear Hd;
+      cbn in Hb.
+      assert (Hc : ∃ dh dt, d = dh :: dt).
+      destruct d as [|dha dta];
+      [congruence | exists dha, dta; exact eq_refl].
+      destruct Hc as (dh & Ht & Hc);
+      rewrite Hc in Hb;
+      cbn in Hb.
+      destruct dh as (dha, dhb);
+      destruct d' as (dl, dt);
+      cbn in Hb.
+      congruence.
+  Qed.
+
+
+
+  Lemma bind_membership_elim  {A : Type} : 
+    ∀ (d : dist A) (f : A -> dist (list A))
+    (a : list A)  (b : prob), 
+    In (a, b) (Bind d f) ->
+    ∃ ldl dx dy ldr  fdl fdx fdy fdr,
+    d = ldl ++ [(dx, dy)] ++ ldr ∧
+    (f dx) = fdl ++ [(fdx, fdy)] ++ fdr ∧ 
+    b = mul_prob dy fdy.
+  Proof.
+    induction d as [|(u, v) d IHd];
+    intros * Ha.
+    +
+      simpl in Ha;
+      inversion Ha.
+    +
+      (* destruct d *)
+      destruct d as [|(uh, vh) d].
+      ++
+        simpl in Ha;
+        rewrite app_nil_r in Ha.
+        eapply in_map_iff in Ha.
+        destruct Ha as ((xl, xp) & Ha & Hb).
+        exists [], u, v, [].
+        inversion Ha; subst; 
+        clear Ha.
+        eapply in_split in Hb.
+        destruct Hb as (la & lb & Hb).
+        rewrite Hb.
+        repeat eexists.
+      ++
+        (* induction case *)
+        remember ((uh, vh) :: d) as uvhd.
+        simpl in Ha;
+        eapply in_app_or in Ha;
+        destruct Ha as [Ha | Ha].
+        +++
+          exists [], u, v, uvhd.
+          eapply in_map_iff in Ha.
+          destruct Ha as ((xl, xp) & Ha & Hb).
+          inversion Ha; subst;
+          clear Ha.
+          eapply in_split in Hb.
+          destruct Hb as (la & lb & Hb).
+          rewrite Hb.
+          repeat eexists.
+        +++
+          (* induction case *)
+          destruct (IHd f a b Ha) as 
+          (ldl & dx & dy & ldr & fdl & fdx & fdy & fdr & 
+          Hb & Hc & Hd).
+          exists ((u, v) :: ldl), dx, dy,
+          ldr, fdl, fdx, fdy, fdr.
+          split; auto.
+          cbn.
+          f_equal.
+          exact Hb.
+  Qed.
+
+
+  Lemma bind_strip_head_elem {A : Type} : 
+    forall (da : dist (list A)) dx ls, 
+    da <> [] ->
+    Bind da (λ v : list A, [(dx :: v, one)]) = ls ->
+    da = List.map (fun '(x, y) => (List.tl x, y)) ls.
+  Proof.
+    induction da as [|(u, v) da IHd].
+    +
+      intros * Ha Hb.
+      congruence.
+    +
+      (* destruct da *)
+      destruct da as [|(du, dv) da].
+      ++
+        intros * Ha Hb.
+        cbn in * |- *.
+        rewrite <-Hb.
+        cbn.
+        f_equal; f_equal.
+        rewrite mul_prob_comm.
+        unfold mul_prob, one.
+        destruct v; cbn; 
+        f_equal; nia.
+      ++
+        (** induction case **)
+        remember ((du, dv) :: da) as dha.
+        intros * Ha Hb.
+        cbn in * |- *.
+        rewrite <-Hb.
+        cbn.
+        f_equal; f_equal.
+        rewrite mul_prob_comm.
+        unfold mul_prob, one.
+        destruct v; cbn; 
+        f_equal; nia.
+        eapply IHd.
+        rewrite Heqdha.
+        intros Hf; congruence.
+        eauto.
+    Qed.
+
+
+    
+        
+  (* 
+    Let's assume d is a uniform and non-empty distribution.
+  *)
+  Lemma uniform_probability_multidraw_gen {A : Type} : 
+    forall (n : nat) (d d' : dist A) (a : list A)
+    (b : prob) (p : A) (q : positive),
+    d = (p, mk_prob 1 q) :: d' -> 
+    (forall x y, In (x, y) d -> y = mk_prob 1 q) -> 
+    In (a, b) (repeat_dist_ntimes d n) ->
+    b = mk_prob 1 (Pos.of_nat (Nat.pow (Pos.to_nat q) n)).
+  Proof.
+    induction n.
+    +
+      intros * Ha Hb Hc.
+      cbn in Hc.
+      destruct Hc as [Hc | Hc]; 
+      inversion Hc; subst;
+      try reflexivity.
+    +
+      intros  * Ha Hb Hc.
+      cbn in * |- *.
+      remember ((repeat_dist_ntimes d n)) as ds.
+      remember ((λ u : A, Bind ds (λ v : list A, Ret (u :: v)))) as f.
+      eapply  bind_membership_elim in Hc.
+      destruct Hc as (ldl & dx & dy & ldr & fdl & fdx & 
+      fdy & fdr & Hc & Hd & He).
+      subst.
+      assert (He : 
+      {| num := 1; denum := Pos.of_nat (Pos.to_nat q * Nat.pow (Pos.to_nat q) n) |} = 
+      mul_prob ({| num := 1; denum := q|}) 
+        ({| num := 1; denum := Pos.of_nat (Nat.pow (Pos.to_nat q) n)|})).
+      unfold mul_prob; f_equal.
+      rewrite Nat2Pos.inj_mul, Pos2Nat.id.
+      reflexivity.
+      nia. 
+      eapply PeanoNat.Nat.pow_nonzero; nia.
+      rewrite He; clear He.
+      f_equal.
+      eapply Hb.
+      rewrite Hc.
+      instantiate (1 := dx).
+      eapply in_app_iff; right; left;
+      reflexivity.
+      eapply IHn;
+      try assumption.
+      apply eq_sym; exact Hc.
+      intros ? ? He.
+      eapply Hb; 
+      rewrite Hc.
+      instantiate (1 := x).
+      exact He.
+      rewrite Hc in Hd.
+      remember ((repeat_dist_ntimes (ldl ++ [(dx, dy)] ++ ldr) n)) 
+      as da.
+      unfold Ret in Hd.
+      eapply bind_strip_head_elem in Hd.
+      rewrite Hd.
+      eapply in_map_iff.
+      exists (fdx, fdy).
+      split. eauto.
+      eapply in_app_iff; right; left;
+      reflexivity.
+      rewrite Heqda.
+      eapply repeat_dist_ntimes_nonempty.
+      intro Hf.
+      congruence.
+  Qed.
+
+
+  Lemma repeat_dist_ntimes_length_elim_aux {A : Type} : 
+    forall (ds : dist (list A)) (x : A) pt a, 
+    ds <> [] ->
+    In (a, pt) (Bind ds (λ v : list A, Ret (x :: v))) ->
+    ∃ dsl hs ht dsr, 
+      ds = dsl ++ [(hs, ht)] ++ dsr ∧
+      a = x :: hs.
+  Proof.
+    induction ds as [|(dx, dy) ds IHd].
+    +
+      intros * Ha Hb.
+      congruence.
+    +
+      (* destruct ds *)
+      intros * Ha Hb.
+      destruct ds as [|(dxa, dya) ds].
+      ++
+        cbn in Hb;
+        destruct Hb as [Hb | Hb];
+        inversion Hb; subst; 
+        clear Hb.
+        exists [], dx, dy, [].
+        auto.
+      ++
+        remember ((dxa, dya) :: ds) as dha.
+        cbn in Hb;
+        destruct Hb as [Hb | Hb].
+        inversion Hb; subst; clear Hb.
+        exists [], dx, dy, ((dxa, dya) :: ds).
+        auto.
+        (* induction case *)
+        assert (Hc : dha <> []).
+        subst; intros Hc; congruence.
+        destruct (IHd _ _ _ Hc Hb) as 
+        (dsl & hs & ht & dsr & Hd & He).
+        subst.
+        repeat eexists.
+        instantiate (3 := (dx, dy) :: dsl).
+        simpl. f_equal.
+        exact Hd.
+  Qed.
+
+
+
+
+  Lemma repeat_dist_ntimes_length_elim {A : Type} : 
+    forall (d : dist A) (ds : dist (list A)) 
+    (a : list A) (b : prob), 
+    d <> [] -> ds <> [] -> 
+    In (a, b) (Bind d 
+      (λ u : A, Bind ds (λ v : list A, Ret (u :: v)))) ->
+    ∃ h hs dl t dr dsl ts dsr, a = h :: hs ∧
+      d = dl ++ [(h, t)] ++ dr ∧
+      ds = dsl ++ [(hs, ts)] ++ dsr.
+  Proof.
+    induction d as [|(x, y) d IHd].
+    +
+      intros * Ha Hb Hc.
+      congruence.
+    +
+      (* destruct d *)
+      destruct d as [|(dx, dy) d].
+      ++
+        (* one element *)
+        intros * Ha Hb Hc.
+        cbn in Hc;
+        rewrite app_nil_r in Hc.
+        eapply in_map_iff in Hc.
+        destruct Hc as 
+        ((ut, pt) & Hc & Hd).
+        inversion Hc; subst; 
+        clear Hc.
+        destruct (repeat_dist_ntimes_length_elim_aux ds x
+          pt a Hb Hd) as (dsl & hs & ht & dsr & He & Hf).
+        repeat eexists. exact Hf.
+        instantiate (1 := []).
+        instantiate (2 := []).
+        reflexivity.
+        exact He.
+      ++
+        intros * ha Hb Hc.
+        remember ((dx, dy) :: d) as dst.
+        cbn in Hc.
+        rewrite in_app_iff in Hc.
+        destruct Hc as [Hc | Hc].
+        +++
+          eapply in_map_iff in Hc.
+          destruct Hc as 
+          ((ut, pt) & Hc & Hd).
+          inversion Hc; subst; 
+          clear Hc.
+          destruct (repeat_dist_ntimes_length_elim_aux ds x
+            pt a Hb Hd) as (dsl & hs & ht & dsr & He & Hf).
+          repeat eexists. exact Hf.
+          instantiate (1 := (dx, dy) :: d).
+          instantiate (2 := []).
+          reflexivity.
+          exact He.
+        +++
+          (* inductive case *)
+          assert (Hd : dst <> []).
+          subst; intros Hd; congruence.
+          destruct (IHd ds a b Hd Hb Hc) as 
+          (h & hs & dl & t & dr & ts & dsr & He & Hf & Hg & Hi);
+          subst.
+          repeat eexists.
+          instantiate (3 := (x, y) :: dl).
+          simpl. f_equal.
+          exact Hg.
+    Qed.
+          
+
+
+
+  Lemma repeat_dist_ntimes_length {A : Type} : 
+    forall (n : nat) (d : dist A) (a : list A)
+    (b : prob),
+    d <> [] -> In (a, b) (repeat_dist_ntimes d n) ->
+    List.length a = n.
+  Proof.
+    induction n.
+    +
+      intros * Ha Hb.
+      cbn in Hb.
+      destruct Hb as [Hb | Hb];
+      inversion Hb; subst;
+      reflexivity.
+    +
+      intros * Ha Hb.
+      cbn in Hb.
+      remember ((repeat_dist_ntimes d n)) as ds.
+      eapply repeat_dist_ntimes_length_elim in Hb; 
+      try assumption.
+      destruct Hb as 
+      (h & hs & dl & t & dr & ts & dsr & Hb & Hc & Hd & He);
+      subst.
+      simpl; f_equal.
+      eapply IHn with (d := (dl ++ [(h, t)] ++ dr)) (b := dsr);
+      try assumption.
+      rewrite He.
+      rewrite in_app_iff;
+      right; left; 
+      reflexivity.
+      subst.
+      eapply repeat_dist_ntimes_nonempty.
+      intro Hf.
+      congruence.
+  Qed.
+
+  
+  
+
+
+  Lemma uniform_with_replacement_non_empty {A : Type} : 
+    forall (lf : list A) (Hlf : lf <> []),
+    uniform_with_replacement lf Hlf ≠ [].
+  Proof.
+    intros [|hlf lf] ?.
+    +
+      intro Ha; congruence.
+    +
+      intros Ha; 
+      unfold uniform_with_replacement in Ha;
+      cbn in Ha;
+      congruence.
+  Qed.
+
+
+  Lemma uniform_probability_multidraw_head {A : Type} :
+    forall n lf (a : list A) b (Hlf : lf <> []), 
+    In (a, b) (repeat_dist_ntimes 
+      (uniform_with_replacement lf Hlf) n) ->
+    List.length a = n.
+  Proof.
+    intros * Ha.
+    eapply repeat_dist_ntimes_length with 
+      (d := (uniform_with_replacement lf Hlf)).
+    eapply uniform_with_replacement_non_empty.
+    exact Ha.
+  Qed.
+  
+
+
+  Lemma uniform_probability {A : Type} : 
+    forall (lf : list A)  (Hlf : lf <> []) a b, 
+    In (a, b) (uniform_with_replacement lf Hlf) ->
+    b = mk_prob 1 (Pos.of_nat (List.length lf)).
+  Proof.
+    intros * Ha.
+    unfold uniform_with_replacement in Ha.
+    apply prob_list in Ha.
+    destruct Ha as [_ Ha].
+    exact Ha.
+  Qed.
+
+
+
+  Lemma uniform_probability_multidraw_prob {A : Type} :
+    forall n lf (a : list A) b (Hlf : lf <> []), 
+    In (a, b) (repeat_dist_ntimes 
+      (uniform_with_replacement lf Hlf) n) ->
+    b = mk_prob 1 (Pos.of_nat 
+      (Nat.pow (List.length lf) n)).
+  Proof.
+    intros * Ha.
+    assert (Hb : (length lf) = 
+    Pos.to_nat (Pos.of_nat (length lf))).
+    rewrite Nat2Pos.id. reflexivity.
+    destruct lf; 
+    [congruence | cbn; nia].
+    rewrite Hb; clear Hb.
+    assert (Hb : ∃ lfh lft, lf = lfh :: lft).
+    destruct lf as [|lfh lft];
+    [congruence | exists lfh, lft; reflexivity].
+    destruct Hb as (lfh & lft & Hb); subst.
+    eapply uniform_probability_multidraw_gen with 
+    (d := (uniform_with_replacement (lfh :: lft) Hlf))
+    (p := lfh) (d' := map
+    (λ x : A,
+       (x, {|
+          num := 1;
+          denum :=
+            match length lft with
+            | 0%nat => 1
+            | S _ => Pos.succ (Pos.of_nat (length lft))
+            end
+        |})) lft).
+    unfold uniform_with_replacement; cbn.
+    reflexivity.
+    eapply uniform_probability.
+    exact Ha.
+  Qed.
+
+
 End Distr.
 
 
@@ -924,460 +1381,42 @@ Section Event.
     simpl in Hone. nia.
   Qed.
 
-  Lemma uniform_probability : 
-    forall (lf : list A)  (Hlf : lf <> []) a b, 
-    In (a, b) (uniform_with_replacement lf Hlf) ->
-    b = mk_prob 1 (Pos.of_nat (List.length lf)).
-  Proof.
-    intros * Ha.
-    unfold uniform_with_replacement in Ha.
-    apply prob_list in Ha.
-    destruct Ha as [_ Ha].
-    exact Ha.
-  Qed.
-
-
-
-  Fixpoint repeat_dist_ntimes (d : dist A) 
-    (n : nat) : dist (list A) := 
-  match n with 
-  | 0 => (Ret [])
-  | S n' => 
-    Bind d (fun u => 
-      Bind (repeat_dist_ntimes d n')
-      (fun v => Ret (u :: v)))
-  end.
-
-
-
-  Lemma repeat_dist_ntimes_nonempty :
-    forall (n : nat) (d : dist A), 
-    d <> [] -> 
-    repeat_dist_ntimes d n <> [].
-  Proof.
-    induction n;
-    intros * Ha Hb; cbn.
-    +
-      cbv in Hb.
-      congruence.
-    +
-      cbn in Hb.
-      eapply IHn with d;
-      try assumption.
-      specialize (IHn d Ha).
-      remember (repeat_dist_ntimes d n) as ds.
-      assert (Hc : ∃ d' ds', ds = d' :: ds').
-      destruct ds as [|dw dws];
-      [congruence| exists dw, dws; exact eq_refl].
-      destruct Hc as (d' & ds' & Hd).
-      rewrite Hd in Hb; clear Hd;
-      cbn in Hb.
-      assert (Hc : ∃ dh dt, d = dh :: dt).
-      destruct d as [|dha dta];
-      [congruence | exists dha, dta; exact eq_refl].
-      destruct Hc as (dh & Ht & Hc);
-      rewrite Hc in Hb;
-      cbn in Hb.
-      destruct dh as (dha, dhb);
-      destruct d' as (dl, dt);
-      cbn in Hb.
-      congruence.
-  Qed.
-
-
-
-  Lemma bind_membership_elim  : 
-    ∀ (d : dist A) (f : A -> dist (list A))
-    (a : list A)  (b : prob), 
-    In (a, b) (Bind d f) ->
-    ∃ ldl dx dy ldr  fdl fdx fdy fdr,
-    d = ldl ++ [(dx, dy)] ++ ldr ∧
-    (f dx) = fdl ++ [(fdx, fdy)] ++ fdr ∧ 
-    b = mul_prob dy fdy.
-  Proof.
-    induction d as [|(u, v) d IHd];
-    intros * Ha.
-    +
-      simpl in Ha;
-      inversion Ha.
-    +
-      (* destruct d *)
-      destruct d as [|(uh, vh) d].
-      ++
-        simpl in Ha;
-        rewrite app_nil_r in Ha.
-        eapply in_map_iff in Ha.
-        destruct Ha as ((xl, xp) & Ha & Hb).
-        exists [], u, v, [].
-        inversion Ha; subst; 
-        clear Ha.
-        eapply in_split in Hb.
-        destruct Hb as (la & lb & Hb).
-        rewrite Hb.
-        repeat eexists.
-      ++
-        (* induction case *)
-        remember ((uh, vh) :: d) as uvhd.
-        simpl in Ha;
-        eapply in_app_or in Ha;
-        destruct Ha as [Ha | Ha].
-        +++
-          exists [], u, v, uvhd.
-          eapply in_map_iff in Ha.
-          destruct Ha as ((xl, xp) & Ha & Hb).
-          inversion Ha; subst;
-          clear Ha.
-          eapply in_split in Hb.
-          destruct Hb as (la & lb & Hb).
-          rewrite Hb.
-          repeat eexists.
-        +++
-          (* induction case *)
-          destruct (IHd f a b Ha) as 
-          (ldl & dx & dy & ldr & fdl & fdx & fdy & fdr & 
-          Hb & Hc & Hd).
-          exists ((u, v) :: ldl), dx, dy,
-          ldr, fdl, fdx, fdy, fdr.
-          split; auto.
-          cbn.
-          f_equal.
-          exact Hb.
-  Qed.
-
-
-  Lemma bind_strip_head_elem : 
-    forall (da : dist (list A)) dx ls, 
-    da <> [] ->
-    Bind da (λ v : list A, [(dx :: v, one)]) = ls ->
-    da = List.map (fun '(x, y) => (List.tl x, y)) ls.
-  Proof.
-    induction da as [|(u, v) da IHd].
-    +
-      intros * Ha Hb.
-      congruence.
-    +
-      (* destruct da *)
-      destruct da as [|(du, dv) da].
-      ++
-        intros * Ha Hb.
-        cbn in * |- *.
-        rewrite <-Hb.
-        cbn.
-        f_equal; f_equal.
-        rewrite mul_prob_comm.
-        unfold mul_prob, one.
-        destruct v; cbn; 
-        f_equal; nia.
-      ++
-        (** induction case **)
-        remember ((du, dv) :: da) as dha.
-        intros * Ha Hb.
-        cbn in * |- *.
-        rewrite <-Hb.
-        cbn.
-        f_equal; f_equal.
-        rewrite mul_prob_comm.
-        unfold mul_prob, one.
-        destruct v; cbn; 
-        f_equal; nia.
-        eapply IHd.
-        rewrite Heqdha.
-        intros Hf; congruence.
-        eauto.
-    Qed.
-
-
-    
-        
-  (* 
-    Let's assume d is a uniform and non-empty distribution.
-  *)
-  Lemma uniform_probability_multidraw_gen : 
-    forall (n : nat) (d d' : dist A) (a : list A)
-    (b : prob) (p : A) (q : positive),
-    d = (p, mk_prob 1 q) :: d' -> 
-    (forall x y, In (x, y) d -> y = mk_prob 1 q) -> 
-    In (a, b) (repeat_dist_ntimes d n) ->
-    b = mk_prob 1 (Pos.of_nat (Nat.pow (Pos.to_nat q) n)).
-  Proof.
-    induction n.
-    +
-      intros * Ha Hb Hc.
-      cbn in Hc.
-      destruct Hc as [Hc | Hc]; 
-      inversion Hc; subst;
-      try reflexivity.
-    +
-      intros  * Ha Hb Hc.
-      cbn in * |- *.
-      remember ((repeat_dist_ntimes d n)) as ds.
-      remember ((λ u : A, Bind ds (λ v : list A, Ret (u :: v)))) as f.
-      eapply  bind_membership_elim in Hc.
-      destruct Hc as (ldl & dx & dy & ldr & fdl & fdx & 
-      fdy & fdr & Hc & Hd & He).
-      subst.
-      assert (He : 
-      {| num := 1; denum := Pos.of_nat (Pos.to_nat q * Nat.pow (Pos.to_nat q) n) |} = 
-      mul_prob ({| num := 1; denum := q|}) 
-        ({| num := 1; denum := Pos.of_nat (Nat.pow (Pos.to_nat q) n)|})).
-      unfold mul_prob; f_equal.
-      rewrite Nat2Pos.inj_mul, Pos2Nat.id.
-      reflexivity.
-      nia. 
-      eapply PeanoNat.Nat.pow_nonzero; nia.
-      rewrite He; clear He.
-      f_equal.
-      eapply Hb.
-      rewrite Hc.
-      instantiate (1 := dx).
-      eapply in_app_iff; right; left;
-      reflexivity.
-      eapply IHn;
-      try assumption.
-      apply eq_sym; exact Hc.
-      intros ? ? He.
-      eapply Hb; 
-      rewrite Hc.
-      instantiate (1 := x).
-      exact He.
-      rewrite Hc in Hd.
-      remember ((repeat_dist_ntimes (ldl ++ [(dx, dy)] ++ ldr) n)) 
-      as da.
-      unfold Ret in Hd.
-      eapply bind_strip_head_elem in Hd.
-      rewrite Hd.
-      eapply in_map_iff.
-      exists (fdx, fdy).
-      split. eauto.
-      eapply in_app_iff; right; left;
-      reflexivity.
-      rewrite Heqda.
-      eapply repeat_dist_ntimes_nonempty.
-      intro Hf.
-      congruence.
-  Qed.
-
-
-  Lemma repeat_dist_ntimes_length_elim_aux : 
-    forall (ds : dist (list A)) (x : A) pt a, 
-    ds <> [] ->
-    In (a, pt) (Bind ds (λ v : list A, Ret (x :: v))) ->
-    ∃ dsl hs ht dsr, 
-      ds = dsl ++ [(hs, ht)] ++ dsr ∧
-      a = x :: hs.
-  Proof.
-    induction ds as [|(dx, dy) ds IHd].
-    +
-      intros * Ha Hb.
-      congruence.
-    +
-      (* destruct ds *)
-      intros * Ha Hb.
-      destruct ds as [|(dxa, dya) ds].
-      ++
-        cbn in Hb;
-        destruct Hb as [Hb | Hb];
-        inversion Hb; subst; 
-        clear Hb.
-        exists [], dx, dy, [].
-        auto.
-      ++
-        remember ((dxa, dya) :: ds) as dha.
-        cbn in Hb;
-        destruct Hb as [Hb | Hb].
-        inversion Hb; subst; clear Hb.
-        exists [], dx, dy, ((dxa, dya) :: ds).
-        auto.
-        (* induction case *)
-        assert (Hc : dha <> []).
-        subst; intros Hc; congruence.
-        destruct (IHd _ _ _ Hc Hb) as 
-        (dsl & hs & ht & dsr & Hd & He).
-        subst.
-        repeat eexists.
-        instantiate (3 := (dx, dy) :: dsl).
-        simpl. f_equal.
-        exact Hd.
-  Qed.
-
-
-
-
-  Lemma repeat_dist_ntimes_length_elim : 
-    forall (d : dist A) (ds : dist (list A)) 
-    (a : list A) (b : prob), 
-    d <> [] -> ds <> [] -> 
-    In (a, b) (Bind d 
-      (λ u : A, Bind ds (λ v : list A, Ret (u :: v)))) ->
-    ∃ h hs dl t dr dsl ts dsr, a = h :: hs ∧
-      d = dl ++ [(h, t)] ++ dr ∧
-      ds = dsl ++ [(hs, ts)] ++ dsr.
-  Proof.
-    induction d as [|(x, y) d IHd].
-    +
-      intros * Ha Hb Hc.
-      congruence.
-    +
-      (* destruct d *)
-      destruct d as [|(dx, dy) d].
-      ++
-        (* one element *)
-        intros * Ha Hb Hc.
-        cbn in Hc;
-        rewrite app_nil_r in Hc.
-        eapply in_map_iff in Hc.
-        destruct Hc as 
-        ((ut, pt) & Hc & Hd).
-        inversion Hc; subst; 
-        clear Hc.
-        destruct (repeat_dist_ntimes_length_elim_aux ds x
-          pt a Hb Hd) as (dsl & hs & ht & dsr & He & Hf).
-        repeat eexists. exact Hf.
-        instantiate (1 := []).
-        instantiate (2 := []).
-        reflexivity.
-        exact He.
-      ++
-        intros * ha Hb Hc.
-        remember ((dx, dy) :: d) as dst.
-        cbn in Hc.
-        rewrite in_app_iff in Hc.
-        destruct Hc as [Hc | Hc].
-        +++
-          eapply in_map_iff in Hc.
-          destruct Hc as 
-          ((ut, pt) & Hc & Hd).
-          inversion Hc; subst; 
-          clear Hc.
-          destruct (repeat_dist_ntimes_length_elim_aux ds x
-            pt a Hb Hd) as (dsl & hs & ht & dsr & He & Hf).
-          repeat eexists. exact Hf.
-          instantiate (1 := (dx, dy) :: d).
-          instantiate (2 := []).
-          reflexivity.
-          exact He.
-        +++
-          (* inductive case *)
-          assert (Hd : dst <> []).
-          subst; intros Hd; congruence.
-          destruct (IHd ds a b Hd Hb Hc) as 
-          (h & hs & dl & t & dr & ts & dsr & He & Hf & Hg & Hi);
-          subst.
-          repeat eexists.
-          instantiate (3 := (x, y) :: dl).
-          simpl. f_equal.
-          exact Hg.
-    Qed.
-          
-
-
-
-  Lemma repeat_dist_ntimes_length : 
-    forall (n : nat) (d : dist A) (a : list A)
-    (b : prob),
-    d <> [] -> In (a, b) (repeat_dist_ntimes d n) ->
-    List.length a = n.
-  Proof.
-    induction n.
-    +
-      intros * Ha Hb.
-      cbn in Hb.
-      destruct Hb as [Hb | Hb];
-      inversion Hb; subst;
-      reflexivity.
-    +
-      intros * Ha Hb.
-      cbn in Hb.
-      remember ((repeat_dist_ntimes d n)) as ds.
-      eapply repeat_dist_ntimes_length_elim in Hb; 
-      try assumption.
-      destruct Hb as 
-      (h & hs & dl & t & dr & ts & dsr & Hb & Hc & Hd & He);
-      subst.
-      simpl; f_equal.
-      eapply IHn with (d := (dl ++ [(h, t)] ++ dr)) (b := dsr);
-      try assumption.
-      rewrite He.
-      rewrite in_app_iff;
-      right; left; 
-      reflexivity.
-      subst.
-      eapply repeat_dist_ntimes_nonempty.
-      intro Hf.
-      congruence.
-  Qed.
-
-
-  Lemma uniform_with_replacement_non_empty : 
-    forall (lf : list A) (Hlf : lf <> []),
-    uniform_with_replacement lf Hlf ≠ [].
-  Proof.
-    intros [|hlf lf] ?.
-    +
-      intro Ha; congruence.
-    +
-      intros Ha; 
-      unfold uniform_with_replacement in Ha;
-      cbn in Ha;
-      congruence.
-  Qed.
-
-
-  Lemma uniform_probability_multidraw_head :
-    forall n lf a b (Hlf : lf <> []), 
-    In (a, b) (repeat_dist_ntimes 
-      (uniform_with_replacement lf Hlf) n) ->
-    List.length a = n.
-  Proof.
-    intros * Ha.
-    eapply repeat_dist_ntimes_length with 
-      (d := (uniform_with_replacement lf Hlf)).
-    eapply uniform_with_replacement_non_empty.
-    exact Ha.
-  Qed.
   
 
 
 
-  Lemma uniform_probability_multidraw_prob :
-    forall n lf a b (Hlf : lf <> []), 
-    In (a, b) (repeat_dist_ntimes 
-      (uniform_with_replacement lf Hlf) n) ->
-    b = mk_prob 1 (Pos.of_nat 
-      (Nat.pow (List.length lf) n)).
+  
+
+
+  Definition bind_vector :
+    forall {m n : nat}, Vector.t (A * prob) (1 + m) ->
+    list (Vector.t A n * prob)  -> list (Vector.t A (S n) * prob).
   Proof.
-    intros * Ha.
-    assert (Hb : (length lf) = 
-    Pos.to_nat (Pos.of_nat (length lf))).
-    rewrite Nat2Pos.id. reflexivity.
-    destruct lf; 
-    [congruence | cbn; nia].
-    rewrite Hb; clear Hb.
-    assert (Hb : ∃ lfh lft, lf = lfh :: lft).
-    destruct lf as [|lfh lft];
-    [congruence | exists lfh, lft; reflexivity].
-    destruct Hb as (lfh & lft & Hb); subst.
-    eapply uniform_probability_multidraw_gen with 
-    (d := (uniform_with_replacement (lfh :: lft) Hlf))
-    (p := lfh) (d' := map
-    (λ x : A,
-       (x, {|
-          num := 1;
-          denum :=
-            match length lft with
-            | 0%nat => 1
-            | S _ => Pos.succ (Pos.of_nat (length lft))
-            end
-        |})) lft).
-    unfold uniform_with_replacement; cbn.
-    reflexivity.
-    eapply uniform_probability.
-    exact Ha.
-  Qed.
+    refine(
+      fix bind_vector m :=
+      match m with 
+      | 0 => fun n ca cb => _
+      | S m' => fun n ca cb => _ 
+      end).
+    +
+      destruct (vector_inv_S ca) as ((h, p) & t & Hc).
+      (* I am going to stick h infront of ever cb and multiply p *)
+      exact (List.map 
+        (fun '(hs, ps) => (Vector.cons _ h _ hs, mul_prob p ps)) cb).
+    +
+      destruct (vector_inv_S ca) as ((h, p) & t & Hc).
+      remember (List.map 
+        (fun '(hs, ps) => (Vector.cons _ h _ hs, mul_prob p ps)) cb) as chead.
+      pose proof (bind_vector m' n t cb) as ctail.
+      exact (chead ++ ctail).
+  Defined.
+
+  
 
 
 End Event.
 
+ 
 Section Example.
 
     Export MonadNotation.
