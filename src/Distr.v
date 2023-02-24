@@ -1158,7 +1158,121 @@ Section Event.
   Qed.
 
 
-  Lemma uniform_probability_multidraw_length : 
+  Lemma repeat_dist_ntimes_length_elim_aux : 
+    forall (ds : dist (list A)) (x : A) pt a, 
+    ds <> [] ->
+    In (a, pt) (Bind ds (λ v : list A, Ret (x :: v))) ->
+    ∃ dsl hs ht dsr, 
+      ds = dsl ++ [(hs, ht)] ++ dsr ∧
+      a = x :: hs.
+  Proof.
+    induction ds as [|(dx, dy) ds IHd].
+    +
+      intros * Ha Hb.
+      congruence.
+    +
+      (* destruct ds *)
+      intros * Ha Hb.
+      destruct ds as [|(dxa, dya) ds].
+      ++
+        cbn in Hb;
+        destruct Hb as [Hb | Hb];
+        inversion Hb; subst; 
+        clear Hb.
+        exists [], dx, dy, [].
+        auto.
+      ++
+        remember ((dxa, dya) :: ds) as dha.
+        cbn in Hb;
+        destruct Hb as [Hb | Hb].
+        inversion Hb; subst; clear Hb.
+        exists [], dx, dy, ((dxa, dya) :: ds).
+        auto.
+        (* induction case *)
+        assert (Hc : dha <> []).
+        subst; intros Hc; congruence.
+        destruct (IHd _ _ _ Hc Hb) as 
+        (dsl & hs & ht & dsr & Hd & He).
+        subst.
+        repeat eexists.
+        instantiate (3 := (dx, dy) :: dsl).
+        simpl. f_equal.
+        exact Hd.
+  Qed.
+
+
+
+
+  Lemma repeat_dist_ntimes_length_elim : 
+    forall (d : dist A) (ds : dist (list A)) 
+    (a : list A) (b : prob), 
+    d <> [] -> ds <> [] -> 
+    In (a, b) (Bind d 
+      (λ u : A, Bind ds (λ v : list A, Ret (u :: v)))) ->
+    ∃ h hs dl t dr dsl ts dsr, a = h :: hs ∧
+      d = dl ++ [(h, t)] ++ dr ∧
+      ds = dsl ++ [(hs, ts)] ++ dsr.
+  Proof.
+    induction d as [|(x, y) d IHd].
+    +
+      intros * Ha Hb Hc.
+      congruence.
+    +
+      (* destruct d *)
+      destruct d as [|(dx, dy) d].
+      ++
+        (* one element *)
+        intros * Ha Hb Hc.
+        cbn in Hc;
+        rewrite app_nil_r in Hc.
+        eapply in_map_iff in Hc.
+        destruct Hc as 
+        ((ut, pt) & Hc & Hd).
+        inversion Hc; subst; 
+        clear Hc.
+        destruct (repeat_dist_ntimes_length_elim_aux ds x
+          pt a Hb Hd) as (dsl & hs & ht & dsr & He & Hf).
+        repeat eexists. exact Hf.
+        instantiate (1 := []).
+        instantiate (2 := []).
+        reflexivity.
+        exact He.
+      ++
+        intros * ha Hb Hc.
+        remember ((dx, dy) :: d) as dst.
+        cbn in Hc.
+        rewrite in_app_iff in Hc.
+        destruct Hc as [Hc | Hc].
+        +++
+          eapply in_map_iff in Hc.
+          destruct Hc as 
+          ((ut, pt) & Hc & Hd).
+          inversion Hc; subst; 
+          clear Hc.
+          destruct (repeat_dist_ntimes_length_elim_aux ds x
+            pt a Hb Hd) as (dsl & hs & ht & dsr & He & Hf).
+          repeat eexists. exact Hf.
+          instantiate (1 := (dx, dy) :: d).
+          instantiate (2 := []).
+          reflexivity.
+          exact He.
+        +++
+          (* inductive case *)
+          assert (Hd : dst <> []).
+          subst; intros Hd; congruence.
+          destruct (IHd ds a b Hd Hb Hc) as 
+          (h & hs & dl & t & dr & ts & dsr & He & Hf & Hg & Hi);
+          subst.
+          repeat eexists.
+          instantiate (3 := (x, y) :: dl).
+          simpl. f_equal.
+          exact Hg.
+    Qed.
+          
+
+
+
+  Lemma repeat_dist_ntimes_length : 
     forall (n : nat) (d : dist A) (a : list A)
     (b : prob),
     d <> [] -> In (a, b) (repeat_dist_ntimes d n) ->
@@ -1175,13 +1289,57 @@ Section Event.
       intros * Ha Hb.
       cbn in Hb.
       remember ((repeat_dist_ntimes d n)) as ds.
-      (* Auxilary lemma *)
-  Admitted.
+      eapply repeat_dist_ntimes_length_elim in Hb; 
+      try assumption.
+      destruct Hb as 
+      (h & hs & dl & t & dr & ts & dsr & Hb & Hc & Hd & He);
+      subst.
+      simpl; f_equal.
+      eapply IHn with (d := (dl ++ [(h, t)] ++ dr)) (b := dsr);
+      try assumption.
+      rewrite He.
+      rewrite in_app_iff;
+      right; left; 
+      reflexivity.
+      subst.
+      eapply repeat_dist_ntimes_nonempty.
+      intro Hf.
+      congruence.
+  Qed.
+
+
+  Lemma uniform_with_replacement_non_empty : 
+    forall (lf : list A) (Hlf : lf <> []),
+    uniform_with_replacement lf Hlf ≠ [].
+  Proof.
+    intros [|hlf lf] ?.
+    +
+      intro Ha; congruence.
+    +
+      intros Ha; 
+      unfold uniform_with_replacement in Ha;
+      cbn in Ha;
+      congruence.
+  Qed.
+
+
+  Lemma uniform_probability_multidraw_head :
+    forall n lf a b (Hlf : lf <> []), 
+    In (a, b) (repeat_dist_ntimes 
+      (uniform_with_replacement lf Hlf) n) ->
+    List.length a = n.
+  Proof.
+    intros * Ha.
+    eapply repeat_dist_ntimes_length with 
+      (d := (uniform_with_replacement lf Hlf)).
+    eapply uniform_with_replacement_non_empty.
+    exact Ha.
+  Qed.
+  
 
 
 
-
-  Lemma uniform_probability_multidraw :
+  Lemma uniform_probability_multidraw_prob :
     forall n lf a b (Hlf : lf <> []), 
     In (a, b) (repeat_dist_ntimes 
       (uniform_with_replacement lf Hlf) n) ->
@@ -1200,7 +1358,7 @@ Section Event.
     [congruence | exists lfh, lft; reflexivity].
     destruct Hb as (lfh & lft & Hb); subst.
     eapply uniform_probability_multidraw_gen with 
-    (d := (uniform_with_replacement (lfh :: lft) Hlf)) 
+    (d := (uniform_with_replacement (lfh :: lft) Hlf))
     (p := lfh) (d' := map
     (λ x : A,
        (x, {|
@@ -1216,14 +1374,6 @@ Section Event.
     eapply uniform_probability.
     exact Ha.
   Qed.
-
-
-
-
-
-
-
-
 
 
 End Event.
