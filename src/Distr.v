@@ -621,6 +621,17 @@ Section Distr.
 
 
 
+  Fixpoint repeat_dist_ntimes_vector {A : Type} (d : dist A) 
+    (n : nat) : dist (Vector.t A n) := 
+  match n with 
+  | 0 => Ret (@Vector.nil A)
+  | S n' => 
+    Bind d (fun u => 
+      Bind (repeat_dist_ntimes_vector d n')
+      (fun v => Ret (Vector.cons _ u _ v)))
+  end.
+
+
 
   Lemma repeat_dist_ntimes_nonempty {A : Type} :
     forall (n : nat) (d : dist A), 
@@ -1382,35 +1393,6 @@ Section Event.
   Qed.
 
   
-
-
-
-  
-
-
-  Definition bind_vector :
-    forall {m n : nat}, Vector.t (A * prob) (1 + m) ->
-    list (Vector.t A n * prob)  -> list (Vector.t A (S n) * prob).
-  Proof.
-    refine(
-      fix bind_vector m :=
-      match m with 
-      | 0 => fun n ca cb => _
-      | S m' => fun n ca cb => _ 
-      end).
-    +
-      destruct (vector_inv_S ca) as ((h, p) & t & Hc).
-      (* I am going to stick h infront of ever cb and multiply p *)
-      exact (List.map 
-        (fun '(hs, ps) => (Vector.cons _ h _ hs, mul_prob p ps)) cb).
-    +
-      destruct (vector_inv_S ca) as ((h, p) & t & Hc).
-      remember (List.map 
-        (fun '(hs, ps) => (Vector.cons _ h _ hs, mul_prob p ps)) cb) as chead.
-      pose proof (bind_vector m' n t cb) as ctail.
-      exact (chead ++ ctail).
-  Defined.
-
   
 
 
