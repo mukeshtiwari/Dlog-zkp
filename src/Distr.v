@@ -841,6 +841,78 @@ Section Distr.
   Qed.
 
 
+   Lemma repeat_dist_ntimes_vector_prob {A : Type} : 
+    forall (n : nat) (d d' : dist A) (a : Vector.t A n)
+    (b : prob) (p : A) (q : positive),
+    d = (p, mk_prob 1 q) :: d' -> 
+    (forall x y, In (x, y) d -> y = mk_prob 1 q) -> 
+    In (a, b) (repeat_dist_ntimes_vector d n) ->
+    b = mk_prob 1 (Pos.of_nat (Nat.pow (Pos.to_nat q) n)).
+  Proof.
+    induction n.
+    +
+       intros * Ha Hb Hc.
+      cbn in Hc.
+      destruct Hc as [Hc | Hc]; 
+      inversion Hc; subst;
+      try reflexivity.
+    +
+      intros  * Ha Hb Hc.
+      cbn in * |- *.
+      remember ((repeat_dist_ntimes_vector d n)) as ds.
+      remember ((λ u : A, Bind ds 
+        (λ v : Vector.t A n, Ret (Vector.cons A u n v)))) as f.
+      (* Everything works upto this point *)
+  Admitted.
+  (* 
+      eapply  bind_membership_elim in Hc.
+      destruct Hc as (ldl & dx & dy & ldr & fdl & fdx & 
+      fdy & fdr & Hc & Hd & He).
+      subst.
+      assert (He : 
+      {| num := 1; denum := Pos.of_nat (Pos.to_nat q * Nat.pow (Pos.to_nat q) n) |} = 
+      mul_prob ({| num := 1; denum := q|}) 
+        ({| num := 1; denum := Pos.of_nat (Nat.pow (Pos.to_nat q) n)|})).
+      unfold mul_prob; f_equal.
+      rewrite Nat2Pos.inj_mul, Pos2Nat.id.
+      reflexivity.
+      nia. 
+      eapply PeanoNat.Nat.pow_nonzero; nia.
+      rewrite He; clear He.
+      f_equal.
+      eapply Hb.
+      rewrite Hc.
+      instantiate (1 := dx).
+      eapply in_app_iff; right; left;
+      reflexivity.
+      eapply IHn;
+      try assumption.
+      apply eq_sym; exact Hc.
+      intros ? ? He.
+      eapply Hb; 
+      rewrite Hc.
+      instantiate (1 := x).
+      exact He.
+      rewrite Hc in Hd.
+      remember ((repeat_dist_ntimes (ldl ++ [(dx, dy)] ++ ldr) n)) 
+      as da.
+      unfold Ret in Hd.
+      eapply bind_strip_head_elem in Hd.
+      rewrite Hd.
+      eapply in_map_iff.
+      exists (fdx, fdy).
+      split. eauto.
+      eapply in_app_iff; right; left;
+      reflexivity.
+      rewrite Heqda.
+      eapply repeat_dist_ntimes_nonempty.
+      intro Hf.
+      congruence.
+
+  Admitted.
+  *)
+
+
   Lemma repeat_dist_ntimes_length_elim_aux {A : Type} : 
     forall (ds : dist (list A)) (x : A) pt a, 
     ds <> [] ->
@@ -1074,6 +1146,8 @@ Section Distr.
     exact Ha.
   Qed.
 
+
+  
 
 End Distr.
 
