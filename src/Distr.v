@@ -608,7 +608,7 @@ Section Distr.
     + apply fmap_compose.
   Defined. 
 
-
+  (* 
   Fixpoint repeat_dist_ntimes {A : Type} (d : dist A) 
     (n : nat) : dist (list A) := 
   match n with 
@@ -618,7 +618,7 @@ Section Distr.
       Bind (repeat_dist_ntimes d n')
       (fun v => Ret (u :: v)))
   end.
-
+  *)
 
 
   Fixpoint repeat_dist_ntimes_vector {A : Type} (d : dist A) 
@@ -632,7 +632,7 @@ Section Distr.
   end.
 
 
-
+  (* 
   Lemma repeat_dist_ntimes_nonempty {A : Type} :
     forall (n : nat) (d : dist A), 
     d <> [] -> 
@@ -666,6 +666,7 @@ Section Distr.
       cbn in Hb.
       congruence.
   Qed.
+  *)
 
 
   Lemma repeat_dist_ntimes_nonempty_vec {A : Type} :
@@ -703,6 +704,7 @@ Section Distr.
   Qed.
   
 
+  (* 
   Lemma bind_membership_elim  {A : Type} : 
     ∀ (d : dist A) (f : A -> dist (list A))
     (a : list A)  (b : prob), 
@@ -760,6 +762,7 @@ Section Distr.
           f_equal.
           exact Hb.
   Qed.
+  *)
 
 
   Lemma bind_membership_elim_vec  {A : Type} {n : nat} : 
@@ -823,7 +826,7 @@ Section Distr.
 
 
 
-
+  (* 
   Lemma bind_strip_head_elem {A : Type} : 
     forall (da : dist (list A)) dx ls, 
     da <> [] ->
@@ -864,10 +867,12 @@ Section Distr.
         intros Hf; congruence.
         eauto.
   Qed.
+  *)
 
   
   Lemma bind_strip_head_elem_vec {A : Type} {n : nat} : 
-    forall (da : dist (Vector.t A n)) dx (ls : list (Vector.t A (1 + n) * prob)),  
+    forall (da : dist (Vector.t A n)) dx 
+    (ls : list (Vector.t A (1 + n) * prob)),  
     da <> [] ->
     Bind da (λ v : Vector.t A n, [(Vector.cons A dx n v, one)]) = ls ->
     da = List.map (fun '(x, y) => (Vector.tl x, y)) ls.
@@ -911,6 +916,7 @@ Section Distr.
   (* 
     Let's assume d is a uniform and non-empty distribution.
   *)
+  (* 
   Lemma uniform_probability_multidraw_gen {A : Type} : 
     forall (n : nat) (d d' : dist A) (a : list A)
     (b : prob) (p : A) (q : positive),
@@ -975,9 +981,12 @@ Section Distr.
       intro Hf.
       congruence.
   Qed.
+  *)
 
-
-   Lemma repeat_dist_ntimes_vector_prob {A : Type} : 
+  (* 
+    Let's assume d is a uniform and non-empty distribution.
+  *)
+  Lemma repeat_dist_ntimes_vector_prob {A : Type} : 
     forall (n : nat) (d d' : dist A) (a : Vector.t A n)
     (b : prob) (p : A) (q : positive),
     d = (p, mk_prob 1 q) :: d' -> 
@@ -1047,7 +1056,7 @@ Section Distr.
   Qed.
 
 
-
+  (* 
   Lemma repeat_dist_ntimes_length_elim_aux {A : Type} : 
     forall (ds : dist (list A)) (x : A) pt a, 
     ds <> [] ->
@@ -1197,7 +1206,7 @@ Section Distr.
       congruence.
   Qed.
 
-  
+  *)
   
 
 
@@ -1215,7 +1224,7 @@ Section Distr.
       congruence.
   Qed.
 
-
+  (* 
   Lemma uniform_probability_multidraw_head {A : Type} :
     forall n lf (a : list A) b (Hlf : lf <> []), 
     In (a, b) (repeat_dist_ntimes 
@@ -1228,6 +1237,7 @@ Section Distr.
     eapply uniform_with_replacement_non_empty.
     exact Ha.
   Qed.
+  *)
   
 
 
@@ -1246,8 +1256,8 @@ Section Distr.
 
 
   Lemma uniform_probability_multidraw_prob {A : Type} :
-    forall n lf (a : list A) b (Hlf : lf <> []), 
-    In (a, b) (repeat_dist_ntimes 
+    forall n lf (a : Vector.t A n) b (Hlf : lf <> []), 
+    In (a, b) (repeat_dist_ntimes_vector 
       (uniform_with_replacement lf Hlf) n) ->
     b = mk_prob 1 (Pos.of_nat 
       (Nat.pow (List.length lf) n)).
@@ -1263,7 +1273,7 @@ Section Distr.
     destruct lf as [|lfh lft];
     [congruence | exists lfh, lft; reflexivity].
     destruct Hb as (lfh & lft & Hb); subst.
-    eapply uniform_probability_multidraw_gen with 
+    eapply repeat_dist_ntimes_vector_prob with 
     (d := (uniform_with_replacement (lfh :: lft) Hlf))
     (p := lfh) (d' := map
     (λ x : A,
