@@ -1277,39 +1277,30 @@ Module Zkp.
             
 
         (* zero-knowledge-proof *)
-        (*
-           Definition generalised_parallel_schnorr_distribution  
-          {n : nat} (lf : list F) 
-          (Hlfn : lf <> List.nil) (x : F) (g : G) 
-          (cs : Vector.t F n) : dist (@sigma_proto n n n) :=
-          (* draw n random elements *)
-          us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) n ;;
-          Ret (construct_parallel_conversations_schnorr x g us cs).
-        *)
+        
 
-     
-        (* 
-        Lemma special_honest_verifier_zkp {n : nat}: 
+        (* Every element in generalised schnorr distribution 
+          is an accepting conversation and it's probability 1 / |lf|^n 
+        *)
+        Lemma special_honest_verifier_schnorr_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
-          In (a, b) (List.map (fun '(x, y) => 
-            (generalised_parallel_accepting_conversations g h x, y))
-            (generalised_parallel_schnorr_distribution lf Hlfn x g cs)) ->
+          List.In (a, b) (generalised_parallel_schnorr_distribution lf Hlfn x g cs) ->
             (* first component is true and probability is *)
-            a = true ∧ b = 1 / (Nat.pow (List.length lf) n).
+          generalised_parallel_accepting_conversations g h a = true ∧ 
+          b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+        Proof.
+        Admitted.
 
-
-          
-          List.map (fun '(a, p) => 
-            (generalised_parallel_accepting_conversations g h a, p))
-            (@generalised_parallel_schnorr_distribution n lf Hlfn x g cs) = 
-          List.map (fun '(a, p) => 
-            (generalised_parallel_accepting_conversations g h a, p))
-            (@generalised_parallel_simulator_distribution  lf Hlfn g h cs).
-    
-      *)
-      
+        Lemma special_honest_verifier_simulator_dist {n : nat}: 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (cs : Vector.t F n) a b, 
+          List.In (a, b) (generalised_parallel_simulator_distribution lf Hlfn g h cs) ->
+            (* first component is true and probability is *)
+          generalised_parallel_accepting_conversations g h a = true ∧ 
+          b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+        Proof.
+        Admitted.
         
 
       End Proofs.
