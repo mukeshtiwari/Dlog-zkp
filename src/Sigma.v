@@ -12,9 +12,9 @@ Require Import Setoid
   Coq.PArith.BinPos
   Sigma.Distr 
   Sigma.Util.
+
       
-Import 
-  MonadNotation 
+Import MonadNotation 
   VectorNotations.
 
 Local Open Scope monad_scope.
@@ -325,14 +325,14 @@ Module Zkp.
         (* involves secret x*)    
         (* Under the hood, it is modelled as a list and 
             looks like:
-            [((a; c; r), prob); ((a; c; r), prop) ......]
+            [((a; c; r), prob); ((a; c; r), prob) ......]
         *)
       
         
         Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
 
-        Lemma probability_schnorr_distribution_generic : 
+        Lemma probability_schnorr_distribution_generic_probability : 
           forall l trans prob c n,
           (forall trx prx, List.In (trx, prx) l -> 
             prx = 1 / n) ->  
@@ -363,37 +363,133 @@ Module Zkp.
 
 
 
+        Lemma probability_schnorr_distribution_generic_transcript : 
+          forall l trans prob c,
+          List.In (trans, prob)
+            (Bind l
+              (λ u : F, Ret (schnorr_protocol x g u c))) ->
+          accepting_conversation g h trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha.
+            simpl in Ha;
+            inversion Ha.
+          + intros * Ha.
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              simpl in Ha;
+              destruct Ha as [Ha | Ha];
+              inversion Ha; subst.
+              unfold schnorr_protocol, 
+              accepting_conversation;
+              cbn.
+              (* algebraic manipulation *)
+              assert (Hb : (g ^ x) ^ c = (g ^ (x * c))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hb; 
+              clear Hb.
+              assert (Hb : (gop (g ^ a) (g ^ (x * c))) = 
+              g^(a + x * c)).
+              rewrite (@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              reflexivity.
+              typeclasses eauto.
+              rewrite Hb; 
+              clear Hb.
+              assert (Hg : c * x = x * c).
+              rewrite (@commutative_ring_is_commutative F (@eq F) zero 
+                one opp add sub mul).
+              reflexivity.
+              typeclasses eauto.
+              rewrite Hg; 
+              clear Hg.
+              now rewrite !dec_eq_true.
+            ++
+             
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha; subst;
+                unfold accepting_conversation, 
+                schnorr_protocol; cbn.
+                assert (Hb : (g ^ x) ^ c = (g ^ (x * c))).
+                rewrite smul_pow_up. 
+                reflexivity.
+                rewrite Hb; 
+                clear Hb.
+                assert (Hb : (gop (g ^ a) (g ^ (x * c))) = 
+                g^(a + x * c)).
+                rewrite (@vector_space_smul_distributive_fadd 
+                  F (@eq F) zero one add mul sub div 
+                  opp inv G (@eq G) gid ginv gop gpow).
+                reflexivity.
+                typeclasses eauto.
+                rewrite Hb; 
+                clear Hb.
+                assert (Hg : c * x = x * c).
+                rewrite (@commutative_ring_is_commutative F (@eq F) zero 
+                  one opp add sub mul).
+                reflexivity.
+                typeclasses eauto.
+                rewrite Hg; 
+                clear Hg.
+                now rewrite !dec_eq_true.
+              +++
+                (* inductive case *)
+                eapply IHl; exact Ha.
+        Qed.
+          
+          
+        
+
+
         (* Every elements in @schnorr_distribution 
           has probability 1/ (List.length lf) where 
           lf the list of Field element from which the 
-          random r is drawn *)
+          random r is drawn and every corresponding 
+          conversation is accepting
+          
+          *)
         Lemma probability_schnorr_distribution : 
           forall (lf : list F) 
           (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n,
           n = List.length lf -> 
           List.In ((a₁; c₁; r₁), prob) 
             (@schnorr_distribution lf Hlfn x g c) ->
-          prob = 1 / n. 
+          prob = 1 / n ∧
+          accepting_conversation g h (a₁; c₁; r₁) = true.
         Proof.
-          cbn.
           intros * Hn Hl.
-          assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
-            List.length lf).
-          unfold uniform_with_replacement.
-          rewrite List.map_length;
-          reflexivity.
-          pose proof probability_schnorr_distribution_generic
-          (uniform_with_replacement lf Hlfn)
-          (a₁; c₁; r₁) prob c n as Ht.
-          rewrite Hn.
-          rewrite Hn in Ht.
-          specialize (Ht 
-            (uniform_probability lf Hlfn) Hl).
-          exact Ht.
+          split.
+          +
+            assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
+              List.length lf).
+            unfold uniform_with_replacement.
+            rewrite List.map_length;
+            reflexivity.
+            pose proof probability_schnorr_distribution_generic_probability
+            (uniform_with_replacement lf Hlfn)
+            (a₁; c₁; r₁) prob c n as Ht.
+            rewrite Hn.
+            rewrite Hn in Ht.
+            specialize (Ht 
+              (uniform_probability lf Hlfn) Hl).
+            exact Ht.
+          +
+            unfold schnorr_distribution in Hl;
+            cbn in Hl.
+            eapply probability_schnorr_distribution_generic_transcript.
+            exact Hl.
         Qed.
+            
+      
 
           
-        Lemma probability_simulator_distribution_generic : 
+        Lemma probability_simulator_distribution_generic_probability : 
           forall l trans prob c n,
           (forall trx prx, List.In (trx, prx) l -> 
             prx = 1 / n) ->  
@@ -422,38 +518,195 @@ Module Zkp.
             exact Hwb.
         Qed.
 
+        Lemma probability_simulator_distribution_generic_transcript : 
+          forall l trans prob c, 
+          List.In (trans, prob)
+            (Bind l
+              (λ u : F, Ret (schnorr_simulator g h u c))) ->
+          accepting_conversation g h trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha.
+            simpl in Ha;
+            inversion Ha.
+          + intros * Ha.
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              simpl in Ha;
+              destruct Ha as [Ha | Ha];
+              inversion Ha; subst.
+              unfold schnorr_simulator, 
+              accepting_conversation;
+              cbn.
+              (* algebraic manipulation. There should 
+              a way to automate these proofs! *)
+              assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; 
+              clear Hg.
+              assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; 
+              clear Hg.
+              assert (Ht : 
+                (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
+              (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
+              rewrite <- (@monoid_is_associative G (@eq G) gop gid).
+              reflexivity. 
+              typeclasses eauto.
+              rewrite Ht; clear Ht.
+              rewrite <-(@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              assert (Ht : (x * opp c + x * c) = 
+                x * (opp c + c)).
+                pose proof ring_is_left_distributive.
+              unfold is_left_distributive in H.
+              specialize (H x (opp c) c).
+              symmetry.
+              exact H.
+              rewrite Ht; clear Ht.
+              assert (Ht : (opp c) + c = c + opp c).
+              rewrite (@commutative_group_is_commutative F 
+              (@eq F) add zero opp).
+              reflexivity.
+              typeclasses eauto.
+              rewrite Ht; 
+              clear Ht.
+              assert (Ht : (c + opp c) = zero).
+              rewrite field_zero_iff_right.
+              reflexivity.
+              rewrite Ht; clear Ht.
+              assert (Ht : x * zero = zero).
+              rewrite ring_mul_0_r;
+              reflexivity.
+              rewrite Ht; 
+              clear Ht.
+              assert (Ht : (g ^ zero) = gid).
+              rewrite vector_space_field_zero.
+              reflexivity.
+              rewrite Ht; 
+              clear Ht.
+              assert (Ht : (gop (g ^ a) gid) = g^a).
+              rewrite monoid_is_right_identity.
+              reflexivity.
+              rewrite Ht;
+              clear Ht.
+              now rewrite !dec_eq_true.
+              eauto.
+            ++
+             
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha; subst;
+                unfold accepting_conversation, 
+                schnorr_simulator; cbn.
+                assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; 
+              clear Hg.
+              assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
+              rewrite smul_pow_up. 
+              reflexivity.
+              rewrite Hg; 
+              clear Hg.
+              assert (Ht : 
+                (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
+              (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
+              rewrite <- (@monoid_is_associative G (@eq G) gop gid).
+              reflexivity. 
+              typeclasses eauto.
+              rewrite Ht; clear Ht.
+              rewrite <-(@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow).
+              assert (Ht : (x * opp c + x * c) = 
+                x * (opp c + c)).
+                pose proof ring_is_left_distributive.
+                unfold is_left_distributive in H.
+                specialize (H x (opp c) c).
+                symmetry.
+                exact H.
+                rewrite Ht; clear Ht.
+                assert (Ht : (opp c) + c = c + opp c).
+                rewrite (@commutative_group_is_commutative F 
+                (@eq F) add zero opp).
+                reflexivity.
+                typeclasses eauto.
+                rewrite Ht; 
+                clear Ht.
+                assert (Ht : (c + opp c) = zero).
+                rewrite field_zero_iff_right.
+                reflexivity.
+                rewrite Ht; clear Ht.
+                assert (Ht : x * zero = zero).
+                rewrite ring_mul_0_r;
+                reflexivity.
+                rewrite Ht; 
+                clear Ht.
+                assert (Ht : (g ^ zero) = gid).
+                rewrite vector_space_field_zero.
+                reflexivity.
+                rewrite Ht; 
+                clear Ht.
+                assert (Ht : (gop (g ^ a) gid) = g^a).
+                rewrite monoid_is_right_identity.
+                reflexivity.
+                rewrite Ht;
+                clear Ht.
+                now rewrite !dec_eq_true.
+                eauto.
+              +++
+                (* inductive case *)
+                eapply IHl; exact Ha.
+        Qed.
+        
+
 
         (* Every elements in @simulator_distribution 
           has probability 1/ (List.length lf) where 
           lf the list of Field element from which the 
-          random r is drawn *)
+          random r is drawn and it's an accepting 
+          conversation *)
         Lemma probability_simulator_distribution : 
           forall (lf : list F) 
           (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n, 
           n = List.length lf -> 
           List.In ((a₁; c₁; r₁), prob) 
             (@simulator_distribution lf Hlfn g h c) ->
-          prob = 1 / n.
+          prob = 1 / n ∧  (* probability is 1/n *)
+          accepting_conversation g h (a₁; c₁; r₁) = true.
         Proof.
-          cbn.
           intros * Hn Hl.
-          assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
-            List.length lf).
-          unfold uniform_with_replacement.
-          rewrite List.map_length;
-          reflexivity.
-          pose proof probability_simulator_distribution_generic
-          (uniform_with_replacement lf Hlfn)
-          (a₁; c₁; r₁) prob c n as Ht.
-          rewrite Hn.
-          rewrite Hn in Ht.
-          specialize (Ht 
-            (uniform_probability lf Hlfn) Hl).
-          exact Ht.
+          split.
+          +
+            assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
+              List.length lf).
+            unfold uniform_with_replacement.
+            rewrite List.map_length;
+            reflexivity.
+            pose proof probability_simulator_distribution_generic_probability
+            (uniform_with_replacement lf Hlfn)
+            (a₁; c₁; r₁) prob c n as Ht.
+            rewrite Hn.
+            rewrite Hn in Ht.
+            specialize (Ht 
+              (uniform_probability lf Hlfn) Hl).
+            exact Ht.
+          +
+            unfold simulator_distribution in Hl.
+            eapply probability_simulator_distribution_generic_transcript;
+            exact Hl.
         Qed.
-          
+       
       
-
+        (* Do I still need this? *)
         Lemma generic_distribution : 
           forall l c, 
           List.map (λ '(a, p), (accepting_conversation g h a, p))
@@ -670,76 +923,30 @@ Module Zkp.
         Defined.
 
 
-      
-
+        
         Definition generalised_parallel_schnorr_distribution  
           {n : nat} (lf : list F) 
           (Hlfn : lf <> List.nil) (x : F) (g : G) 
-          (cs : Vector.t F n) : dist (@sigma_proto n n n).
-        Proof.
-          remember ((uniform_with_replacement lf Hlfn)) as d.
-          remember ((repeat_dist_ntimes d n)) as ds.
-          refine 
-            (Bind ds (fun us =>
-              let vs := Vector.of_list us in 
-              let pf : length us = n := _ in 
-              Ret (construct_parallel_conversations_schnorr x g 
-                (eq_rect (length us) _ vs n pf) cs))).
-        Admitted.
-
-                
-
-
-        (* 
-        Definition generalised_parallel_schnorr_distribution  
-          {n : nat} (lf : list F) 
-          (Hlfn : lf <> List.nil) (x : F) (g : G) 
-          (cs : Vector.t F n) : dist (@sigma_proto n n n).
-          us <- repeat_dist_ntimes (uniform_with_replacement lf Hlfn) n ;;
-          let vs := Vector.of_list us in 
-          let pf : length us = n := _ in 
-          Ret (construct_parallel_conversations_schnorr x g vs cs).
-        *)
-
+          (cs : Vector.t F n) : dist (@sigma_proto n n n) :=
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_parallel_conversations_schnorr x g us cs).
+        
         
         
         (* without secret *)
-        Definition generalised_parallelsimulator_distribution 
+        Definition generalised_parallel_simulator_distribution 
           {n : nat} (lf : list F) (Hlfn : lf <> List.nil) (g h : G) 
-          (cs : Vector.t F n) : 
-          dist (@sigma_proto n n n).
-        Proof.
-          remember ((uniform_with_replacement lf Hlfn)) as d.
-          remember ((repeat_dist_ntimes d n)) as ds.
-          refine 
-            (Bind ds (fun us =>
-              let vs := Vector.of_list us in 
-              let pf : length us = n := _ in 
-              Ret (construct_parallel_conversations_simulator g h 
-                (eq_rect (length us) _ vs n pf) cs))).
-          (* Now I need to prove lenght us n *)
-        Admitted.
-
-        (* 
-
-          us <- repeat_dist_ntimes (uniform_with_replacement lf Hlfn) n ;;
+          (cs : Vector.t F n) : dist (@sigma_proto n n n) := 
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
           Ret (construct_parallel_conversations_simulator g h us cs).
-        *)
-        
-      (* 
-        Lemma special_honest_verifier_zkp : 
-          forall (lf : list F) (Hlfn : lf <> List.nil) (cs : F), 
-            List.map (fun '(a, p) => 
-              (generalised_parallel_accepting_conversations g h a, p))
-              (@sgeneralised_parallel_schnorr_distribution  lf Hlfn x g cs) = 
-            List.map (fun '(a, p) => 
-              (generalised_parallel_accepting_conversations g h a, p))
-              (@generalised_parallelsimulator_distribution  lf Hlfn g h cs).
-      *)
-
-        
+  
 
       End Def.
+
 
       Section Proofs. 
 
@@ -1070,7 +1277,38 @@ Module Zkp.
             
 
         (* zero-knowledge-proof *)
+        (*
+           Definition generalised_parallel_schnorr_distribution  
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (x : F) (g : G) 
+          (cs : Vector.t F n) : dist (@sigma_proto n n n) :=
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_parallel_conversations_schnorr x g us cs).
+        *)
 
+     
+        (* 
+        Lemma special_honest_verifier_zkp {n : nat}: 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (cs : Vector.t F n) a b, 
+          In (a, b) (List.map (fun '(x, y) => 
+            (generalised_parallel_accepting_conversations g h x, y))
+            (generalised_parallel_schnorr_distribution lf Hlfn x g cs)) ->
+            (* first component is true and probability is *)
+            a = true ∧ b = 1 / (Nat.pow (List.length lf) n).
+
+
+          
+          List.map (fun '(a, p) => 
+            (generalised_parallel_accepting_conversations g h a, p))
+            (@generalised_parallel_schnorr_distribution n lf Hlfn x g cs) = 
+          List.map (fun '(a, p) => 
+            (generalised_parallel_accepting_conversations g h a, p))
+            (@generalised_parallel_simulator_distribution  lf Hlfn g h cs).
+    
+      *)
       
         
 
