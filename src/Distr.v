@@ -668,6 +668,40 @@ Section Distr.
   Qed.
 
 
+  Lemma repeat_dist_ntimes_nonempty_vec {A : Type} :
+    forall (n : nat) (d : dist A), 
+    d <> [] -> 
+    repeat_dist_ntimes_vector d n <> [].
+  Proof.
+    induction n;
+    intros * Ha Hb; cbn.
+    +
+      cbv in Hb.
+      congruence.
+    +
+      cbn in Hb.
+      eapply IHn with d;
+      try assumption.
+      specialize (IHn d Ha).
+      remember (repeat_dist_ntimes_vector d n) as ds.
+      assert (Hc : ∃ d' ds', ds = d' :: ds').
+      destruct ds as [|dw dws];
+      [congruence| exists dw, dws; exact eq_refl].
+      destruct Hc as (d' & ds' & Hd).
+      rewrite Hd in Hb; clear Hd;
+      cbn in Hb.
+      assert (Hc : ∃ dh dt, d = dh :: dt).
+      destruct d as [|dha dta];
+      [congruence | exists dha, dta; exact eq_refl].
+      destruct Hc as (dh & Ht & Hc);
+      rewrite Hc in Hb;
+      cbn in Hb.
+      destruct dh as (dha, dhb);
+      destruct d' as (dl, dt);
+      cbn in Hb.
+      congruence.
+  Qed.
+  
 
   Lemma bind_membership_elim  {A : Type} : 
     ∀ (d : dist A) (f : A -> dist (list A))
@@ -728,6 +762,68 @@ Section Distr.
   Qed.
 
 
+  Lemma bind_membership_elim_vec  {A : Type} {n : nat} : 
+    ∀ (d : dist A) (f : A -> dist (Vector.t A (1 + n)))
+    (a : Vector.t A (1 + n))  (b : prob), 
+    In (a, b) (Bind d f) ->
+    ∃ ldl dx dy ldr  fdl fdx fdy fdr,
+    d = ldl ++ [(dx, dy)] ++ ldr ∧
+    (f dx) = fdl ++ [(fdx, fdy)] ++ fdr ∧ 
+    b = mul_prob dy fdy.
+  Proof.
+    induction d as [|(u, v) d IHd];
+    intros * Ha.
+    +
+      simpl in Ha;
+      inversion Ha.
+    +
+      (* destruct d *)
+      destruct d as [|(uh, vh) d].
+      ++
+        simpl in Ha;
+        rewrite app_nil_r in Ha.
+        eapply in_map_iff in Ha.
+        destruct Ha as ((xl, xp) & Ha & Hb).
+        exists [], u, v, [].
+        inversion Ha; subst; 
+        clear Ha.
+        eapply in_split in Hb.
+        destruct Hb as (la & lb & Hb).
+        rewrite Hb.
+        repeat eexists.
+      ++
+        (* induction case *)
+        remember ((uh, vh) :: d) as uvhd.
+        simpl in Ha;
+        eapply in_app_or in Ha;
+        destruct Ha as [Ha | Ha].
+        +++
+          exists [], u, v, uvhd.
+          eapply in_map_iff in Ha.
+          destruct Ha as ((xl, xp) & Ha & Hb).
+          inversion Ha; subst;
+          clear Ha.
+          eapply in_split in Hb.
+          destruct Hb as (la & lb & Hb).
+          rewrite Hb.
+          repeat eexists.
+        +++
+          (* induction case *)
+          destruct (IHd f a b Ha) as 
+          (ldl & dx & dy & ldr & fdl & fdx & fdy & fdr & 
+          Hb & Hc & Hd).
+          exists ((u, v) :: ldl), dx, dy,
+          ldr, fdl, fdx, fdy, fdr.
+          split; auto.
+          cbn.
+          f_equal.
+          exact Hb.
+  Qed.
+  
+
+
+
+
   Lemma bind_strip_head_elem {A : Type} : 
     forall (da : dist (list A)) dx ls, 
     da <> [] ->
@@ -767,10 +863,50 @@ Section Distr.
         rewrite Heqdha.
         intros Hf; congruence.
         eauto.
-    Qed.
+  Qed.
 
-
-    
+  
+  Lemma bind_strip_head_elem_vec {A : Type} {n : nat} : 
+    forall (da : dist (Vector.t A n)) dx (ls : list (Vector.t A (1 + n) * prob)),  
+    da <> [] ->
+    Bind da (λ v : Vector.t A n, [(Vector.cons A dx n v, one)]) = ls ->
+    da = List.map (fun '(x, y) => (Vector.tl x, y)) ls.
+  Proof.
+    induction da as [|(u, v) da IHd].
+    +
+      intros * Ha Hb.
+      congruence.
+    +
+      (* destruct da *)
+      destruct da as [|(du, dv) da].
+      ++
+        intros * Ha Hb.
+        cbn in * |- *.
+        rewrite <-Hb.
+        cbn.
+        f_equal; f_equal.
+        rewrite mul_prob_comm.
+        unfold mul_prob, one.
+        destruct v; cbn; 
+        f_equal; nia.
+      ++
+        (** induction case **)
+        remember ((du, dv) :: da) as dha.
+        intros * Ha Hb.
+        cbn in * |- *.
+        rewrite <-Hb.
+        cbn.
+        f_equal; f_equal.
+        rewrite mul_prob_comm.
+        unfold mul_prob, one.
+        destruct v; cbn; 
+        f_equal; nia.
+        eapply IHd.
+        rewrite Heqdha.
+        intros Hf; congruence.
+        eauto.
+  Qed.
+  
         
   (* 
     Let's assume d is a uniform and non-empty distribution.
@@ -862,10 +998,7 @@ Section Distr.
       remember ((repeat_dist_ntimes_vector d n)) as ds.
       remember ((λ u : A, Bind ds 
         (λ v : Vector.t A n, Ret (Vector.cons A u n v)))) as f.
-      (* Everything works upto this point *)
-  Admitted.
-  (* 
-      eapply  bind_membership_elim in Hc.
+      eapply  bind_membership_elim_vec in Hc.
       destruct Hc as (ldl & dx & dy & ldr & fdl & fdx & 
       fdy & fdr & Hc & Hd & He).
       subst.
@@ -894,23 +1027,25 @@ Section Distr.
       instantiate (1 := x).
       exact He.
       rewrite Hc in Hd.
-      remember ((repeat_dist_ntimes (ldl ++ [(dx, dy)] ++ ldr) n)) 
+      remember ((repeat_dist_ntimes_vector (ldl ++ [(dx, dy)] ++ ldr) n)) 
       as da.
       unfold Ret in Hd.
-      eapply bind_strip_head_elem in Hd.
+      remember (fdl ++ [(fdx, fdy)] ++ fdr) as ls.
+       (* Everything works upto this point *)
+      eapply bind_strip_head_elem_vec in Hd.
       rewrite Hd.
       eapply in_map_iff.
       exists (fdx, fdy).
       split. eauto.
+      rewrite Heqls.
       eapply in_app_iff; right; left;
       reflexivity.
       rewrite Heqda.
-      eapply repeat_dist_ntimes_nonempty.
+      eapply repeat_dist_ntimes_nonempty_vec.
       intro Hf.
       congruence.
+  Qed.
 
-  Admitted.
-  *)
 
 
   Lemma repeat_dist_ntimes_length_elim_aux {A : Type} : 
