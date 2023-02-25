@@ -1285,8 +1285,9 @@ Module Zkp.
         Lemma special_honest_verifier_schnorr_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
-          List.In (a, b) (generalised_parallel_schnorr_distribution lf Hlfn x g cs) ->
-            (* first component is true and probability is *)
+          List.In (a, b) 
+            (generalised_parallel_schnorr_distribution lf Hlfn x g cs) ->
+            (* it's an accepting conversation and probability is *)
           generalised_parallel_accepting_conversations g h a = true ∧ 
           b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
         Proof.
@@ -1295,7 +1296,8 @@ Module Zkp.
         Lemma special_honest_verifier_simulator_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
-          List.In (a, b) (generalised_parallel_simulator_distribution lf Hlfn g h cs) ->
+          List.In (a, b) 
+            (generalised_parallel_simulator_distribution lf Hlfn g h cs) ->
             (* first component is true and probability is *)
           generalised_parallel_accepting_conversations g h a = true ∧ 
           b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
@@ -1313,6 +1315,11 @@ Module Zkp.
 
       Section Def.
          
+       (*
+          ∃ x₁ : g₁ = h₁^x ..... 
+          xs gs hs 
+          c : single challenge
+        *)
 
         Definition construct_and_conversations_schnorr :
           forall {n : nat}, 
@@ -1379,6 +1386,31 @@ Module Zkp.
             (Fn _ gtl htl (atl; c; rtl))).
         Defined.
 
+         
+        (* Check the definition *)
+        Definition generalised_and_schnorr_distribution  
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (xs : Vector.t F n) 
+          (gs : Vector.t G n) 
+          (c : F) : dist (@sigma_proto n n n) :=
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_and_conversations_schnorr xs gs us c).
+        
+        
+        
+        (* without secret *)
+        Definition generalised_and_simulator_distribution 
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (gs hs : Vector.t G n) 
+          (c : F) : dist (@sigma_proto n n n) :=
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_and_conversations_simulator gs hs us c).
+
+
       End Def.
 
       Section Proofs.
@@ -1408,7 +1440,6 @@ Module Zkp.
 
       (* Common witness w for 2 or more relations 
         ∃ w : F, R₁ x w ∧ R₂ x w 
-      
       *)
       Section Def.
 
