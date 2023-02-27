@@ -212,6 +212,12 @@ Section Vect.
   Defined.
   
  
+  Fixpoint repeat_ntimes (n : nat) (w : R) : Vector.t R n :=
+    match n as n' return Vector.t R n' with
+    | 0 => []
+    | S n' => w :: repeat_ntimes n' w 
+    end.
+
   
   (* Two challenge vectors are same pointwise *)
   Definition two_challenge_vectors_same_everyelem {n : nat} :
@@ -236,6 +242,8 @@ Section Vect.
      Vector.t R n -> Vector.t R n -> Prop :=
     fun u v => ∃ (f : Fin.t n),
     nth u f = nth v f.
+
+  
 
   (* Write Ltac *)
 

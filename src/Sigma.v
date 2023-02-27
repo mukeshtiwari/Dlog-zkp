@@ -68,13 +68,7 @@ Module Zkp.
     
 
 
-      Definition compose_two_sigma_protocols {n m r u v w : nat} 
-        (s₁ : @sigma_proto n m r) (s₂ : @sigma_proto u v w) :
-        @sigma_proto (n + u) (m + v) (r + w) :=
-        match s₁, s₂ with 
-        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ c₂ r₂) =>
-          mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
-        end.
+     
 
     End SigmaDefinition.
 
@@ -93,7 +87,10 @@ Module Zkp.
       Section Def.
       
         (* x is a secret *)
-        (* h = g^x *)
+        (* g and h are public values *)
+        (* Relation: R := h = g^x *)
+        (* A prover convinces a verified that they know 
+          x such that h := g^x *)
       
 
         (* Real transcript, using randomness u and (secret) witness x *)
@@ -120,14 +117,14 @@ Module Zkp.
           end.
 
 
-
+        (* Distribution that involves the secret x *)
         Definition schnorr_distribution  (lf : list F) 
           (Hlfn : lf <> List.nil) (x : F) (g : G) (c : F) : dist sigma_proto :=
           u <- (uniform_with_replacement lf Hlfn) ;;
           Ret (schnorr_protocol x g u c).
         
         
-        (* without secret *)
+        (* without secret x *)
         Definition simulator_distribution 
           (lf : list F) (Hlfn : lf <> List.nil) (g h : G) (c : F) :=
           u <- (uniform_with_replacement lf Hlfn) ;;
@@ -449,11 +446,11 @@ Module Zkp.
 
         (* Every elements in @schnorr_distribution 
           has probability 1/ (List.length lf) where 
-          lf the list of Field element from which the 
+          lf the list of scalor (Field) elements from which the 
           random r is drawn and every corresponding 
           conversation is accepting
-          
-          *)
+        *)
+
         Lemma probability_schnorr_distribution : 
           forall (lf : list F) 
           (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n,
@@ -859,8 +856,18 @@ Module Zkp.
 
       Section Def.
 
+        Definition compose_two_parallel_sigma_protocols {n m r u v w : nat} 
+          (s₁ : @sigma_proto n m r) (s₂ : @sigma_proto u v w) :
+          @sigma_proto (n + u) (m + v) (r + w) :=
+        match s₁, s₂ with 
+        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ c₂ r₂) =>
+          mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
+        end.
+
+
         (*
-          Construct parallel Sigma protocol for a relation R : h = g^x
+          Construct parallel Sigma protocol for a 
+          the relation R : h = g^x
         *)
         Definition construct_parallel_conversations_schnorr :
           forall {n : nat}, 
@@ -875,7 +882,7 @@ Module Zkp.
           + 
             destruct (vector_inv_S us) as (ush & ustl & _).
             destruct (vector_inv_S cs) as (csh & cstl & _).
-            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+            exact (@compose_two_parallel_sigma_protocols _ _ _ _ _ _ 
               (schnorr_protocol x g ush csh)
               (Fn _ x g ustl cstl)).
         Defined.
@@ -895,7 +902,7 @@ Module Zkp.
           + 
             destruct (vector_inv_S us) as (ush & ustl & _).
             destruct (vector_inv_S cs) as (csh & cstl & _).
-            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+            exact (@compose_two_parallel_sigma_protocols _ _ _ _ _ _ 
               (schnorr_simulator g h ush csh)
               (Fn _ g h ustl cstl)).
         Defined.
@@ -1005,7 +1012,7 @@ Module Zkp.
         Qed.
      
           
-        (* When we have an accepting conversations, then 
+        (* When we have accepting conversations, then 
         generalised_accepting accepts it.
         *)
         Lemma generalised_parallel_accepting_conversations_correctness_backward : 
@@ -1314,29 +1321,42 @@ Module Zkp.
     Section And.
 
       Section Def.
+
+         Definition compose_two_and_sigma_protocols {n : nat} 
+          (s₁ : @sigma_proto 1 1 1) (s₂ : @sigma_proto n 1 n) :
+          @sigma_proto (1 + n) 1 (1 + n) :=
+        match s₁, s₂ with 
+        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ _ r₂) =>
+          mk_sigma _ _ _ (a₁ ++ a₂) c₁ (r₁ ++ r₂)
+        end.
          
        (*
-          ∃ x₁ : g₁ = h₁^x ..... 
-          xs gs hs 
-          c : single challenge
+          ∃ x₁ x₂ x₃ : g₁ = h₁^x₁ ∧ g₂ = h₂^x₂ ∧ g₃ = h₃^x₃ ...
+          
+          xs : List F (* list of secres*)
+          gh and hs : List G (* list of public values *)
+          c : single challenge 
         *)
 
+       
         Definition construct_and_conversations_schnorr :
           forall {n : nat}, 
-          Vector.t F n -> Vector.t G n -> Vector.t F n -> 
-          F -> @sigma_proto n n n.
+          Vector.t F n -> Vector.t G n -> 
+          Vector.t F n -> F -> @sigma_proto n 1 n.
         Proof.
           refine(fix Fn n {struct n} := 
           match n with 
           | 0 => fun xs gs us c => _
           | S n' => fun xs gs us c  => _
           end).
-          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            (* Base case *)
+            refine (mk_sigma _ _ _ [] [c] []).
           +
             destruct (vector_inv_S xs) as (xsh & xstl & _).
             destruct (vector_inv_S gs) as (gsh & gstl & _).
             destruct (vector_inv_S us) as (ush & ustl & _).
-            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+            exact (@compose_two_and_sigma_protocols _
               (schnorr_protocol xsh gsh ush c)
               (Fn _ xstl gstl ustl c)).
         Defined.
@@ -1346,19 +1366,20 @@ Module Zkp.
         Definition construct_and_conversations_simulator :
           forall {n : nat}, 
           Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
-          F -> @sigma_proto n n n.
+          F -> @sigma_proto n 1 n.
         Proof.
           refine(fix Fn n {struct n} := 
           match n with 
           | 0 => fun gs hs us c => _
           | S n' => fun gs hs us c  => _
           end).
-          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            refine (mk_sigma _ _ _ [] [c] []).
           + 
             destruct (vector_inv_S gs) as (gsh & gstl & _).
             destruct (vector_inv_S hs) as (hsh & hstl & _).
             destruct (vector_inv_S us) as (ush & ustl & _).
-            exact (@compose_two_sigma_protocols _ _ _ _ _ _ 
+            exact (@compose_two_and_sigma_protocols _ 
               (schnorr_simulator gsh hsh ush c)
               (Fn _ gstl hstl ustl c)).
         Defined.
@@ -1392,7 +1413,7 @@ Module Zkp.
           {n : nat} (lf : list F) 
           (Hlfn : lf <> List.nil) (xs : Vector.t F n) 
           (gs : Vector.t G n) 
-          (c : F) : dist (@sigma_proto n n n) :=
+          (c : F) : dist (@sigma_proto n 1 n) :=
           (* draw n random elements *)
           us <- repeat_dist_ntimes_vector 
             (uniform_with_replacement lf Hlfn) n ;;
@@ -1404,7 +1425,7 @@ Module Zkp.
         Definition generalised_and_simulator_distribution 
           {n : nat} (lf : list F) 
           (Hlfn : lf <> List.nil) (gs hs : Vector.t G n) 
-          (c : F) : dist (@sigma_proto n n n) :=
+          (c : F) : dist (@sigma_proto n 1 n) :=
           (* draw n random elements *)
           us <- repeat_dist_ntimes_vector 
             (uniform_with_replacement lf Hlfn) n ;;
@@ -1425,7 +1446,8 @@ Module Zkp.
           (H : forall (f : Fin.t n), 
             (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
 
-
+        (* Completeness, Special Soundess (proof of knowledge) and 
+          zero-knowledge *)
         
 
         
@@ -1442,6 +1464,75 @@ Module Zkp.
         ∃ w : F, R₁ x w ∧ R₂ x w 
       *)
       Section Def.
+
+        (* 
+          x : common witness for all relations
+          gs and hs : public inputs 
+          c : single challenge
+        *)
+
+        (* we construct n copies of the witness x and 
+          call And composition 
+        *)
+        Definition construct_eq_conversations_schnorr :
+          forall {n : nat}, 
+          F -> Vector.t G n -> Vector.t F n -> 
+          F -> @sigma_proto n 1 n.
+        Proof.
+          intros ? x gs us c.
+          exact (construct_and_conversations_schnorr
+            (repeat_ntimes n x) gs us c).
+        Defined.
+      
+
+
+        (* Does not involve the secret x *)
+        Definition construct_eq_conversations_simulator :
+          forall {n : nat}, 
+          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
+          F -> @sigma_proto n 1 n.
+        Proof.
+          intros ? gs hs us c.
+          exact (construct_and_conversations_simulator 
+            gs hs us c).
+        Defined.
+       
+
+        
+        Definition generalised_eq_accepting_conversations : 
+          forall {n : nat}
+          (g h : Vector.t G n),
+          @sigma_proto n 1 n -> bool.
+        Proof.
+          intros * g h Ha.
+          exact (generalised_and_accepting_conversations g h Ha).
+        Defined.
+        
+
+
+         (* Check the definition *)
+         Definition generalised_eq_schnorr_distribution  
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (x : F) 
+          (gs : Vector.t G n) (c : F) : dist (@sigma_proto n 1 n) :=
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_eq_conversations_schnorr x gs us c).
+        
+       
+       
+       (* without secret *)
+        Definition generalised_eq_simulator_distribution 
+          {n : nat} (lf : list F) 
+          (Hlfn : lf <> List.nil) (gs hs : Vector.t G n) 
+          (c : F) : dist (@sigma_proto n 1 n) :=
+          (* draw n random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) n ;;
+          Ret (construct_eq_conversations_simulator gs hs us c).
+
+
 
       End Def.
 
@@ -1464,7 +1555,38 @@ Module Zkp.
 
     Section Or.
 
+      (* 
+          What if I want to prove k-out-n Or proof? 
+          https://www.win.tue.nl/~berry/papers/crypto94.pdf
+      *)
+      (* Generalised Or composition? 
+      
+        ∃ x : g₁^w = h₁ ∨ g₂^w = h₂ ∨ g₃^w = h₃ ... 
+
+        One witness out of n statements
+      
+      *)
       Section Def.
+
+        (* Prover knows the ith relation *)
+         Definition construct_or_conversations_schnorr :
+          forall {n : nat}, 
+          Fin.t n -> F -> Vector.t G n -> Vector.t F n -> 
+          F -> @sigma_proto n n n.
+        Proof.
+          intros ? i x gs us c.
+          (*
+
+            
+
+          
+          
+          *)
+
+        Admitted.
+          
+
+
 
       End Def.
 
@@ -1480,6 +1602,7 @@ Module Zkp.
 
     Section NEQ.
 
+      (* generalised NEQ *)
       Section Def.
 
       End Def.

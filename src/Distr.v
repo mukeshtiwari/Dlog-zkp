@@ -41,9 +41,7 @@ Section Distr.
   Global Instance dist_refl {A : Type} : 
     Reflexive (@dist_equiv A).
   Proof.
-    unfold dist_equiv, 
-    Reflexive.
-    eauto.
+    unfold dist_equiv; eauto.
   Qed.
 
 
