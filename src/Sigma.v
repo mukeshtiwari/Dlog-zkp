@@ -1568,6 +1568,15 @@ Module Zkp.
       *)
       Section Def.
 
+        Definition compose_two_or_sigma_protocols {n m r u v w : nat} 
+          (s₁ : @sigma_proto n m r) (s₂ : @sigma_proto u v w) :
+          @sigma_proto (n + u) (m + v) (r + w) :=
+        match s₁, s₂ with 
+        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ c₂ r₂) =>
+          mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
+        end.
+
+
         (* Prover knows the ith relation *)
         (* The way out is that the verifier may let the prover “cheat” a 
           little bit by allowing the prover to use the simulator of the 
@@ -1579,55 +1588,97 @@ Module Zkp.
           may be c = c1 ⊕ c2 if the challenges happen to be bit strings. 
           Essentially, the prover gets one degree of freedom to cheat. 
         *)
-        (* In our case, we are going to run simulator 
-          for n - 1 relation and original protocol 
-          for 1.
-        *)
-         (* 
-            prover knowns ith relation 
-            x is the secret 
-            rs is randomly generated scalors 
-            us = usl ++ [u_i] ++ usr
-            rs = rsl ++ [r_i] ++ rsr 
-            Prove recomputes: 
-            r_i := c - Σ rsl + rsr 
+        (* 
+          prover knowns ith relation 
+          x is the secret 
+          rs is randomly generated scalors 
+          us = usl ++ [u_i] ++ usr
+          rs = rsl ++ [_] ++ rsr 
+          Prover recomputes: 
+          r_i := c - Σ rsl + rsr 
 
-            Uses simulator on (usl ++ usr) (rsl ++ rsr)
-            Uses Schnorr protocol u_i r_i 
-            Package them together.
+          Uses simulator on (usl ++ usr) (rsl ++ rsr)
+          Uses Schnorr protocol u_i r_i 
+          Package them together.
 
-            Verifier check the if all the individual 
-            sigma protocols are valid and 
-            challenges sum to c.
+          Verifier check the if all the individual 
+          sigma protocols are valid and 
+          challenges sum up to c.
         *)
 
-        (*  intros ? i x us rs c. *)
-        Definition construct_or_conversations_schnorr :
+        (* Does not involve the secret x *)
+        (* gs hs us rs *)
+        Definition construct_or_conversations_simulator :
           forall {n : nat}, 
-          Fin.t n -> F -> Vector.t F n -> Vector.t F n -> 
-          F -> @sigma_proto n (1 + n) n.
+          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
+          Vector.t F n -> @sigma_proto n n n.
         Proof.
-          refine
-          (fix construct_or_conversations_schnorr n :=
-            match n as n' return n = n' -> _  with
-            | 0 => fun Ha i x us rs c => _ 
-            | S n => fun Ha i x us rs c => _ 
-            end eq_refl).
-          +
-            (* base case is trivial *)
-            exact (mk_sigma _ _ _ [] [c] []).
-          +
-            (* inductive case *)
-            (* Now, I need to split us and rs 
-              us = usl ++ [u_i] ++ usr 
-              rs = rsl ++ [r_i] ++ rsr 
-              Simulator for (usl ++ usr) (rsl ++ rsr)
-              Compute r_i := c - Σ rsl + rsl
-            *)
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun gs hs us rs => _
+          | S n' => fun gs hs us rs  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            destruct (vector_inv_S gs) as (gsh & gstl & _).
+            destruct (vector_inv_S hs) as (hsh & hstl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            destruct (vector_inv_S rs) as (rsh & rstl & _).
+            exact (compose_two_or_sigma_protocols 
+              (schnorr_simulator gsh hsh ush rsh)
+              (Fn _ gstl hstl ustl rstl)).
+        Defined.
 
+        (* 
+          intros m n x gs hs us rs c. 
+          x is secret  
+          gs and hs are public group elements 
+          and prover knows the (m + 1)th relation.
+          us and rs are randomness 
+          c is challenge
+        *)
 
-        Admitted.
-          
+        (* This Api is avoid any take and drop *)
+        Definition construct_or_conversations_schnorr :
+          forall {m n : nat}, 
+          F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
+          Vector.t F (m + (1 + n)) -> Vector.t F (m + (1 + n)) -> 
+          F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
+        Proof.
+          intros ? ? x gs hs us rs c.
+          destruct (splitat m gs) as (gsl & gsrt).
+          destruct (vector_inv_S gsrt) as (g & gsr & _).
+          destruct (splitat m hs) as (hsl & hsrt).
+          (* discard h because it is not needed in schnorr protocol *)
+          destruct (vector_inv_S hsrt) as (_ & hsr & _).
+          (* us := usl ++ [r_i] ++ usr *)
+          destruct (splitat m us) as (usl & rurt).
+          destruct (vector_inv_S rurt) as (u_i & usr & _).
+          (* rs := rsl ++ [_] ++ rsr *)
+          destruct (splitat m rs) as (rsl & rsrt).
+          (* discard r_i *)
+          destruct (vector_inv_S rsrt) as (__ & rsr & _).
+          (* compute r_i  *)
+          remember (c - (Vector.fold_right add (rsl ++ rsr) zero)) 
+          as r_i.
+          (* we will return rsl ++ [r_i] ++ rsr in c field *)
+          (* run simulator on gsl hsl usl rsl *)
+          remember (construct_or_conversations_simulator 
+            gsl hsl usl rsl) as Ha.
+          (* run protocol for known relation *)
+          remember (schnorr_protocol x g u_i r_i) as Hb.
+          (* run simulator on gsr hsr usr rsr *)
+          remember (construct_or_conversations_simulator 
+            gsr hsr usr rsr) as Hc.
+          (* now combine all and put the 
+            c at front of challenges *)
+          refine 
+            match Ha, Hb, Hc with 
+            |(a₁; c₁; r₁), (a₂; c₂; r₂), (a₃; c₃; r₃) => 
+              ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
+            end.
+        Defined.
+        
 
 
 
