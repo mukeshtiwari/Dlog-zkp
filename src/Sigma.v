@@ -443,7 +443,7 @@ Module Zkp.
           
         
 
-
+        (* special honest verifier zero-knowledge-proof *)
         (* Every elements in @schnorr_distribution 
           has probability 1/ (List.length lf) where 
           lf the list of scalor (Field) elements from which the 
@@ -665,7 +665,7 @@ Module Zkp.
         Qed.
         
 
-
+        (* special honest verifier zero-knowledge-proof *)
         (* Every elements in @simulator_distribution 
           has probability 1/ (List.length lf) where 
           lf the list of Field element from which the 
@@ -1289,7 +1289,7 @@ Module Zkp.
         (* Every element in generalised schnorr distribution 
           is an accepting conversation and it's probability 1 / |lf|^n 
         *)
-        Lemma special_honest_verifier_schnorr_dist {n : nat}: 
+        Lemma generalised_parallel_special_honest_verifier_schnorr_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
           List.In (a, b) 
@@ -1300,7 +1300,7 @@ Module Zkp.
         Proof.
         Admitted.
 
-        Lemma special_honest_verifier_simulator_dist {n : nat}: 
+        Lemma generalised_parallel_special_honest_verifier_simulator_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
           List.In (a, b) 
@@ -1386,14 +1386,14 @@ Module Zkp.
 
         
         Definition generalised_and_accepting_conversations : 
-          forall {n : nat}
-          (g h : Vector.t G n),
+          forall {n : nat}, 
+          Vector.t G n -> Vector.t G n ->
           @sigma_proto n 1 n -> bool.
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
             | 0 => fun _ _ p => true
-            | S n' => fun g h p => 
+            | S n' => fun gs hs p => 
               match p with 
               | (a; c ; r) => _ 
               end 
@@ -1401,9 +1401,9 @@ Module Zkp.
           destruct (vector_inv_S a) as (ah & atl & _).
           destruct (vector_inv_S c) as (ch & ctl & _).
           destruct (vector_inv_S r) as (rh & rtl & _).
-          destruct (vector_inv_S g) as (gh & gtl & _).
-          destruct (vector_inv_S h) as (hh & htl & _).
-          exact ((@accepting_conversation gh hh ([ah]; [ch]; [rh])) &&
+          destruct (vector_inv_S gs) as (g & gtl & _).
+          destruct (vector_inv_S hs) as (h & htl & _).
+          exact ((@accepting_conversation g h ([ah]; [ch]; [rh])) &&
             (Fn _ gtl htl (atl; c; rtl))).
         Defined.
 
@@ -1436,21 +1436,129 @@ Module Zkp.
 
       Section Proofs.
 
+        (* properties about the generalised_and_accepting_conversations function *)
+
+        Lemma generalised_and_accepting_conversations_correctness_forward : 
+          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          generalised_and_accepting_conversations gs hs s = true ->
+          ∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f)
+              (mk_sigma 1 1 1
+                [(nth a f)] c [(nth r f)]) = true
+          end.
+        Proof.
+        Admitted.
+        
+
+        Lemma generalised_and_accepting_conversations_correctness_backward : 
+          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          (∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f)
+              (mk_sigma 1 1 1
+                [(nth a f)] c [(nth r f)]) = true
+          end) ->
+          generalised_and_accepting_conversations gs hs s = true.         
+        Proof.
+        Admitted.
+
+        Lemma generalised_and_accepting_conversations_correctness : 
+          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          (∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f)
+              (mk_sigma 1 1 1
+                [(nth a f)] c [(nth r f)]) = true
+          end) <->
+          generalised_and_accepting_conversations gs hs s = true.         
+        Proof.
+          intros *; 
+          split.
+          +
+            eapply generalised_and_accepting_conversations_correctness_backward;
+            try assumption.
+          +
+            eapply generalised_and_accepting_conversations_correctness_forward;
+            try assumption.
+        Qed.
+
+        (* end of properites *)
+
         (*
-          ∃ x₁ : g₁ = h₁^x ..... 
+          ∃ x₁ : g₁ = h₁^x₁ ..... 
         *)
         Context
-          {n : nat}
-          (xs : Vector.t F n)
-          (gs hs : Vector.t G n)
-          (H : forall (f : Fin.t n), 
-            (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
+        {n : nat}
+        (xs : Vector.t F n)
+        (gs hs : Vector.t G n)
+        (R : forall (f : Fin.t n), 
+          (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
 
-        (* Completeness, Special Soundess (proof of knowledge) and 
-          zero-knowledge *)
+        (* completeness *)
+
+        Lemma construct_and_conversations_schnorr_completeness : 
+          forall (us : Vector.t F n) (c : F),
+          generalised_and_accepting_conversations gs hs
+            (construct_and_conversations_schnorr xs gs us c) = true.
+        Proof.
+        Admitted.
+
+
+        Lemma construct_and_conversations_simulator_completeness : 
+          forall (us : Vector.t F n) (c : F),
+          generalised_and_accepting_conversations gs hs
+            (construct_and_conversations_simulator gs hs us c) = true.
+        Proof.
+        Admitted.
+
+
+        (* special soundeness (proof of knowledge) *)
+        Lemma generalise_and_sigma_soundenss :
+          forall (a : Vector.t G n) (c₁ : Vector.t F 1) 
+          (r₁ : Vector.t F n) (c₂ : Vector.t F 1) (r₂ : Vector.t F n),
+          generalised_and_accepting_conversations gs hs (a; c₁; r₁) = true ->
+          generalised_and_accepting_conversations gs hs (a; c₂; r₂) = true ->
+          c₁ <> c₂ ->
+          (∀ (f : Fin.t n), ∃ ys : Vector.t F n,  
+            (nth gs f)^(nth ys f) = (nth hs f)).
+        Proof using -(xs R).
+          clear xs R. (* otherwise trival *)
+        Admitted.
         
 
-        
+        (* special honest verifier zero-knowledge *)
+         (* Every element in generalised schnorr distribution 
+          is an accepting conversation and it's probability 1 / |lf|^n 
+        *)
+        Lemma generalised_and_special_honest_verifier_schnorr_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_and_schnorr_distribution lf Hlfn xs gs c) ->
+            (* it's an accepting conversation and probability is *)
+            generalised_and_accepting_conversations gs hs a = true ∧ 
+          b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+        Proof.
+        Admitted.
+
+
+        Lemma generalised_and_special_honest_verifier_simulator_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_and_simulator_distribution lf Hlfn gs hs c) ->
+            (* first component is true and probability is *)
+          generalised_and_accepting_conversations gs hs a = true ∧ 
+          b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+        Proof.
+        Admitted.
+
+
+
 
 
       End Proofs.
@@ -1477,9 +1585,11 @@ Module Zkp.
         Definition construct_eq_conversations_schnorr :
           forall {n : nat}, 
           F -> Vector.t G n -> Vector.t F n -> 
-          F -> @sigma_proto n 1 n.
+          F -> @sigma_proto n 1 n. (* @sigma_proto n 1 1 *)
         Proof.
           intros ? x gs us c.
+          (* Think about it *)
+
           exact (construct_and_conversations_schnorr
             (repeat_ntimes n x) gs us c).
         Defined.
@@ -1500,12 +1610,12 @@ Module Zkp.
 
         
         Definition generalised_eq_accepting_conversations : 
-          forall {n : nat}
-          (g h : Vector.t G n),
+          forall {n : nat},
+          Vector.t G n -> Vector.t G n ->
           @sigma_proto n 1 n -> bool.
         Proof.
-          intros * g h Ha.
-          exact (generalised_and_accepting_conversations g h Ha).
+          intros * gs hs Ha.
+          exact (generalised_and_accepting_conversations gs hs Ha).
         Defined.
         
 
@@ -1539,12 +1649,98 @@ Module Zkp.
 
       Section Proofs.
 
-         Context
+        (* properties about generalised_eq_accepting_conversations *)
+
+        Lemma generalised_eq_accepting_conversations_correctness_forward : 
+          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          generalised_eq_accepting_conversations gs hs s = true ->
+          ∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f)
+              (mk_sigma 1 1 1
+                [(nth a f)] c [(nth r f)]) = true
+          end.
+        Proof.
+        Admitted.
+
+
+        Lemma generalised_eq_accepting_conversations_correctness_backward : 
+          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          (∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f)
+              (mk_sigma 1 1 1
+                [(nth a f)] c [(nth r f)]) = true
+          end) -> generalised_eq_accepting_conversations gs hs s = true.
+        Proof.
+        Admitted.
+
+
+        Lemma generalised_eq_accepting_conversations_correctness : 
+          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          (∀ (f : Fin.t n), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f)
+              (mk_sigma 1 1 1
+                [(nth a f)] c [(nth r f)]) = true
+          end) <-> generalised_eq_accepting_conversations gs hs s = true.
+        Proof.
+          intros *; 
+          split.
+          +
+            eapply generalised_eq_accepting_conversations_correctness_backward;
+            try assumption.
+          +
+            eapply generalised_eq_accepting_conversations_correctness_forward;
+            try assumption.
+        Qed.
+      
+
+        (* end of properties *)
+
+        Context
           {n : nat}
           (x : F)
           (gs hs : Vector.t G n)
-          (H : forall (f : Fin.t n), 
+          (R : forall (f : Fin.t n), 
             (Vector.nth gs f)^x = Vector.nth hs f).
+
+        (* completeness *)
+
+        Lemma construct_eq_conversations_schnorr_completeness : 
+          forall (us : Vector.t F n) (c : F),
+          generalised_eq_accepting_conversations gs hs
+            (construct_eq_conversations_schnorr x gs us c) = true.
+        Proof.
+        Admitted.
+
+
+        Lemma construct_eq_conversations_simulator_completeness : 
+          forall (us : Vector.t F n) (c : F),
+          generalised_and_accepting_conversations gs hs
+            (construct_and_conversations_simulator gs hs us c) = true.
+        Proof.
+        Admitted.
+
+
+        (* special soundness (proof of knowledge) *)
+         
+        Lemma generalise_eq_sigma_soundenss :
+         forall (a : Vector.t G n) (c₁ : Vector.t F 1) 
+         (r₁ : Vector.t F n) (c₂ : Vector.t F 1) (r₂ : Vector.t F n),
+         generalised_eq_accepting_conversations gs hs (a; c₁; r₁) = true ->
+         generalised_eq_accepting_conversations gs hs (a; c₂; r₂) = true ->
+         c₁ <> c₂ ->
+         ∃ y : F, (forall (f : Fin.t n),
+          (nth gs f)^y = (nth hs f)).
+        Proof using -(x R).
+          clear x R. (* otherwise trival *)
+        Admitted.
+
+        (* special honest verifier zero-knowledge-proof *)
 
 
 
@@ -1796,7 +1992,7 @@ Module Zkp.
         Proof.
         Admitted.
 
-        
+
         Lemma generalised_or_accepting_conversations_correctness_backward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
