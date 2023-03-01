@@ -135,6 +135,24 @@ Module Zkp.
 
       Section Proofs.
 
+
+        (* properties about  accepting_conversation  *)
+        Lemma accepting_conversation_correct : 
+            forall g h a c r, 
+            accepting_conversation g h (a; c; r) = true <->
+            (g^(hd r)) = (gop (hd a) (h^(hd c))). (* g^r := a * h^c *)
+        Proof.
+          intros *; 
+          split; intros Ha.
+          +
+            eapply (@dec_true _ Gdec) in Ha; 
+            exact Ha.
+          +
+            eapply (@dec_true _ Gdec); 
+            exact Ha.
+        Qed.
+
+        (* end of properties *)
         
         (* available in global context *)
         Context 
@@ -1465,6 +1483,7 @@ Module Zkp.
         Proof.
         Admitted.
 
+
         Lemma generalised_and_accepting_conversations_correctness : 
           forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
           (∀ (f : Fin.t n), 
@@ -1573,6 +1592,14 @@ Module Zkp.
       *)
       Section Def.
 
+        Definition compose_two_eq_sigma_protocols {n : nat} 
+          (s₁ : @sigma_proto 1 1 1) (s₂ : @sigma_proto n 1 1) :
+          @sigma_proto (1 + n) 1 1 :=
+        match s₁, s₂ with 
+        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ _ _) =>
+          mk_sigma _ _ _ (a₁ ++ a₂) c₁ r₁
+        end.
+
         (* 
           x : common witness for all relations
           gs and hs : public inputs 
@@ -1584,50 +1611,102 @@ Module Zkp.
         *)
         Definition construct_eq_conversations_schnorr :
           forall {n : nat}, 
-          F -> Vector.t G n -> Vector.t F n -> 
-          F -> @sigma_proto n 1 n. (* @sigma_proto n 1 1 *)
+          F -> Vector.t G (1 + n) -> Vector.t F (1 + n) -> 
+          F -> @sigma_proto (1 + n) 1 1. (* @sigma_proto n 1 1 *)
         Proof.
-          intros ? x gs us c.
-          (* Think about it *)
-
-          exact (construct_and_conversations_schnorr
-            (repeat_ntimes n x) gs us c).
+          refine(
+            fix Fn n :=
+            match n with 
+            | 0 => fun x gs us c => _ 
+            | S n' => fun x gs us c => _
+            end).
+          +
+            (* base case *)
+            destruct (vector_inv_S gs) as (g & _ & _).
+            destruct (vector_inv_S us) as (u & _ & _).
+            exact (schnorr_protocol x g u c).
+          +
+            (* inductive case *)
+            destruct (vector_inv_S gs) as (g & gtl & _).
+            destruct (vector_inv_S us) as (u & utl & _).
+            
+            exact (compose_two_eq_sigma_protocols 
+            (schnorr_protocol x g u c)
+            (Fn _ x gtl utl c)).
         Defined.
-      
+            
+       
 
 
         (* Does not involve the secret x *)
         Definition construct_eq_conversations_simulator :
           forall {n : nat}, 
-          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
-          F -> @sigma_proto n 1 n.
+          Vector.t G (1 + n) ->  Vector.t G (1 + n) -> 
+          Vector.t F (1 + n) -> F -> @sigma_proto (1 + n) 1 1.
         Proof.
-          intros ? gs hs us c.
-          exact (construct_and_conversations_simulator 
-            gs hs us c).
-        Defined.
-       
+          refine(
+            fix Fn n :=
+            match n with 
+            | 0 => fun gs hs us c => _ 
+            | S n' => fun gs hs us c => _
+            end).
+          +
+            (* base case *)
+            destruct (vector_inv_S gs) as (g & _ & _).
+            destruct (vector_inv_S hs) as (h & _ & _).
+            destruct (vector_inv_S us) as (u & _ & _).
+            exact (schnorr_simulator g h u c).
+          +
+            (* inductive case *)
+            destruct (vector_inv_S gs) as (g & gtl & _).
+            destruct (vector_inv_S hs) as (h & htl & _).
+            destruct (vector_inv_S us) as (u & utl & _).
+            exact (compose_two_eq_sigma_protocols 
+            (schnorr_simulator g h u c)
+            (Fn _ gtl htl utl c)).
+          Defined.
 
-        
-        Definition generalised_eq_accepting_conversations : 
-          forall {n : nat},
-          Vector.t G n -> Vector.t G n ->
-          @sigma_proto n 1 n -> bool.
-        Proof.
-          intros * gs hs Ha.
-          exact (generalised_and_accepting_conversations gs hs Ha).
-        Defined.
-        
+
+
+          Definition generalised_eq_accepting_conversations : 
+            forall {n : nat},
+            Vector.t G (1 + n) -> Vector.t G (1 + n) ->
+            @sigma_proto (1 + n) 1 1 -> bool.
+          Proof.
+            refine(
+              fix Fn n :=
+              match n with 
+              | 0 => fun gs hs Ha => _ 
+              | S n' => fun gs hs Ha => _
+              end).
+            +
+              (* base case *)
+              destruct (vector_inv_S gs) as (g & _ & _).
+              destruct (vector_inv_S hs) as (h & _ & _).
+              exact (accepting_conversation g h Ha).
+            +
+              destruct (vector_inv_S gs) as (g & gtl & _).
+              destruct (vector_inv_S hs) as (h & htl & _).
+              refine 
+                match Ha with 
+                |(a; c; r) => _ 
+                end.
+              destruct (vector_inv_S a) as (ah & atl & _).
+              exact ((accepting_conversation g h ([ah]; c; r)) && 
+                (Fn _ gtl htl (atl; c; r))).
+          Defined.
+              
+         
 
 
          (* Check the definition *)
          Definition generalised_eq_schnorr_distribution  
           {n : nat} (lf : list F) 
           (Hlfn : lf <> List.nil) (x : F) 
-          (gs : Vector.t G n) (c : F) : dist (@sigma_proto n 1 n) :=
-          (* draw n random elements *)
+          (gs : Vector.t G (1 + n)) (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
+          (* draw 1 + n random elements *)
           us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) n ;;
+            (uniform_with_replacement lf Hlfn) (1 + n) ;;
           Ret (construct_eq_conversations_schnorr x gs us c).
         
        
@@ -1635,14 +1714,14 @@ Module Zkp.
        (* without secret *)
         Definition generalised_eq_simulator_distribution 
           {n : nat} (lf : list F) 
-          (Hlfn : lf <> List.nil) (gs hs : Vector.t G n) 
-          (c : F) : dist (@sigma_proto n 1 n) :=
+          (Hlfn : lf <> List.nil) (gs hs : Vector.t G (1 + n)) 
+          (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
           (* draw n random elements *)
           us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) n ;;
+            (uniform_with_replacement lf Hlfn) (1 + n) ;;
           Ret (construct_eq_conversations_simulator gs hs us c).
 
-
+         (* Everything good upto here *)
 
       End Def.
 
