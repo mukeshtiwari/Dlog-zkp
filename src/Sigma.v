@@ -1755,6 +1755,20 @@ Module Zkp.
           accepting conversations and 
           hd c = sum of rest of c 
         *)
+        Lemma generalised_or_accepting_conversations_correctness_t_forward : 
+          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          (s :  @sigma_proto (m + (1 + n)) (m + (1 + n)) (m + (1 + n))),
+          generalised_or_accepting_conversations_t gs hs s = true ->
+          ∀ (f : Fin.t (m + (1 + n))), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = true
+          end.
+        Proof.
+        Admitted.
+
+
         Lemma generalised_or_accepting_conversations_correctness_forward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
@@ -1770,6 +1784,19 @@ Module Zkp.
         Admitted.
 
 
+        Lemma generalised_or_accepting_conversations_correctness_t_backward : 
+          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          (s :  @sigma_proto (m + (1 + n)) (m + (1 + n)) (m + (1 + n))),
+          (∀ (f : Fin.t (m + (1 + n))), 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = true
+          end) -> generalised_or_accepting_conversations_t gs hs s = true.
+        Proof.
+        Admitted.
+
+        
         Lemma generalised_or_accepting_conversations_correctness_backward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
