@@ -1569,19 +1569,62 @@ Module Zkp.
       Section Def.
 
         (* Prover knows the ith relation *)
-         Definition construct_or_conversations_schnorr :
+        (* The way out is that the verifier may let the prover “cheat” a 
+          little bit by allowing the prover to use the simulator of the 
+          Σ-protocol for the relation Ri for which the prover does not 
+          know witness wi (i = 1 or i = 2). The verifier will do so by 
+          providing a single challenge c which the prover is allowed to 
+          split into two challenges c1, c2 provided c1, c2 satisfy a 
+          linear constraint in terms of c. For example, the constraint 
+          may be c = c1 ⊕ c2 if the challenges happen to be bit strings. 
+          Essentially, the prover gets one degree of freedom to cheat. 
+        *)
+        (* In our case, we are going to run simulator 
+          for n - 1 relation and original protocol 
+          for 1.
+        *)
+         (* 
+            prover knowns ith relation 
+            x is the secret 
+            rs is randomly generated scalors 
+            us = usl ++ [u_i] ++ usr
+            rs = rsl ++ [r_i] ++ rsr 
+            Prove recomputes: 
+            r_i := c - Σ rsl + rsr 
+
+            Uses simulator on (usl ++ usr) (rsl ++ rsr)
+            Uses Schnorr protocol u_i r_i 
+            Package them together.
+
+            Verifier check the if all the individual 
+            sigma protocols are valid and 
+            challenges sum to c.
+        *)
+
+        (*  intros ? i x us rs c. *)
+        Definition construct_or_conversations_schnorr :
           forall {n : nat}, 
-          Fin.t n -> F -> Vector.t G n -> Vector.t F n -> 
-          F -> @sigma_proto n n n.
+          Fin.t n -> F -> Vector.t F n -> Vector.t F n -> 
+          F -> @sigma_proto n (1 + n) n.
         Proof.
-          intros ? i x gs us c.
-          (*
+          refine
+          (fix construct_or_conversations_schnorr n :=
+            match n as n' return n = n' -> _  with
+            | 0 => fun Ha i x us rs c => _ 
+            | S n => fun Ha i x us rs c => _ 
+            end eq_refl).
+          +
+            (* base case is trivial *)
+            exact (mk_sigma _ _ _ [] [c] []).
+          +
+            (* inductive case *)
+            (* Now, I need to split us and rs 
+              us = usl ++ [u_i] ++ usr 
+              rs = rsl ++ [r_i] ++ rsr 
+              Simulator for (usl ++ usr) (rsl ++ rsr)
+              Compute r_i := c - Σ rsl + rsl
+            *)
 
-            
-
-          
-          
-          *)
 
         Admitted.
           
