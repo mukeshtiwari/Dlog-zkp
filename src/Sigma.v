@@ -1721,7 +1721,7 @@ Module Zkp.
             (uniform_with_replacement lf Hlfn) (1 + n) ;;
           Ret (construct_eq_conversations_simulator gs hs us c).
 
-         (* Everything good upto here *)
+        
 
       End Def.
 
@@ -1731,40 +1731,40 @@ Module Zkp.
         (* properties about generalised_eq_accepting_conversations *)
 
         Lemma generalised_eq_accepting_conversations_correctness_forward : 
-          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
+          forall (n : nat) (gs hs : Vector.t G (1 + n)) 
+          (s : @sigma_proto (1 + n) 1 1),
           generalised_eq_accepting_conversations gs hs s = true ->
-          ∀ (f : Fin.t n), 
+          (∀ f : Fin.t (1 + n), 
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
-              (mk_sigma 1 1 1
-                [(nth a f)] c [(nth r f)]) = true
-          end.
+              ([(nth a f)]; c; r) = true
+          end).
         Proof.
         Admitted.
 
 
         Lemma generalised_eq_accepting_conversations_correctness_backward : 
-          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
-          (∀ (f : Fin.t n), 
+          forall (n : nat) (gs hs : Vector.t G (1 + n)) 
+          (s : @sigma_proto (1 + n) 1 1),
+          (∀ f : Fin.t (1 + n), 
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
-              (mk_sigma 1 1 1
-                [(nth a f)] c [(nth r f)]) = true
+              ([(nth a f)]; c; r) = true
           end) -> generalised_eq_accepting_conversations gs hs s = true.
         Proof.
         Admitted.
 
 
         Lemma generalised_eq_accepting_conversations_correctness : 
-          forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
-          (∀ (f : Fin.t n), 
+          forall (n : nat) (gs hs : Vector.t G (1 + n)) 
+          (s : @sigma_proto (1 + n) 1 1),
+          (∀ f : Fin.t (1 + n), 
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
-              (mk_sigma 1 1 1
-                [(nth a f)] c [(nth r f)]) = true
+              ([(nth a f)]; c; r) = true
           end) <-> generalised_eq_accepting_conversations gs hs s = true.
         Proof.
           intros *; 
@@ -1783,14 +1783,14 @@ Module Zkp.
         Context
           {n : nat}
           (x : F)
-          (gs hs : Vector.t G n)
-          (R : forall (f : Fin.t n), 
+          (gs hs : Vector.t G (1 + n))
+          (R : forall (f : Fin.t (1 + n)), 
             (Vector.nth gs f)^x = Vector.nth hs f).
 
         (* completeness *)
 
         Lemma construct_eq_conversations_schnorr_completeness : 
-          forall (us : Vector.t F n) (c : F),
+          forall (us : Vector.t F (1 + n)) (c : F),
           generalised_eq_accepting_conversations gs hs
             (construct_eq_conversations_schnorr x gs us c) = true.
         Proof.
@@ -1798,13 +1798,14 @@ Module Zkp.
 
 
         Lemma construct_eq_conversations_simulator_completeness : 
-          forall (us : Vector.t F n) (c : F),
-          generalised_and_accepting_conversations gs hs
-            (construct_and_conversations_simulator gs hs us c) = true.
+          forall (us : Vector.t F (1 + n)) (c : F),
+          generalised_eq_accepting_conversations gs hs
+            (construct_eq_conversations_simulator gs hs us c) = true.
         Proof.
         Admitted.
 
 
+        (* Everything good upto here *)
         (* special soundness (proof of knowledge) *)
          
         Lemma generalise_eq_sigma_soundenss :
