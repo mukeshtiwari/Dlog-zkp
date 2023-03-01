@@ -1634,18 +1634,16 @@ Module Zkp.
           x is secret  
           gs and hs are public group elements 
           and prover knows the (m + 1)th relation.
-          us and rs are randomness 
+          us and cs --verifier let prover cheat -- are randomness 
           c is challenge
-        *)
-
-        (* This Api is avoid any take and drop *)
+        *)  
         Definition construct_or_conversations_schnorr :
           forall {m n : nat}, 
           F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
           Vector.t F (m + (1 + n)) -> Vector.t F (m + (1 + n)) -> 
           F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
-          intros ? ? x gs hs us rs c.
+          intros ? ? x gs hs us cs c.
           destruct (splitat m gs) as (gsl & gsrt).
           destruct (vector_inv_S gsrt) as (g & gsr & _).
           destruct (splitat m hs) as (hsl & hsrt).
@@ -1655,21 +1653,21 @@ Module Zkp.
           destruct (splitat m us) as (usl & rurt).
           destruct (vector_inv_S rurt) as (u_i & usr & _).
           (* rs := rsl ++ [_] ++ rsr *)
-          destruct (splitat m rs) as (rsl & rsrt).
+          destruct (splitat m cs) as (csl & csrt).
           (* discard r_i *)
-          destruct (vector_inv_S rsrt) as (__ & rsr & _).
+          destruct (vector_inv_S csrt) as (__ & csr & _).
           (* compute r_i  *)
-          remember (c - (Vector.fold_right add (rsl ++ rsr) zero)) 
+          remember (c - (Vector.fold_right add (csl ++ csr) zero)) 
           as r_i.
           (* we will return rsl ++ [r_i] ++ rsr in c field *)
           (* run simulator on gsl hsl usl rsl *)
           remember (construct_or_conversations_simulator 
-            gsl hsl usl rsl) as Ha.
+            gsl hsl usl csl) as Ha.
           (* run protocol for known relation *)
           remember (schnorr_protocol x g u_i r_i) as Hb.
           (* run simulator on gsr hsr usr rsr *)
           remember (construct_or_conversations_simulator 
-            gsr hsr usr rsr) as Hc.
+            gsr hsr usr csr) as Hc.
           (* now combine all and put the 
             c at front of challenges *)
           refine 
@@ -1678,7 +1676,8 @@ Module Zkp.
               ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
             end.
         Defined.
-        
+          
+
 
 
 
@@ -1686,6 +1685,8 @@ Module Zkp.
 
 
       Section Proofs.
+
+        (* Let's prove completeness *)
 
 
       End Proofs.
