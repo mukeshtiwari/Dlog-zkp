@@ -1322,7 +1322,7 @@ Module Zkp.
 
       Section Def.
 
-         Definition compose_two_and_sigma_protocols {n : nat} 
+        Definition compose_two_and_sigma_protocols {n : nat} 
           (s₁ : @sigma_proto 1 1 1) (s₂ : @sigma_proto n 1 n) :
           @sigma_proto (1 + n) 1 (1 + n) :=
         match s₁, s₂ with 
@@ -1676,6 +1676,67 @@ Module Zkp.
               ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
             end.
         Defined.
+
+
+
+        Local Definition generalised_or_accepting_conversations_t : 
+          forall {n : nat}, 
+          Vector.t G n -> Vector.t G n ->
+          @sigma_proto n n n -> bool.
+        Proof.
+          refine
+            (fix Fn n := 
+            match n with 
+            | 0 => fun gs hs Ha => true
+            | S n' => fun gs hs Ha => 
+              match Ha with 
+              | (a₁; c₁; r₁) => _ 
+              end 
+            end).
+          destruct (vector_inv_S gs) as (g & gsr & _).
+          destruct (vector_inv_S hs) as (h & hsr & _).
+          destruct (vector_inv_S a₁) as (a & asr & _).
+          destruct (vector_inv_S c₁) as (c & csr & _).
+          destruct (vector_inv_S r₁) as (r & rsr & _).
+          exact ((accepting_conversation g h ([a]; [c]; [r])) &&
+            (Fn _ gsr hsr (asr; csr; rsr))).
+        Defined.
+          
+    
+        (* verify or sigma protocol *)
+        Definition generalised_or_accepting_conversations : 
+          forall {m n : nat}, 
+          Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
+          @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)) ->
+          bool.
+        Proof.
+          intros ? ? gs hs Ha.
+          (* prover knows for (m+1)th relation *)
+          refine 
+            match Ha with 
+            |(a; ct; r) => _ 
+            end.
+          (* Verifier first checks if challenge c is equal 
+            to the rest of challenges *)
+          destruct (vector_inv_S ct) as (c & cs & _).
+          refine
+            match Fdec c (Vector.fold_right add cs zero) with 
+            | left _ => 
+                (* now check sigma *)
+                generalised_or_accepting_conversations_t gs hs (a; cs; r)
+            | right _ => false (* if it's false, there is 
+              no point for checking further *)
+            end.
+        Defined.
+
+
+        (* distribution *)
+         
+          
+          
+
+
+        
           
 
 
