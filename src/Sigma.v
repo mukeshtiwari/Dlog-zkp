@@ -1747,7 +1747,142 @@ Module Zkp.
 
       Section Proofs.
 
+
+        (* properties about accepting funciton *)
+        (* 
+          when generalised_or_accepting_conversations return true 
+          then every individual sigma protocol is an 
+          accepting conversations and 
+          hd c = sum of rest of c 
+        *)
+        Lemma generalised_or_accepting_conversations_correctness_forward : 
+          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          generalised_or_accepting_conversations gs hs s = true ->
+          ∀ (f : Fin.t (m + (1 + n))), 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
+          end.
+        Proof.
+        Admitted.
+
+
+        Lemma generalised_or_accepting_conversations_correctness_backward : 
+          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          (∀ (f : Fin.t (m + (1 + n))), 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
+          end) -> 
+          generalised_or_accepting_conversations gs hs s = true.
+        Proof.
+        Admitted.
+
+
+        Lemma generalised_or_accepting_conversations_correctness: 
+          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
+          (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
+          (∀ (f : Fin.t (m + (1 + n))), 
+          match s with 
+          | (a; c; r) => 
+            Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
+          end) <-> 
+          generalised_or_accepting_conversations gs hs s = true.
+        Proof.
+          intros *; 
+          split; intro Ha.
+          +
+            eapply generalised_or_accepting_conversations_correctness_backward; 
+            try assumption.
+          +
+            eapply generalised_or_accepting_conversations_correctness_forward;
+            try assumption.
+        Qed.
+        (* end of properties *)
+
         (* Let's prove completeness *)
+        (* gs := gsl ++ [g] ++ gsr *)
+        (* hs := hsl ++ [h] ++ hsr *)
+
+        
+        Context
+          {m n : nat}
+          (gsl : Vector.t G m) 
+          (gsr : Vector.t G n)
+          (x : F) (* secret witness *)
+          (g h : G) (* public values *)
+          (hsl : Vector.t G m) 
+          (hsr : Vector.t G n) 
+          (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
+
+        
+        (* completeness *)
+        Lemma construct_or_conversations_schnorr_completeness : 
+          ∀ (us cs : Vector.t F (m + (1 + n))) (c : F),
+          generalised_or_accepting_conversations 
+            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
+            (construct_or_conversations_schnorr x
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
+              us cs c) = true.
+        Proof.
+          intros *.
+          unfold generalised_or_accepting_conversations,
+          construct_or_conversations_schnorr.
+          repeat rewrite VectorSpec.splitat_append.
+          destruct (vector_inv_S ([g] ++ gsr)) as (ga & gt & Ha).
+          destruct (vector_inv_S ([h] ++ hsr)) as (ha & ht & Hb).
+          destruct (splitat m us) as (usa & usb) eqn:Hc.
+          destruct (vector_inv_S usb) as (usba & usbb & Hd).
+          destruct (splitat m cs) as (csa & csb) eqn:He.
+          destruct (vector_inv_S csb) as (csba & csbb & Hf).
+          remember (construct_or_conversations_simulator gsl hsl usa csa)
+          as sa.
+          refine
+          (match sa as s'
+          return sa = s' -> _ with 
+          |(a₁; c₁; r₁) => fun Hg => _  
+          end eq_refl).
+          unfold schnorr_protocol.
+          remember (construct_or_conversations_simulator gt ht usbb csbb)
+          as sb. 
+          refine
+          (match sb as s'
+          return sb = s' -> _ with 
+          |(a₂; c₂; r₂) => fun Hi => _  
+          end eq_refl); cbn.
+          (* 
+          fold_right add (csa ++ csbb) zero = c₁ + c₂
+          *)
+          destruct (Fdec c
+          (fold_right add
+             (c₁ ++ c - fold_right add (csa ++ csbb) zero :: c₂) zero)) 
+          as [Hj | Hj].
+          subst.
+          cbn in Ha, Hb.
+          inversion Ha; subst.
+          inversion Hb; subst.
+          eapply Eqdep.EqdepTheory.inj_pair2 in H1, H2.
+          subst.
+        Admitted. 
+         
+          
+
+
+          
+          
+
+
+
+
+
 
 
       End Proofs.
