@@ -252,12 +252,14 @@ Module Zkp.
           then exatractor can extract a witness 
         *)
       
-        Lemma special_soundness_berry : 
+        Lemma special_soundness_berry_gen : 
           forall a c₁ r₁ c₂ r₂, 
           c₁ <> c₂ -> 
           accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
           accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
-          ∃ y : F, g^y = h. (* then we can find a witness y such that g^y = h *)
+          ∃ y : F, g^y = h ∧ y =  ((r₁ - r₂) * inv (c₁ - c₂)).
+          (* The explicit value of y is require in EQ proof *)
+          (* then we can find a witness y such that g^y = h *)
         Proof using -(x R).
           clear x R. (* remove the assumption, otherwise it's trivial :) *)
           intros ? ? ? ? ? Ha Hb Hc.
@@ -303,7 +305,7 @@ Module Zkp.
           specialize (Hone h).
           rewrite Hone in Hcom.
           rewrite <-ring_sub_definition in Hcom.
-          exact Hcom.
+          exact (conj Hcom eq_refl).
           intros Hf.
           pose proof ring_neq_sub_neq_zero c₁ c₂ Ha as Hw.
           apply Hw.
@@ -311,6 +313,23 @@ Module Zkp.
           exact Hf.
           all:typeclasses eauto.
         Qed.
+
+
+        Lemma special_soundness_berry: 
+          forall a c₁ r₁ c₂ r₂, 
+          c₁ <> c₂ -> 
+          accepting_conversation g h ([a]; [c₁]; [r₁]) = true -> (* and it's accepting *) 
+          accepting_conversation g h ([a]; [c₂]; [r₂]) = true -> (* and it's accepting *)
+          ∃ y : F, g^y = h.
+          (* then we can find a witness y such that g^y = h *)
+        Proof using -(x R).
+          intros * Ha Hb Hc.
+          pose proof special_soundness_berry_gen 
+          a c₁ r₁ c₂ r₂ Ha Hb Hc as Hd.
+          destruct Hd as (y & Hd & He).
+          exists y; exact Hd.
+        Qed.
+
 
 
 
@@ -1211,7 +1230,7 @@ Module Zkp.
               of Schonorr protocol as 
               base case 
             *)
-            apply special_soundness_berry with 
+            eapply special_soundness_berry with
             (a := ha₁) (c₁ := hc₁) (r₁ := hr₁)
             (c₂ := hc₂) (r₂ := hr₂).
             
@@ -1731,7 +1750,7 @@ Module Zkp.
 
 
         (* special soundeness (proof of knowledge) *)
-        Lemma generalise_and_sigma_soundenss :
+        Lemma generalise_and_sigma_soundness :
           forall (a : Vector.t G n) (c₁ : Vector.t F 1) 
           (r₁ : Vector.t F n) (c₂ : Vector.t F 1) (r₂ : Vector.t F n),
           generalised_and_accepting_conversations gs hs (a; c₁; r₁) = true ->
@@ -2296,20 +2315,160 @@ Module Zkp.
               
 
         (* special soundness (proof of knowledge) *)
-         
+        (* This is bit challenging *)
         Lemma generalise_eq_sigma_soundenss :
-         forall (a : Vector.t G (1 + n)) (c₁ : Vector.t F 1) 
-         (r₁ : Vector.t F 1) (c₂ : Vector.t F 1) (r₂ : Vector.t F 1),
-         generalised_eq_accepting_conversations gs hs (a; c₁; r₁) = true ->
-         generalised_eq_accepting_conversations gs hs (a; c₂; r₂) = true ->
+         forall (a : Vector.t G (1 + n)) (c₁ c₂ : F) 
+         (r₁ r₂ : F),
+         generalised_eq_accepting_conversations gs hs (a; [c₁]; [r₁]) = true ->
+         generalised_eq_accepting_conversations gs hs (a; [c₂]; [r₂]) = true ->
          c₁ <> c₂ ->
          ∃ y : F, (forall (f : Fin.t (1 + n)),
           (nth gs f)^y = (nth hs f)).
         Proof using -(x R).
           clear x R. (* otherwise trival *)
-          
+          intros * Ha Hb Hc.
+          pose proof 
+            (generalised_eq_accepting_conversations_correctness_forward _ 
+            gs hs _ Ha) as Hd.
+          pose proof 
+            (generalised_eq_accepting_conversations_correctness_forward _ 
+            gs hs _ Hb) as He.
+          clear Ha; clear Hb.
+          rename Hd into Ha.
+          rename He into Hb.
+          induction n as [|n' IHn].
+          +
+            specialize (Ha Fin.F1). 
+            specialize (Hb Fin.F1).
+            cbn in Ha, Hb.
+            destruct (vector_inv_S a) as (ah & atl & Hd).
+            destruct (vector_inv_S gs) as (gsh & gstl & He).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hf).
+            subst; cbn in Ha, Hb.
+            rewrite dec_true in Ha, Hb.
+            exists ((r₁ - r₂) * inv (c₁ - c₂));
+            intros f.
+            destruct (fin_inv_S _ f) as [hf | (hf & Hl)];
+            [|inversion hf].
+            subst; cbn.
+            eapply f_equal with (f := ginv) in Hb.
+            rewrite connection_between_vopp_and_fopp in Hb.
+            rewrite group_inv_flip in Hb.
+            rewrite commutative in Hb.
+            pose proof (@rewrite_gop G gop _ _ _ _ Ha Hb) as Hcom.
+            rewrite <-(@vector_space_smul_distributive_fadd 
+              F (@eq F) zero one add mul sub div 
+              opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+            rewrite <-ring_sub_definition in Hcom.
+            assert (Hwt : gop ah (hsh ^ c₁) = gop (hsh ^ c₁) ah).
+            rewrite commutative; reflexivity.
+            rewrite Hwt in Hcom; clear Hwt.
+            setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+            in Hcom.
+            assert (Hwt : (gop ah (gop (ginv ah) (ginv (hsh ^ c₂)))) = 
+            (ginv (hsh ^ c₂))).
+            rewrite associative.
+            rewrite group_is_right_inverse,
+            monoid_is_left_idenity;
+            reflexivity.
+            rewrite Hwt in Hcom; clear Hwt.
+            rewrite connection_between_vopp_and_fopp in Hcom.
+            rewrite <-(@vector_space_smul_distributive_fadd 
+              F (@eq F) zero one add mul sub div 
+              opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+            apply f_equal with (f := fun x => x^(inv (c₁ + opp c₂)))
+            in Hcom.
+            rewrite !smul_pow_up in Hcom.
+            assert (Hw : (c₁ + opp c₂) * inv (c₁ + opp c₂) = 
+            (inv (c₁ + opp c₂) * (c₁ + opp c₂))).
+            rewrite commutative; reflexivity.
+            rewrite Hw in Hcom; clear Hw.
+            rewrite field_is_left_multiplicative_inverse in Hcom.
+            pose proof vector_space_field_one as Hone.
+            unfold is_field_one in Hone.
+            specialize (Hone hsh).
+            rewrite Hone in Hcom.
+            rewrite <-ring_sub_definition in Hcom.
+            exact Hcom.
+            intros Hf.
+            pose proof ring_neq_sub_neq_zero c₁ c₂ Hc as Hw.
+            apply Hw.
+            rewrite ring_sub_definition.
+            exact Hf.
+            all:typeclasses eauto. 
+          +
+            destruct (vector_inv_S a) as (ah & atl & Hd).
+            destruct (vector_inv_S gs) as (gsh & gstl & He).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hf).
+            exists ((r₁ - r₂) * inv (c₁ - c₂)).
+            intros f.
+            destruct (fin_inv_S _ f) as [hf | (hf & Hl)].
+            ++
+              specialize (Ha f).
+              specialize (Hb f).
+              rewrite He, Hf, hf.
+              cbn.
+              subst. cbn in Ha, Hb.
+              rewrite dec_true in Ha, Hb.
+              eapply f_equal with (f := ginv) in Hb.
+              rewrite connection_between_vopp_and_fopp in Hb.
+              rewrite group_inv_flip in Hb.
+              rewrite commutative in Hb.
+              pose proof (@rewrite_gop G gop _ _ _ _ Ha Hb) as Hcom.
+              rewrite <-(@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+              rewrite <-ring_sub_definition in Hcom.
+              assert (Hwt : gop ah (hsh ^ c₁) = gop (hsh ^ c₁) ah).
+              rewrite commutative; reflexivity.
+              rewrite Hwt in Hcom; clear Hwt.
+              setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+              in Hcom.
+              assert (Hwt : (gop ah (gop (ginv ah) (ginv (hsh ^ c₂)))) = 
+              (ginv (hsh ^ c₂))).
+              rewrite associative.
+              rewrite group_is_right_inverse,
+              monoid_is_left_idenity;
+              reflexivity.
+              rewrite Hwt in Hcom; clear Hwt.
+              rewrite connection_between_vopp_and_fopp in Hcom.
+              rewrite <-(@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+              apply f_equal with (f := fun x => x^(inv (c₁ + opp c₂)))
+              in Hcom.
+              rewrite !smul_pow_up in Hcom.
+              assert (Hw : (c₁ + opp c₂) * inv (c₁ + opp c₂) = 
+              (inv (c₁ + opp c₂) * (c₁ + opp c₂))).
+              rewrite commutative; reflexivity.
+              rewrite Hw in Hcom; clear Hw.
+              rewrite field_is_left_multiplicative_inverse in Hcom.
+              pose proof vector_space_field_one as Hone.
+              unfold is_field_one in Hone.
+              specialize (Hone hsh).
+              rewrite Hone in Hcom.
+              rewrite <-ring_sub_definition in Hcom.
+              exact Hcom.
+              intros Hf.
+              pose proof ring_neq_sub_neq_zero c₁ c₂ Hc as Hw.
+              apply Hw.
+              rewrite ring_sub_definition.
+              exact Hf.
+              all:typeclasses eauto.
+            ++
+              specialize (Ha f).
+              specialize (Hb f).
+              rewrite He, Hf, Hl in Ha, Hb |- *.
+              cbn in Ha, Hb |- *.
+              rewrite Hd in Ha, Hb.
+              cbn in Ha, Hb.
+              pose proof special_soundness_berry_gen 
+              _ _ _ _ _ _ _ Hc Ha Hb as Hi.
+              destruct Hi as (y & Hi & Hj).
+              rewrite <-Hj.
+              exact Hi.
+        Qed.
 
-        Admitted.
 
         (* special honest verifier zero-knowledge-proof *)
         (* Every element in generalised schnorr distribution 
