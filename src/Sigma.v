@@ -1463,11 +1463,43 @@ Module Zkp.
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
-              (mk_sigma 1 1 1
-                [(nth a f)] c [(nth r f)]) = true
+              ([(nth a f)]; c; [(nth r f)]) = true
           end.
         Proof.
-        Admitted.
+          unfold accepting_conversation.
+          induction n as [|n IHn];
+          simpl.
+          +  
+            intros * Ha f.
+            refine (match f with end).
+          +
+            intros * Ha f.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun Hc => _  
+            end eq_refl).
+            rewrite Hc in Ha.
+            destruct (vector_inv_S a) as (ha & ta & Hd).
+            destruct (vector_inv_S c) as (hc & tc & He).
+            destruct (vector_inv_S r) as (hr & tr & Hf).
+            destruct (vector_inv_S gs) as (gsa & gstl & Hi).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hj).
+            eapply andb_true_iff in Ha.
+            destruct Ha as [Hal Har].
+            destruct (fin_inv_S _ f) as [hf | (hf & Hg)].
+            ++
+              subst; cbn;
+              exact Hal.
+            ++
+              rewrite Hi, Hf, Hd, Hj, He, 
+              Hg; cbn.
+              specialize (IHn _ _ _ Har hf);
+              cbn in IHn.
+              rewrite He in IHn;
+              cbn in IHn; exact IHn.
+        Qed.
+
         
 
         Lemma generalised_and_accepting_conversations_correctness_backward : 
@@ -1476,12 +1508,41 @@ Module Zkp.
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
-              (mk_sigma 1 1 1
-                [(nth a f)] c [(nth r f)]) = true
+              ([(nth a f)]; c; [(nth r f)]) = true
           end) ->
           generalised_and_accepting_conversations gs hs s = true.         
         Proof.
-        Admitted.
+          unfold accepting_conversation.
+          induction n as [|n IHn];
+          simpl.
+          +
+            intros * Ha.
+            reflexivity.
+          +
+            intros * Ha.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(a; c; r) => fun Hb => _  
+            end eq_refl).
+            destruct (vector_inv_S a) as (ha & ta & Hc).
+            destruct (vector_inv_S c) as (hc & tc & Hd).
+            destruct (vector_inv_S r) as (hr & tr & He).
+            destruct (vector_inv_S gs) as (gsa & gstl & Hi).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hj).
+            eapply andb_true_iff; split.
+            ++
+              subst.
+              exact (Ha Fin.F1).
+            ++
+              eapply IHn;
+              intro fz.
+              pose proof (Ha (Fin.FS fz)) as Hk.
+              subst; cbn in Hk |- *.
+              exact Hk.
+        Qed.
+
+          
 
 
         Lemma generalised_and_accepting_conversations_correctness : 
@@ -1490,8 +1551,7 @@ Module Zkp.
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
-              (mk_sigma 1 1 1
-                [(nth a f)] c [(nth r f)]) = true
+              ([(nth a f)]; c; [(nth r f)]) = true
           end) <->
           generalised_and_accepting_conversations gs hs s = true.         
         Proof.
@@ -1507,32 +1567,167 @@ Module Zkp.
 
         (* end of properites *)
 
+        (* Proof that we are using the same challenge for all 
+          relations *)
+        Lemma construct_and_conversations_schnorr_challenge : 
+          ∀ (n : nat) (xs : t F n) (gs : t G n) (us : t F n) 
+          (c : F) (aw : t G n) (cw : t F 1) (rw : t F n),
+          (aw; cw; rw) = construct_and_conversations_schnorr xs gs us c ->
+          cw = [c].
+        Proof.
+          destruct n as [|n].
+          +
+            cbn;
+            intros * ? ? ? ? ? ? ? Ha.
+            inversion Ha; subst;
+            reflexivity.
+          +
+            cbn;
+            intros ? ? ? ? ? ? ? H.
+            destruct (vector_inv_S xs) as (xsa & xstl & Ha).
+            destruct (vector_inv_S gs) as (gsa & gstl & Hb).
+            destruct (vector_inv_S us) as (usa & ustl & Hc).
+            remember (construct_and_conversations_schnorr xstl gstl ustl c) 
+            as s. 
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            rewrite Hd in H;
+            inversion H; 
+            reflexivity.
+        Qed.
+
+        Lemma construct_and_conversations_simulator_challenge : 
+          ∀ (n : nat) (gs hs : t G n) (us : t F n) 
+          (c : F) (aw : t G n) (cw : t F 1) (rw : t F n),
+          (aw; cw; rw) = construct_and_conversations_simulator gs hs us c ->
+          cw = [c].
+        Proof.
+          destruct n as [|n].
+          +
+            cbn;
+            intros * ? ? ? ? ? ? ? Ha.
+            inversion Ha; subst;
+            reflexivity.
+          +
+            cbn;
+            intros ? ? ? ? ? ? ? H.
+            destruct (vector_inv_S gs) as (gsa & gstl & Hb).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hc).
+            destruct (vector_inv_S us) as (usa & ustl & Hd).
+            remember (construct_and_conversations_simulator gstl hstl ustl c) 
+            as s. 
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            rewrite Hd in H;
+            inversion H; 
+            reflexivity.
+        Qed.
+        (* end of same challenge *)
+
         (*
-          ∃ x₁ : g₁ = h₁^x₁ ..... 
+          ∃ x₁ x₂ x₃ : F : g₁ = h₁^x₁ ∧ g₂ = h₂^x₂ ∧ g₃ = h₃^x₃ ..... 
         *)
         Context
-        {n : nat}
-        (xs : Vector.t F n)
-        (gs hs : Vector.t G n)
-        (R : forall (f : Fin.t n), 
-          (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
+          {n : nat}
+          (xs : Vector.t F n)
+          (gs hs : Vector.t G n)
+          (R : forall (f : Fin.t n), 
+            (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
 
         (* completeness *)
-
+       
         Lemma construct_and_conversations_schnorr_completeness : 
           forall (us : Vector.t F n) (c : F),
           generalised_and_accepting_conversations gs hs
             (construct_and_conversations_schnorr xs gs us c) = true.
         Proof.
-        Admitted.
+          induction n as [|n' IHn].
+          +
+            intros *.
+            cbn; reflexivity.
+          +
+            intros *.
+            cbn.
+            destruct (vector_inv_S xs) as (xsa & xstl & Ha).
+            destruct (vector_inv_S gs) as (gsa & gstl & Hb).
+            destruct (vector_inv_S us) as (usa & ustl & Hc).
+            remember (construct_and_conversations_schnorr xstl gstl ustl c) 
+            as s. 
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            destruct (vector_inv_S hs) as (hsa & hstl & He).
+            eapply andb_true_iff.
+            split.
+            ++
+              eapply schnorr_completeness.
+              (* I need hsa = gsa^x *)
+              subst.
+              specialize (R Fin.F1); 
+              cbn in R; subst; reflexivity.
+            ++
+              specialize (IHn xstl gstl hstl).
+              assert (Hg : (∀ f : Fin.t n', gstl[@f] ^ xstl[@f] = hstl[@f])).
+              intros f; subst.
+              exact (R (Fin.FS f)).
+              specialize (IHn Hg ustl c).
+              rewrite <-Heqs, Hd in IHn.
+              rewrite Hd in Heqs.
+              eapply construct_and_conversations_schnorr_challenge in Heqs.
+              rewrite <-Heqs.
+              exact IHn. 
+        Qed.
 
 
+        
         Lemma construct_and_conversations_simulator_completeness : 
           forall (us : Vector.t F n) (c : F),
           generalised_and_accepting_conversations gs hs
             (construct_and_conversations_simulator gs hs us c) = true.
         Proof.
-        Admitted.
+          induction n as [|n' IHn].
+          +
+            intros *;
+            cbn; reflexivity.
+          +
+            intros *;
+            cbn.
+            destruct (vector_inv_S gs) as (gsa & gstl & Ha).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hb).
+            destruct (vector_inv_S us) as (usa & ustl & Hc).
+            destruct (vector_inv_S xs) as (xsa & xstl & Hd).
+            remember (construct_and_conversations_simulator gstl hstl ustl c) 
+            as s. 
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            eapply andb_true_iff.
+            split.
+            ++
+              subst.
+              now eapply simulator_completeness.
+            ++
+              specialize (IHn xstl gstl hstl).
+              assert (Hg : (∀ f : Fin.t n', gstl[@f] ^ xstl[@f] = hstl[@f])).
+              intros f; subst.
+              exact (R (Fin.FS f)).
+              specialize (IHn Hg ustl c).
+              rewrite <-Heqs, Hd in IHn.
+              rewrite Hd in Heqs.
+              eapply construct_and_conversations_simulator_challenge in Heqs.
+              rewrite <-Heqs.
+              exact IHn.
+        Qed. 
 
 
         (* special soundeness (proof of knowledge) *)
@@ -1542,12 +1737,100 @@ Module Zkp.
           generalised_and_accepting_conversations gs hs (a; c₁; r₁) = true ->
           generalised_and_accepting_conversations gs hs (a; c₂; r₂) = true ->
           c₁ <> c₂ ->
-          (∀ (f : Fin.t n), ∃ ys : Vector.t F n,  
+          (∃ ys : Vector.t F n, ∀ (f : Fin.t n), 
             (nth gs f)^(nth ys f) = (nth hs f)).
         Proof using -(xs R).
           clear xs R. (* otherwise trival *)
-        Admitted.
-        
+          induction n as [|n' IHn].
+          +
+            intros * Ha Hb Hc.
+            exists [];
+            intros f; inversion f.
+          +
+            intros * Ha Hb Hc.
+            destruct (vector_inv_S a) as (ah & atl & Hd).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & He).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hf).
+            destruct (vector_inv_S c₂) as (ch₂ & ctl₂ & Hg).
+            destruct (vector_inv_S r₂) as (rh₂ & rtl₂ & Hi).
+            destruct (vector_inv_S gs) as (gsh & gstl & Hj).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hk).
+            specialize (IHn gstl hstl atl c₁ rtl₁ c₂ rtl₂).
+            rewrite Hd, Hf, He, Hj, Hk in Ha; 
+            cbn in Ha.
+            rewrite Hd, Hg, Hi, Hj, Hk in Hb; 
+            cbn in Hb.
+            eapply andb_true_iff in Ha, Hb.
+            destruct Ha as [Hal Har];
+            destruct Hb as [Hbl Hbr].
+            rewrite <-He in Har;
+            rewrite <-Hg in Hbr.
+            specialize (IHn Har Hbr Hc).
+            destruct IHn as (ys & IHn).
+            exists (((rh₁ - rh₂) * inv (ch₁ - ch₂)) :: ys).
+            intro f.
+            destruct (fin_inv_S _ f) as [hf | (hf & Hl)].
+            ++
+              subst; cbn.
+              rewrite dec_true in Hal, Hbl.
+              eapply f_equal with (f := ginv) in Hbl.
+              rewrite connection_between_vopp_and_fopp in Hbl.
+              rewrite group_inv_flip in Hbl.
+              rewrite commutative in Hbl.
+              pose proof (@rewrite_gop G gop _ _ _ _ Hal Hbl) as Hcom.
+              rewrite <-(@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+              rewrite <-ring_sub_definition in Hcom.
+              assert (Hwt : gop ah (hsh ^ ch₁) = gop (hsh ^ ch₁) ah).
+              rewrite commutative; reflexivity.
+              rewrite Hwt in Hcom; clear Hwt.
+              setoid_rewrite <-(@monoid_is_associative G (@eq G) gop gid) 
+              in Hcom.
+              assert (Hwt : (gop ah (gop (ginv ah) (ginv (hsh ^ ch₂)))) = 
+              (ginv (hsh ^ ch₂))).
+              rewrite associative.
+              rewrite group_is_right_inverse,
+              monoid_is_left_idenity;
+              reflexivity.
+              rewrite Hwt in Hcom; clear Hwt.
+              rewrite connection_between_vopp_and_fopp in Hcom.
+              rewrite <-(@vector_space_smul_distributive_fadd 
+                F (@eq F) zero one add mul sub div 
+                opp inv G (@eq G) gid ginv gop gpow) in Hcom.
+              apply f_equal with (f := fun x => x^(inv (ch₁ + opp ch₂)))
+              in Hcom.
+              rewrite !smul_pow_up in Hcom.
+              assert (Hw : (ch₁ + opp ch₂) * inv (ch₁ + opp ch₂) = 
+              (inv (ch₁ + opp ch₂) * (ch₁ + opp ch₂))).
+              rewrite commutative; reflexivity.
+              rewrite Hw in Hcom; clear Hw.
+              rewrite field_is_left_multiplicative_inverse in Hcom.
+              pose proof vector_space_field_one as Hone.
+              unfold is_field_one in Hone.
+              specialize (Hone hsh).
+              rewrite Hone in Hcom.
+              rewrite <-ring_sub_definition in Hcom.
+              exact Hcom.
+              intros Hf.
+              assert (Ht : ch₁ <> ch₂).
+              intro Hg; eapply Hc;
+              subst. f_equal.
+              rewrite (vector_inv_0 ctl₁);
+              rewrite (vector_inv_0 ctl₂);
+              reflexivity.
+              pose proof ring_neq_sub_neq_zero ch₁ ch₂ Ht as Hw.
+              apply Hw.
+              rewrite ring_sub_definition.
+              exact Hf.
+              all:typeclasses eauto.
+            ++
+              specialize (IHn hf).
+              rewrite Hj, Hk, Hl; cbn.
+              exact IHn.
+        Qed.
+        (* what an awesome proof *)
+
 
         (* special honest verifier zero-knowledge *)
          (* Every element in generalised schnorr distribution 
@@ -1805,16 +2088,16 @@ Module Zkp.
         Admitted.
 
 
-        (* Everything good upto here *)
+       
         (* special soundness (proof of knowledge) *)
          
         Lemma generalise_eq_sigma_soundenss :
-         forall (a : Vector.t G n) (c₁ : Vector.t F 1) 
-         (r₁ : Vector.t F n) (c₂ : Vector.t F 1) (r₂ : Vector.t F n),
+         forall (a : Vector.t G (1 + n)) (c₁ : Vector.t F 1) 
+         (r₁ : Vector.t F 1) (c₂ : Vector.t F 1) (r₂ : Vector.t F 1),
          generalised_eq_accepting_conversations gs hs (a; c₁; r₁) = true ->
          generalised_eq_accepting_conversations gs hs (a; c₂; r₂) = true ->
          c₁ <> c₂ ->
-         ∃ y : F, (forall (f : Fin.t n),
+         ∃ y : F, (forall (f : Fin.t (1 + n)),
           (nth gs f)^y = (nth hs f)).
         Proof using -(x R).
           clear x R. (* otherwise trival *)
