@@ -1833,7 +1833,7 @@ Module Zkp.
 
 
         (* special honest verifier zero-knowledge *)
-         (* Every element in generalised schnorr distribution 
+        (* Every element in generalised schnorr distribution 
           is an accepting conversation and it's probability 1 / |lf|^n 
         *)
         Lemma generalised_and_special_honest_verifier_schnorr_dist : 
@@ -1858,9 +1858,6 @@ Module Zkp.
           b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
         Proof.
         Admitted.
-
-
-
 
 
       End Proofs.
@@ -1889,33 +1886,28 @@ Module Zkp.
           c : single challenge
         *)
 
-        (* we construct n copies of the witness x and 
-          call And composition 
-        *)
+       
         Definition construct_eq_conversations_schnorr :
           forall {n : nat}, 
-          F -> Vector.t G (1 + n) -> Vector.t F (1 + n) -> 
+          F -> Vector.t G (1 + n) -> F  -> 
           F -> @sigma_proto (1 + n) 1 1. (* @sigma_proto n 1 1 *)
         Proof.
           refine(
             fix Fn n :=
             match n with 
-            | 0 => fun x gs us c => _ 
-            | S n' => fun x gs us c => _
+            | 0 => fun x gs u c => _ 
+            | S n' => fun x gs u c => _
             end).
           +
             (* base case *)
             destruct (vector_inv_S gs) as (g & _ & _).
-            destruct (vector_inv_S us) as (u & _ & _).
             exact (schnorr_protocol x g u c).
           +
             (* inductive case *)
             destruct (vector_inv_S gs) as (g & gtl & _).
-            destruct (vector_inv_S us) as (u & utl & _).
-            
             exact (compose_two_eq_sigma_protocols 
             (schnorr_protocol x g u c)
-            (Fn _ x gtl utl c)).
+            (Fn _ x gtl u c)).
         Defined.
             
        
@@ -1925,28 +1917,26 @@ Module Zkp.
         Definition construct_eq_conversations_simulator :
           forall {n : nat}, 
           Vector.t G (1 + n) ->  Vector.t G (1 + n) -> 
-          Vector.t F (1 + n) -> F -> @sigma_proto (1 + n) 1 1.
+          F -> F -> @sigma_proto (1 + n) 1 1.
         Proof.
           refine(
             fix Fn n :=
             match n with 
-            | 0 => fun gs hs us c => _ 
-            | S n' => fun gs hs us c => _
+            | 0 => fun gs hs u c => _ 
+            | S n' => fun gs hs u c => _
             end).
           +
             (* base case *)
             destruct (vector_inv_S gs) as (g & _ & _).
             destruct (vector_inv_S hs) as (h & _ & _).
-            destruct (vector_inv_S us) as (u & _ & _).
             exact (schnorr_simulator g h u c).
           +
             (* inductive case *)
             destruct (vector_inv_S gs) as (g & gtl & _).
             destruct (vector_inv_S hs) as (h & htl & _).
-            destruct (vector_inv_S us) as (u & utl & _).
             exact (compose_two_eq_sigma_protocols 
             (schnorr_simulator g h u c)
-            (Fn _ gtl htl utl c)).
+            (Fn _ gtl htl u c)).
           Defined.
 
 
@@ -1984,13 +1974,11 @@ Module Zkp.
 
          (* Check the definition *)
          Definition generalised_eq_schnorr_distribution  
-          {n : nat} (lf : list F) 
-          (Hlfn : lf <> List.nil) (x : F) 
+          {n : nat} (lf : list F)  (Hlfn : lf <> List.nil) (x : F) 
           (gs : Vector.t G (1 + n)) (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
-          (* draw 1 + n random elements *)
-          us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) (1 + n) ;;
-          Ret (construct_eq_conversations_schnorr x gs us c).
+          (* draw u randomly *)
+          u <- (uniform_with_replacement lf Hlfn) ;;
+          Ret (construct_eq_conversations_schnorr x gs u c).
         
        
        
@@ -1999,10 +1987,9 @@ Module Zkp.
           {n : nat} (lf : list F) 
           (Hlfn : lf <> List.nil) (gs hs : Vector.t G (1 + n)) 
           (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
-          (* draw n random elements *)
-          us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) (1 + n) ;;
-          Ret (construct_eq_conversations_simulator gs hs us c).
+          (* draw u random  *)
+          u <- uniform_with_replacement lf Hlfn ;;
+          Ret (construct_eq_conversations_simulator gs hs u c).
 
         
 
@@ -2024,8 +2011,46 @@ Module Zkp.
               ([(nth a f)]; c; r) = true
           end).
         Proof.
-        Admitted.
-
+          induction n as [|n IHn].
+          +
+            intros * Ha ?.
+            cbn in f.
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun Hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hh & hstl & Hd).
+            destruct (vector_inv_S a) as (ah & atl & He).
+            destruct (fin_inv_S _ f) as [hf | (hf & Hg)];
+            [|inversion hf].
+            subst; cbn.
+            cbn in Ha |- *.
+            rewrite dec_true in Ha |- *.
+            exact Ha.
+          +
+            intros * Ha ?.
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun Hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hh & hstl & Hd).
+            destruct (vector_inv_S a) as (ah & atl & He).
+            destruct (fin_inv_S _ f) as [hf | (hf & Hg)].
+            subst; cbn in Ha |- *.
+            eapply andb_true_iff in Ha.
+            destruct Ha as [Hal Har].
+            exact Hal.
+            subst. cbn in Ha |- *.
+            eapply andb_true_iff in Ha;
+            destruct Ha as [Hal Har].
+            specialize (IHn gstl hstl _ Har hf); 
+            cbn in IHn.
+            exact IHn.
+        Qed.
 
         Lemma generalised_eq_accepting_conversations_correctness_backward : 
           forall (n : nat) (gs hs : Vector.t G (1 + n)) 
@@ -2037,7 +2062,46 @@ Module Zkp.
               ([(nth a f)]; c; r) = true
           end) -> generalised_eq_accepting_conversations gs hs s = true.
         Proof.
-        Admitted.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun Hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hh & hstl & Hd).
+            destruct (vector_inv_S a) as (ah & atl & He).
+            specialize (Ha Fin.F1).
+            rewrite Hb in Ha.
+            subst; cbn in Ha |- *;
+            exact Ha.
+          +
+
+            intros * Ha.
+            refine
+              (match s as s' return s = s' -> _ 
+              with 
+              |(a; c; r) => fun Hb => _
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hh & hstl & Hd).
+            destruct (vector_inv_S a) as (ah & atl & He).
+            rewrite Hc, Hd, He; cbn.
+            eapply andb_true_iff.
+            split.
+            specialize (Ha Fin.F1);
+            rewrite Hb, Hc, Hd, He in Ha; 
+            cbn in Ha; exact Ha.
+            eapply IHn;
+            intros f.
+            pose proof (Ha (Fin.FS f)) as Hf.
+            rewrite Hb, Hc, Hd, He in Hf; 
+            cbn in Hf.
+            exact Hf.
+        Qed.
+            
 
 
         Lemma generalised_eq_accepting_conversations_correctness : 
@@ -2061,11 +2125,81 @@ Module Zkp.
         Qed.
       
 
+        Lemma construct_eq_conversations_schnorr_challenge_and_response :
+          forall (n : nat) (aw gs : Vector.t G (1 + n)) 
+          (cw rw : Vector.t F 1) (c x u : F), 
+          (aw; cw; rw) = construct_eq_conversations_schnorr x gs u c ->
+          cw = [c] ∧ rw = [u + c * x].
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            destruct (vector_inv_S gs) as (gsh & gstl & Hb).
+            subst; cbn in Ha.
+            unfold schnorr_protocol in Ha; 
+            inversion Ha; subst. 
+            refine (conj _ _); reflexivity.
+          +
+            intros * Ha.
+            destruct (vector_inv_S aw) as (awh & awtl & Hb).
+            destruct (vector_inv_S gs) as (gsh & gstl & Hc).
+            specialize (IHn awtl gstl cw rw c x u).
+            rewrite Hc in Ha; cbn in Ha.
+            remember (construct_eq_conversations_schnorr x gstl u c) 
+            as s.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            rewrite Hd, Hb in Ha.
+            inversion Ha; subst.
+            refine(conj _ _);
+            reflexivity.
+        Qed.
+
+        Lemma construct_eq_conversations_simulator_challenge_and_response :
+          forall (n : nat) (aw gs hs : Vector.t G (1 + n)) 
+          (cw rw : Vector.t F 1) (u c : F), 
+          (aw; cw; rw) = construct_eq_conversations_simulator gs hs u c ->
+          cw = [c] ∧ rw = [u].
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            destruct (vector_inv_S gs) as (gsh & gstl & Hb).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hc).
+            subst; cbn in Ha.
+            unfold schnorr_protocol in Ha; 
+            inversion Ha; subst. 
+            refine (conj _ _); reflexivity.
+          +
+            intros * Ha.
+            destruct (vector_inv_S aw) as (awh & awtl & Hb).
+            destruct (vector_inv_S gs) as (gsh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hd).
+            specialize (IHn awtl gstl hstl cw rw u c).
+            rewrite Hc in Ha; cbn in Ha.
+            rewrite Hd in Ha; cbn in Ha.
+            remember (construct_eq_conversations_simulator gstl hstl u c) 
+            as s.
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            rewrite Hd, Hb in Ha.
+            inversion Ha; subst.
+            refine(conj _ _);
+            reflexivity.
+        Qed.
+
+
         (* end of properties *)
 
         Context
           {n : nat}
-          (x : F)
+          (x : F) (* common witness for all relations *)
           (gs hs : Vector.t G (1 + n))
           (R : forall (f : Fin.t (1 + n)), 
             (Vector.nth gs f)^x = Vector.nth hs f).
@@ -2073,22 +2207,94 @@ Module Zkp.
         (* completeness *)
 
         Lemma construct_eq_conversations_schnorr_completeness : 
-          forall (us : Vector.t F (1 + n)) (c : F),
+          forall (u c : F),
           generalised_eq_accepting_conversations gs hs
-            (construct_eq_conversations_schnorr x gs us c) = true.
+            (construct_eq_conversations_schnorr x gs u c) = true.
         Proof.
-        Admitted.
+          induction n as [|n' IHn].
+          +
+            intros *.
+            destruct (vector_inv_S gs) as (gsa & gstl & Ha).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hb).
+            specialize (R Fin.F1); subst; cbn in R |- *.
+            eapply schnorr_completeness.
+            rewrite <-R; reflexivity.
+          +
+            intros *; cbn.
+            destruct (vector_inv_S gs) as (gsa & gstl & Ha).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hb).
+            remember (construct_eq_conversations_schnorr x gstl u c) 
+            as s. 
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            eapply andb_true_iff.
+            split.
+            ++
+              eapply schnorr_completeness.
+              (* I need hsa = gsa^x *)
+              subst.
+              specialize (R Fin.F1); 
+              cbn in R; subst; reflexivity.
+            ++
+              specialize (IHn gstl hstl).
+              assert (Hg : (∀ f : Fin.t (1 + n'), gstl[@f] ^ x = hstl[@f])).
+              intros f; subst.
+              exact (R (Fin.FS f)).
+              specialize (IHn Hg u c).
+              rewrite <-Heqs, Hd in IHn.
+              rewrite Hd in Heqs.
+              eapply construct_eq_conversations_schnorr_challenge_and_response 
+              in Heqs.
+              destruct Heqs as [Heqsl Heqsr].
+              subst; exact IHn.
+        Qed.
 
 
         Lemma construct_eq_conversations_simulator_completeness : 
-          forall (us : Vector.t F (1 + n)) (c : F),
+          forall (u c : F),
           generalised_eq_accepting_conversations gs hs
-            (construct_eq_conversations_simulator gs hs us c) = true.
+            (construct_eq_conversations_simulator gs hs u c) = true.
         Proof.
-        Admitted.
+          induction n as [|n' IHn].
+          +
+            intros *.
+            destruct (vector_inv_S gs) as (gsa & gstl & Ha).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hb).
+            specialize (R Fin.F1); subst; cbn in R |- *.
+            eapply simulator_completeness.
+          +
+            intros *; cbn.
+            destruct (vector_inv_S gs) as (gsa & gstl & Ha).
+            destruct (vector_inv_S hs) as (hsa & hstl & Hb).
+            remember (construct_eq_conversations_simulator gstl hstl u c) 
+            as s. 
+            refine
+            (match s as s'
+            return s = s' -> _ with 
+            |(aw; cw; rw) => fun Hd => _  
+            end eq_refl); cbn.
+            eapply andb_true_iff.
+            split.
+            ++
+              eapply simulator_completeness.
+            ++
+              specialize (IHn gstl hstl).
+              assert (Hg : (∀ f : Fin.t (1 + n'), gstl[@f] ^ x = hstl[@f])).
+              intros f; subst.
+              exact (R (Fin.FS f)).
+              specialize (IHn Hg u c).
+              rewrite <-Heqs, Hd in IHn.
+              rewrite Hd in Heqs.
+              eapply construct_eq_conversations_simulator_challenge_and_response
+              in Heqs.
+              destruct Heqs; subst.
+              exact IHn.
+        Qed.
+              
 
-
-       
         (* special soundness (proof of knowledge) *)
          
         Lemma generalise_eq_sigma_soundenss :
@@ -2101,9 +2307,37 @@ Module Zkp.
           (nth gs f)^y = (nth hs f)).
         Proof using -(x R).
           clear x R. (* otherwise trival *)
+          
+
         Admitted.
 
         (* special honest verifier zero-knowledge-proof *)
+        (* Every element in generalised schnorr distribution 
+          is an accepting conversation and it's probability 1 / |lf|
+        *)
+        Lemma generalised_eq_special_honest_verifier_schnorr_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_eq_schnorr_distribution lf Hlfn x gs c) ->
+            (* it's an accepting conversation and probability is 1 / |lf|*)
+            generalised_eq_accepting_conversations gs hs a = true ∧ 
+          b = mk_prob 1 (Pos.of_nat (List.length lf)).
+        Proof.
+          intros * Ha.
+        Admitted.
+
+
+        Lemma generalised_eq_special_honest_verifier_simulator_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_eq_simulator_distribution lf Hlfn gs hs c) ->
+            (* first component is true and probability is 1/ |lf| *)
+          generalised_eq_accepting_conversations gs hs a = true ∧ 
+          b = mk_prob 1 (Pos.of_nat (List.length lf)).
+        Proof.
+        Admitted.
 
 
 
