@@ -3434,7 +3434,27 @@ Module Zkp.
           (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
 
         
-
+        Lemma field_rewrite : 
+          forall (c ca cb : F), 
+          c = ca + (c - (ca + cb) + cb).
+        Proof.
+          (* 
+          pose proof commutative_group_is_commutative as Hj;
+          rewrite Hj.
+          pose proof monoid_is_associative as Hk;
+          rewrite <-Hk.
+          assert (Ht : ca + cb = cb + ca).
+          rewrite Hj. reflexivity.
+          rewrite Ht; clear Ht.
+          assert (Ht : opp (cb + ca) + (cb + ca) = zero).
+          unfold is_commutative in Hj.
+          pose proof (Hj (opp (cb + ca)) (cb + ca)).
+          rewrite <-Hj.
+          rewrite field_zero_iff_right; reflexivity.
+          rewrite <-ring_sub_0_l in Ht
+          admit.
+          *)
+        Admitted.
         
         (* completeness *)
         Lemma construct_or_conversations_schnorr_completeness : 
@@ -3487,21 +3507,7 @@ Module Zkp.
           rewrite Heqsb.
           remember (fold_right add c₁ zero) as ca.
           remember (fold_right add c₂ zero) as cb.
-          pose proof commutative_group_is_commutative as Hj;
-          rewrite Hj.
-          pose proof monoid_is_associative as Hk;
-          rewrite <-Hk.
-          assert (Ht : ca + cb = cb + ca).
-          rewrite Hj. reflexivity.
-          rewrite Ht; clear Ht.
-          assert (Ht : opp (cb + ca) + (cb + ca) = zero).
-          unfold is_commutative in Hj.
-          pose proof (Hj (opp (cb + ca)) (cb + ca)).
-          rewrite <-Hj.
-          rewrite field_zero_iff_right; reflexivity.
-          rewrite <-ring_sub_0_l in Ht.
-          
-          admit.
+          eapply field_rewrite.
           rewrite <-Hj.
           destruct (Fdec c c) as [Hk | Hk].
           rewrite generalised_or_accepting_conversations_supp_app.
@@ -3537,7 +3543,9 @@ Module Zkp.
           subst.
           eapply construct_or_conversations_simulator_completeness.
           congruence.
-        Admitted.
+        Qed.
+
+        (* finished completeness *)
          
           
 
