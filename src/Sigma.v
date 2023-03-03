@@ -39,8 +39,6 @@ Module Zkp.
       {ginv : G -> G}
       {gop : G -> G -> G} 
       {gpow : G -> F -> G}
-      {Hvec: @vector_space F (@eq F) zero one add mul sub 
-        div opp inv G (@eq G) gid ginv gop gpow}
       {Gdec : forall x y : G, {x = y} + {x <> y}}. 
       (* decidable equality on G *)
      
@@ -134,6 +132,11 @@ Module Zkp.
       End Def.
 
       Section Proofs.
+
+        (* Vector Space *)
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
 
 
         (* properties about  accepting_conversation  *)
@@ -828,10 +831,13 @@ Module Zkp.
       Section Proofs. 
 
         Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow} (* vector space *)
           (x : F) (* secret witness *)
           (g h : G) (* public values *) 
           (R : h = g ^ x). (* relation that 
           prover trying to establish, or convince a verifier*)
+
 
        
         (* 
@@ -1645,6 +1651,8 @@ Module Zkp.
           ∃ x₁ x₂ x₃ : F : g₁ = h₁^x₁ ∧ g₂ = h₂^x₂ ∧ g₃ = h₃^x₃ ..... 
         *)
         Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}
           {n : nat}
           (xs : Vector.t F n)
           (gs hs : Vector.t G n)
@@ -2378,6 +2386,8 @@ Module Zkp.
         (* end of properties *)
 
         Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}
           {n : nat}
           (x : F) (* common witness for all relations *)
           (gs hs : Vector.t G (1 + n))
@@ -3117,6 +3127,8 @@ Module Zkp.
 
         
         Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}
           {m n : nat}
           (gsl : Vector.t G m) 
           (gsr : Vector.t G n)
