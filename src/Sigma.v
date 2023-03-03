@@ -138,9 +138,9 @@ Module Zkp.
 
         (* properties about  accepting_conversation  *)
         Lemma accepting_conversation_correct : 
-            forall g h a c r, 
-            accepting_conversation g h (a; c; r) = true <->
-            (g^(hd r)) = (gop (hd a) (h^(hd c))). (* g^r := a * h^c *)
+            forall (g h a : G) (c r : F), 
+            accepting_conversation g h ([a]; [c]; [r]) = true <->
+            (g^r) = (gop a (h^c)). (* g^r := a ∙ h^c *)
         Proof.
           intros *; 
           split; intros Ha.
@@ -366,7 +366,7 @@ Module Zkp.
         Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
 
-        Lemma probability_schnorr_distribution_generic_probability : 
+        Lemma schnorr_distribution_probability_generic : 
           forall l trans prob c n,
           (forall trx prx, List.In (trx, prx) l -> 
             prx = 1 / n) ->  
@@ -397,7 +397,7 @@ Module Zkp.
 
 
 
-        Lemma probability_schnorr_distribution_generic_transcript : 
+        Lemma schnorr_distribution_transcript_generic : 
           forall l trans prob c,
           List.In (trans, prob)
             (Bind l
@@ -488,7 +488,7 @@ Module Zkp.
           conversation is accepting
         *)
 
-        Lemma probability_schnorr_distribution : 
+        Lemma schnorr_distribution_probability : 
           forall (lf : list F) 
           (Hlfn : lf <> List.nil) (c : F) a₁ c₁ r₁ prob n,
           n = List.length lf -> 
@@ -505,25 +505,22 @@ Module Zkp.
             unfold uniform_with_replacement.
             rewrite List.map_length;
             reflexivity.
-            pose proof probability_schnorr_distribution_generic_probability
+            pose proof schnorr_distribution_probability_generic
             (uniform_with_replacement lf Hlfn)
             (a₁; c₁; r₁) prob c n as Ht.
-            rewrite Hn.
-            rewrite Hn in Ht.
-            specialize (Ht 
-              (uniform_probability lf Hlfn) Hl).
-            exact Ht.
+            rewrite Hn in Ht |- *.
+            exact (Ht (uniform_probability lf Hlfn) Hl).
           +
             unfold schnorr_distribution in Hl;
             cbn in Hl.
-            eapply probability_schnorr_distribution_generic_transcript.
+            eapply schnorr_distribution_transcript_generic;
             exact Hl.
         Qed.
             
       
 
           
-        Lemma probability_simulator_distribution_generic_probability : 
+        Lemma simulator_distribution_probability_generic : 
           forall l trans prob c n,
           (forall trx prx, List.In (trx, prx) l -> 
             prx = 1 / n) ->  
@@ -552,7 +549,7 @@ Module Zkp.
             exact Hwb.
         Qed.
 
-        Lemma probability_simulator_distribution_generic_transcript : 
+        Lemma simulator_distribution_transcript_generic : 
           forall l trans prob c, 
           List.In (trans, prob)
             (Bind l
@@ -725,7 +722,7 @@ Module Zkp.
             unfold uniform_with_replacement.
             rewrite List.map_length;
             reflexivity.
-            pose proof probability_simulator_distribution_generic_probability
+            pose proof simulator_distribution_probability_generic
             (uniform_with_replacement lf Hlfn)
             (a₁; c₁; r₁) prob c n as Ht.
             rewrite Hn.
@@ -735,7 +732,7 @@ Module Zkp.
             exact Ht.
           +
             unfold simulator_distribution in Hl.
-            eapply probability_simulator_distribution_generic_transcript;
+            eapply simulator_distribution_transcript_generic;
             exact Hl.
         Qed.
        
@@ -2484,6 +2481,11 @@ Module Zkp.
           b = mk_prob 1 (Pos.of_nat (List.length lf)).
         Proof.
           intros * Ha.
+          refine(conj _ _).
+          +
+            cbn in Ha.
+            admit.
+          +
         Admitted.
 
 
@@ -2853,15 +2855,6 @@ Module Zkp.
         Admitted. 
          
           
-
-
-          
-          
-
-
-
-
-
 
 
       End Proofs.
