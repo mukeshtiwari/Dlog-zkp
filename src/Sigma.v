@@ -414,64 +414,16 @@ Module Zkp.
             ++
               simpl in Ha;
               destruct Ha as [Ha | Ha];
-              inversion Ha; subst.
-              unfold schnorr_protocol, 
-              accepting_conversation;
-              cbn.
-              (* algebraic manipulation *)
-              assert (Hb : (g ^ x) ^ c = (g ^ (x * c))).
-              rewrite smul_pow_up. 
-              reflexivity.
-              rewrite Hb; 
-              clear Hb.
-              assert (Hb : (gop (g ^ a) (g ^ (x * c))) = 
-              g^(a + x * c)).
-              rewrite (@vector_space_smul_distributive_fadd 
-                F (@eq F) zero one add mul sub div 
-                opp inv G (@eq G) gid ginv gop gpow).
-              reflexivity.
-              typeclasses eauto.
-              rewrite Hb; 
-              clear Hb.
-              assert (Hg : c * x = x * c).
-              rewrite (@commutative_ring_is_commutative F (@eq F) zero 
-                one opp add sub mul).
-              reflexivity.
-              typeclasses eauto.
-              rewrite Hg; 
-              clear Hg.
-              now rewrite !dec_eq_true.
+              inversion Ha.
+              eapply schnorr_completeness.
             ++
              
               remember (((la, lp) :: l)%list) as ls.
               cbn in Ha.
               destruct Ha as [Ha | Ha].
               +++
-                inversion Ha; subst;
-                unfold accepting_conversation, 
-                schnorr_protocol; cbn.
-                assert (Hb : (g ^ x) ^ c = (g ^ (x * c))).
-                rewrite smul_pow_up. 
-                reflexivity.
-                rewrite Hb; 
-                clear Hb.
-                assert (Hb : (gop (g ^ a) (g ^ (x * c))) = 
-                g^(a + x * c)).
-                rewrite (@vector_space_smul_distributive_fadd 
-                  F (@eq F) zero one add mul sub div 
-                  opp inv G (@eq G) gid ginv gop gpow).
-                reflexivity.
-                typeclasses eauto.
-                rewrite Hb; 
-                clear Hb.
-                assert (Hg : c * x = x * c).
-                rewrite (@commutative_ring_is_commutative F (@eq F) zero 
-                  one opp add sub mul).
-                reflexivity.
-                typeclasses eauto.
-                rewrite Hg; 
-                clear Hg.
-                now rewrite !dec_eq_true.
+                inversion Ha.
+                eapply  schnorr_completeness.
               +++
                 (* inductive case *)
                 eapply IHl; exact Ha.
@@ -549,6 +501,7 @@ Module Zkp.
             exact Hwb.
         Qed.
 
+
         Lemma simulator_distribution_transcript_generic : 
           forall l trans prob c, 
           List.In (trans, prob)
@@ -566,133 +519,16 @@ Module Zkp.
             ++
               simpl in Ha;
               destruct Ha as [Ha | Ha];
-              inversion Ha; subst.
-              unfold schnorr_simulator, 
-              accepting_conversation;
-              cbn.
-              (* algebraic manipulation. There should 
-              a way to automate these proofs! *)
-              assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
-              rewrite smul_pow_up. 
-              reflexivity.
-              rewrite Hg; 
-              clear Hg.
-              assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
-              rewrite smul_pow_up. 
-              reflexivity.
-              rewrite Hg; 
-              clear Hg.
-              assert (Ht : 
-                (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
-              (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
-              rewrite <- (@monoid_is_associative G (@eq G) gop gid).
-              reflexivity. 
-              typeclasses eauto.
-              rewrite Ht; clear Ht.
-              rewrite <-(@vector_space_smul_distributive_fadd 
-                F (@eq F) zero one add mul sub div 
-                opp inv G (@eq G) gid ginv gop gpow).
-              assert (Ht : (x * opp c + x * c) = 
-                x * (opp c + c)).
-                pose proof ring_is_left_distributive.
-              unfold is_left_distributive in H.
-              specialize (H x (opp c) c).
-              symmetry.
-              exact H.
-              rewrite Ht; clear Ht.
-              assert (Ht : (opp c) + c = c + opp c).
-              rewrite (@commutative_group_is_commutative F 
-              (@eq F) add zero opp).
-              reflexivity.
-              typeclasses eauto.
-              rewrite Ht; 
-              clear Ht.
-              assert (Ht : (c + opp c) = zero).
-              rewrite field_zero_iff_right.
-              reflexivity.
-              rewrite Ht; clear Ht.
-              assert (Ht : x * zero = zero).
-              rewrite ring_mul_0_r;
-              reflexivity.
-              rewrite Ht; 
-              clear Ht.
-              assert (Ht : (g ^ zero) = gid).
-              rewrite vector_space_field_zero.
-              reflexivity.
-              rewrite Ht; 
-              clear Ht.
-              assert (Ht : (gop (g ^ a) gid) = g^a).
-              rewrite monoid_is_right_identity.
-              reflexivity.
-              rewrite Ht;
-              clear Ht.
-              now rewrite !dec_eq_true.
-              eauto.
+              inversion Ha.
+              eapply simulator_completeness.
             ++
              
               remember (((la, lp) :: l)%list) as ls.
               cbn in Ha.
               destruct Ha as [Ha | Ha].
               +++
-                inversion Ha; subst;
-                unfold accepting_conversation, 
-                schnorr_simulator; cbn.
-                assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
-              rewrite smul_pow_up. 
-              reflexivity.
-              rewrite Hg; 
-              clear Hg.
-              assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
-              rewrite smul_pow_up. 
-              reflexivity.
-              rewrite Hg; 
-              clear Hg.
-              assert (Ht : 
-                (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
-              (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
-              rewrite <- (@monoid_is_associative G (@eq G) gop gid).
-              reflexivity. 
-              typeclasses eauto.
-              rewrite Ht; clear Ht.
-              rewrite <-(@vector_space_smul_distributive_fadd 
-                F (@eq F) zero one add mul sub div 
-                opp inv G (@eq G) gid ginv gop gpow).
-              assert (Ht : (x * opp c + x * c) = 
-                x * (opp c + c)).
-                pose proof ring_is_left_distributive.
-                unfold is_left_distributive in H.
-                specialize (H x (opp c) c).
-                symmetry.
-                exact H.
-                rewrite Ht; clear Ht.
-                assert (Ht : (opp c) + c = c + opp c).
-                rewrite (@commutative_group_is_commutative F 
-                (@eq F) add zero opp).
-                reflexivity.
-                typeclasses eauto.
-                rewrite Ht; 
-                clear Ht.
-                assert (Ht : (c + opp c) = zero).
-                rewrite field_zero_iff_right.
-                reflexivity.
-                rewrite Ht; clear Ht.
-                assert (Ht : x * zero = zero).
-                rewrite ring_mul_0_r;
-                reflexivity.
-                rewrite Ht; 
-                clear Ht.
-                assert (Ht : (g ^ zero) = gid).
-                rewrite vector_space_field_zero.
-                reflexivity.
-                rewrite Ht; 
-                clear Ht.
-                assert (Ht : (gop (g ^ a) gid) = g^a).
-                rewrite monoid_is_right_identity.
-                reflexivity.
-                rewrite Ht;
-                clear Ht.
-                now rewrite !dec_eq_true.
-                eauto.
+                inversion Ha.
+                eapply simulator_completeness.
               +++
                 (* inductive case *)
                 eapply IHl; exact Ha.
