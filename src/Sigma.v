@@ -1,4 +1,5 @@
 Require Import Setoid
+  Coq.setoid_ring.Field_tac
   Sigma.Algebra.Hierarchy
   Sigma.Algebra.Group Sigma.Algebra.Monoid
   Sigma.Algebra.Field Sigma.Algebra.Integral_domain
@@ -3308,6 +3309,11 @@ Module Zkp.
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
             div opp inv G (@eq G) gid ginv gop gpow}.
 
+        (* add field *)
+        Add Field field_tac : (@field_theory_for_stdlib_tactic F
+            eq zero one opp add mul sub inv div vector_space_field).
+          
+
       
         Lemma construct_or_conversations_simulator_challenge : 
           forall (n : nat) (gs hs : Vector.t G n)
@@ -3434,32 +3440,6 @@ Module Zkp.
           (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
       
       
-        Add Field field_tac : (@field_theory_for_stdlib_tactic F
-            eq zero one opp add mul sub inv div vector_space_field).
-          
-        Lemma field_rewrite : 
-          forall (c ca cb : F), 
-          c = ca + (c - (ca + cb) + cb).
-        Proof.
-          intros *.
-          (* Fail field. why did this fail? *)
-          (* 
-          pose proof commutative_group_is_commutative as Hj;
-          rewrite Hj.
-          pose proof monoid_is_associative as Hk;
-          rewrite <-Hk.
-          assert (Ht : ca + cb = cb + ca).
-          rewrite Hj. reflexivity.
-          rewrite Ht; clear Ht.
-          assert (Ht : opp (cb + ca) + (cb + ca) = zero).
-          unfold is_commutative in Hj.
-          pose proof (Hj (opp (cb + ca)) (cb + ca)).
-          rewrite <-Hj.
-          rewrite field_zero_iff_right; reflexivity.
-          rewrite <-ring_sub_0_l in Ht
-          admit.
-          *)
-        Admitted.
         
         (* completeness *)
         Lemma construct_or_conversations_schnorr_completeness : 
@@ -3512,7 +3492,7 @@ Module Zkp.
           rewrite Heqsb.
           remember (fold_right add c₁ zero) as ca.
           remember (fold_right add c₂ zero) as cb.
-          eapply field_rewrite.
+          field.
           rewrite <-Hj.
           destruct (Fdec c c) as [Hk | Hk].
           rewrite generalised_or_accepting_conversations_supp_app.
