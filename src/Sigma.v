@@ -2966,7 +2966,7 @@ Module Zkp.
 
 
 
-        Definition generalised_or_accepting_conversations_supp : 
+        Definition generalised_or_accepting_conversations_supplement : 
           forall {n : nat}, 
           Vector.t G n -> Vector.t G n ->
           @sigma_proto n n n -> bool.
@@ -2985,7 +2985,7 @@ Module Zkp.
           destruct (vector_inv_S a₁) as (a & asr & _).
           destruct (vector_inv_S c₁) as (c & csr & _).
           destruct (vector_inv_S r₁) as (r & rsr & _).
-          exact ((accepting_conversation g h ([a]; [c]; [r])) &&
+          exact ((accepting_conversation g h ([a]; [c]; [r])) && (* https://github.com/benadida/helios-server/blob/master/helios/crypto/elgamal.py#L393-L397 *)
             (Fn _ gsr hsr (asr; csr; rsr))).
         Defined.
           
@@ -3010,7 +3010,7 @@ Module Zkp.
             match Fdec c (Vector.fold_right add cs zero) with 
             | left _ => 
                 (* now check sigma *)
-                generalised_or_accepting_conversations_supp gs hs (a; cs; r)
+                generalised_or_accepting_conversations_supplement gs hs (a; cs; r)
             | right _ => false (* if it's false, there is 
               no point for checking further *)
             end.
@@ -3022,13 +3022,6 @@ Module Zkp.
          
           
           
-
-
-        
-          
-
-
-
 
       End Def.
 
@@ -3042,10 +3035,10 @@ Module Zkp.
           accepting conversations and 
           hd c = sum of rest of c 
         *)
-        Lemma generalised_or_accepting_conversations_correctness_supp_forward : 
+        Lemma generalised_or_accepting_conversations_correctness_supplement_forward : 
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
-          generalised_or_accepting_conversations_supp gs hs s = true ->
+          generalised_or_accepting_conversations_supplement gs hs s = true ->
           ∀ f : Fin.t n, 
           match s with 
           | (a; c; r) => 
@@ -3087,7 +3080,7 @@ Module Zkp.
           
 
 
-        Lemma generalised_or_accepting_conversations_correctness_supp_backward : 
+        Lemma generalised_or_accepting_conversations_correctness_supplement_backward : 
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
           (∀ f : Fin.t n, 
@@ -3095,7 +3088,7 @@ Module Zkp.
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
-          end) -> generalised_or_accepting_conversations_supp gs hs s = true.
+          end) -> generalised_or_accepting_conversations_supplement gs hs s = true.
         Proof.
           induction n as [|n IHn].
           +
@@ -3135,10 +3128,10 @@ Module Zkp.
         Qed.
 
 
-        Lemma generalised_or_accepting_conversations_correctness_supp : 
+        Lemma generalised_or_accepting_conversations_correctness_supplement : 
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
-          generalised_or_accepting_conversations_supp gs hs s = true <->
+          generalised_or_accepting_conversations_supplement gs hs s = true <->
           ∀ f : Fin.t n, 
           match s with 
           | (a; c; r) => 
@@ -3149,24 +3142,24 @@ Module Zkp.
           intros *.
           split; intros Ha.
           +
-            eapply generalised_or_accepting_conversations_correctness_supp_forward;
+            eapply generalised_or_accepting_conversations_correctness_supplement_forward;
             exact Ha.
           +
-            eapply generalised_or_accepting_conversations_correctness_supp_backward;
+            eapply generalised_or_accepting_conversations_correctness_supplement_backward;
             exact Ha.
         Qed.
         
 
         
-        Lemma generalised_or_accepting_conversations_supp_app :
+        Lemma generalised_or_accepting_conversations_supplement_app :
           forall (n m : nat) 
           (gsl hsl al : Vector.t G n) (gsr hsr ar : Vector.t G m)
           (cl rl : Vector.t F n) (cr rr : Vector.t F m),
-          generalised_or_accepting_conversations_supp
+          generalised_or_accepting_conversations_supplement
             (gsl ++ gsr) (hsl ++ hsr) 
             ((al ++ ar); (cl ++ cr); (rl ++ rr)) = 
-          generalised_or_accepting_conversations_supp gsl hsl (al; cl; rl)  && 
-          generalised_or_accepting_conversations_supp gsr hsr (ar; cr; rr).
+          generalised_or_accepting_conversations_supplement gsl hsl (al; cl; rl)  && 
+          generalised_or_accepting_conversations_supplement gsr hsr (ar; cr; rr).
         Proof.
           induction n as [|n IHn].
           +
@@ -3227,7 +3220,7 @@ Module Zkp.
             exact e.
           +
             rewrite Hc; cbn.
-            eapply generalised_or_accepting_conversations_correctness_supp_forward in
+            eapply generalised_or_accepting_conversations_correctness_supplement_forward in
             Ha; exact Ha.
         Qed.
 
