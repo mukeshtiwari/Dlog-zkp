@@ -2863,6 +2863,28 @@ Module Zkp.
           mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
         end.
 
+        (* Does not involve the secret x *)
+        (* gs hs us rs *)
+        Definition construct_or_conversations_simulator :
+          forall {n : nat}, 
+          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
+          Vector.t F n -> @sigma_proto n n n.
+        Proof.
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun gs hs us rs => _
+          | S n' => fun gs hs us rs  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            destruct (vector_inv_S gs) as (gsh & gstl & _).
+            destruct (vector_inv_S hs) as (hsh & hstl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            destruct (vector_inv_S rs) as (rsh & rstl & _).
+            exact (compose_two_or_sigma_protocols 
+              (schnorr_simulator gsh hsh ush rsh)
+              (Fn _ gstl hstl ustl rstl)).
+        Defined.
 
         (* Prover knows the ith relation *)
         (* The way out is that the verifier may let the prover “cheat” a 
@@ -2893,28 +2915,6 @@ Module Zkp.
           challenges sum up to c.
         *)
 
-        (* Does not involve the secret x *)
-        (* gs hs us rs *)
-        Definition construct_or_conversations_simulator :
-          forall {n : nat}, 
-          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
-          Vector.t F n -> @sigma_proto n n n.
-        Proof.
-          refine(fix Fn n {struct n} := 
-          match n with 
-          | 0 => fun gs hs us rs => _
-          | S n' => fun gs hs us rs  => _
-          end).
-          + refine (mk_sigma _ _ _ [] [] []).
-          + 
-            destruct (vector_inv_S gs) as (gsh & gstl & _).
-            destruct (vector_inv_S hs) as (hsh & hstl & _).
-            destruct (vector_inv_S us) as (ush & ustl & _).
-            destruct (vector_inv_S rs) as (rsh & rstl & _).
-            exact (compose_two_or_sigma_protocols 
-              (schnorr_simulator gsh hsh ush rsh)
-              (Fn _ gstl hstl ustl rstl)).
-        Defined.
 
         (* 
           intros m n x gs hs us rs c. 
