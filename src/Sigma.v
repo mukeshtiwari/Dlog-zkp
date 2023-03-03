@@ -2864,6 +2864,35 @@ Module Zkp.
         end.
 
 
+        (* Prover knows the ith relation *)
+        (* The way out is that the verifier may let the prover “cheat” a 
+          little bit by allowing the prover to use the simulator of the 
+          Σ-protocol for the relation Ri for which the prover does not 
+          know witness wi (i = 1 or i = 2). The verifier will do so by 
+          providing a single challenge c which the prover is allowed to 
+          split into two challenges c1, c2 provided c1, c2 satisfy a 
+          linear constraint in terms of c. For example, the constraint 
+          may be c = c1 ⊕ c2 if the challenges happen to be bit strings. 
+          Essentially, the prover gets one degree of freedom to cheat. 
+        *)
+        (* 
+          prover knowns ith relation 
+          x is the secret 
+          rs is randomly generated scalors 
+          us = usl ++ [u_i] ++ usr
+          rs = rsl ++ [_] ++ rsr 
+          Prover recomputes: 
+          r_i := c - Σ rsl + rsr 
+
+          Uses simulator on (usl ++ usr) (rsl ++ rsr)
+          Uses Schnorr protocol u_i r_i 
+          Package them together.
+
+          Verifier check the if all the individual 
+          sigma protocols are valid and 
+          challenges sum up to c.
+        *)
+
         (* Does not involve the secret x *)
         (* gs hs us rs *)
         Definition construct_or_conversations_simulator :
@@ -2886,61 +2915,8 @@ Module Zkp.
               (schnorr_simulator gsh hsh ush rsh)
               (Fn _ gstl hstl ustl rstl)).
         Defined.
-        
 
-        Definition generalised_or_accepting_conversations_simulator :
-          forall {n : nat}, 
-          Vector.t G n ->  Vector.t G n -> 
-          @sigma_proto n n n -> bool.
-        Proof.
-          refine
-          (fix Fn n := 
-          match n with 
-          | 0 => fun gs hs Ha => true
-          | S n' => fun gs hs Ha => 
-            match Ha with 
-            | (a₁; c₁; r₁) => _ 
-            end 
-          end).
-          destruct (vector_inv_S gs) as (g & gsr & _).
-          destruct (vector_inv_S hs) as (h & hsr & _).
-          destruct (vector_inv_S a₁) as (a & asr & _).
-          destruct (vector_inv_S c₁) as (c & csr & _).
-          destruct (vector_inv_S r₁) as (r & rsr & _).
-          exact ((accepting_conversation g h ([a]; [c]; [r])) || (* *)
-            (Fn _ gsr hsr (asr; csr; rsr))).
-        Defined.
-
-
-        (* Prover knows the ith relation *)
-        (* The way out is that the verifier may let the prover “cheat” a 
-          little bit by allowing the prover to use the simulator of the 
-          Σ-protocol for the relation Ri for which the prover does not 
-          know witness wi (i = 1 or i = 2). The verifier will do so by 
-          providing a single challenge c which the prover is allowed to 
-          split into two challenges c1, c2 provided c1, c2 satisfy a 
-          linear constraint in terms of c. For example, the constraint 
-          may be c = c1 ⊕ c2 if the challenges happen to be bit strings. 
-          Essentially, the prover gets one degree of freedom to cheat. 
-        *)
         (* 
-          prover knowns (m + 1)th relation 
-          x is the secret (h := g^x )
-          rs is randomly generated scalors 
-          us = usl ++ [u_(m+1)] ++ usr
-          rs = rsl ++ [_] ++ rsr 
-          Prover recomputes: 
-          r_(m+1) := c - Σ rsl + rsr 
-
-          Uses simulator on (usl ++ usr) (rsl ++ rsr)
-          Uses Schnorr protocol u_(m+1) r_(m+1) 
-          Package them together.
-
-          Verifier check the if all the individual 
-          sigma protocols are valid and 
-          challenges sum up to c.
-       
-
           intros m n x gs hs us rs c. 
           x is secret  
           gs and hs are public group elements 
@@ -2958,18 +2934,19 @@ Module Zkp.
           destruct (splitat m gs) as (gsl & gsrt).
           destruct (vector_inv_S gsrt) as (g & gsr & _).
           destruct (splitat m hs) as (hsl & hsrt).
+          (* discard h because it is not needed in schnorr protocol *)
           destruct (vector_inv_S hsrt) as (_ & hsr & _).
-          (* us := usl ++ [u_(m+1)] ++ usr *)
+          (* us := usl ++ [r_i] ++ usr *)
           destruct (splitat m us) as (usl & rurt).
           destruct (vector_inv_S rurt) as (u_i & usr & _).
           (* rs := rsl ++ [_] ++ rsr *)
           destruct (splitat m cs) as (csl & csrt).
-          (* discard r_(m+1) *)
+          (* discard r_i *)
           destruct (vector_inv_S csrt) as (__ & csr & _).
-          (* compute new r_(m+1)  *)
+          (* compute r_i  *)
           remember (c - (Vector.fold_right add (csl ++ csr) zero)) 
           as r_i.
-          (* we will return rsl ++ [r_(m+1)] ++ rsr in c field *)
+          (* we will return rsl ++ [r_i] ++ rsr in c field *)
           (* run simulator on gsl hsl usl rsl *)
           remember (construct_or_conversations_simulator 
             gsl hsl usl csl) as Ha.
@@ -2986,9 +2963,33 @@ Module Zkp.
               ((a₁ ++ (a₂ ++ a₃)); c :: c₁ ++ (c₂ ++ c₃); (r₁ ++ (r₂ ++ r₃)))
             end.
         Defined.
+
+
+
+        Definition generalised_or_accepting_conversations_supp : 
+          forall {n : nat}, 
+          Vector.t G n -> Vector.t G n ->
+          @sigma_proto n n n -> bool.
+        Proof.
+          refine
+            (fix Fn n := 
+            match n with 
+            | 0 => fun gs hs Ha => true
+            | S n' => fun gs hs Ha => 
+              match Ha with 
+              | (a₁; c₁; r₁) => _ 
+              end 
+            end).
+          destruct (vector_inv_S gs) as (g & gsr & _).
+          destruct (vector_inv_S hs) as (h & hsr & _).
+          destruct (vector_inv_S a₁) as (a & asr & _).
+          destruct (vector_inv_S c₁) as (c & csr & _).
+          destruct (vector_inv_S r₁) as (r & rsr & _).
+          exact ((accepting_conversation g h ([a]; [c]; [r])) &&
+            (Fn _ gsr hsr (asr; csr; rsr))).
+        Defined.
           
     
-
         (* verify or sigma protocol *)
         Definition generalised_or_accepting_conversations : 
           forall {m n : nat}, 
@@ -3007,30 +3008,14 @@ Module Zkp.
           destruct (vector_inv_S ct) as (c & cs & _).
           refine
             match Fdec c (Vector.fold_right add cs zero) with 
-            | left _ => (* now check sigma *) _
+            | left _ => 
+                (* now check sigma *)
+                generalised_or_accepting_conversations_supp gs hs (a; cs; r)
             | right _ => false (* if it's false, there is 
               no point for checking further *)
             end.
-          destruct (splitat m gs) as (gsl & gsrt).
-          destruct (vector_inv_S gsrt) as (g & gsr & _).
-          destruct (splitat m hs) as (hsl & hsrt).
-          destruct (vector_inv_S hsrt) as (h & hsr & _).
-          destruct (splitat m a) as (al & art).
-          destruct (vector_inv_S art) as (arth & artl & _).
-          destruct (splitat m cs) as (csl & csrt).
-          destruct (vector_inv_S csrt) as (csrth & csrtl & _).
-          destruct (splitat m r) as (rl & rrt).
-          destruct (vector_inv_S rrt) as (rrth & rrtl & _).
-          exact 
-          ((generalised_or_accepting_conversations_simulator gsl hsl (al; csl; rl)) ||
-           (accepting_conversation g h ([arth]; [csrth]; [rrth])) ||
-           (generalised_or_accepting_conversations_simulator gsr hsr (artl; csrtl; rrtl))).
         Defined.
 
-
-          
-          
-  
 
         (* distribution *)
 
@@ -3057,8 +3042,6 @@ Module Zkp.
           accepting conversations and 
           hd c = sum of rest of c 
         *)
-
-        (* 
         Lemma generalised_or_accepting_conversations_correctness_supp_forward : 
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
@@ -3321,7 +3304,6 @@ Module Zkp.
             try assumption.
         Qed.
         (* end of properties *)
-        *)
 
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
@@ -3383,7 +3365,7 @@ Module Zkp.
         (* so in OR composition, we need simulator correctness first *)
         Lemma construct_or_conversations_simulator_completeness :
           forall (m : nat) (gsl hsl : Vector.t G m) (usa csa : Vector.t F m),
-          generalised_or_accepting_conversations_simulator gsl hsl
+          generalised_or_accepting_conversations_supp gsl hsl
             (construct_or_conversations_simulator gsl hsl usa csa) = true.
         Proof.
           induction m as [|m' IHm].
@@ -3408,9 +3390,12 @@ Module Zkp.
             with 
             | (a₁; c₁; r₁) => fun Hb => _ 
             end eq_refl); cbn.
-            eapply orb_true_iff; right.
-            rewrite <-Hb, Heqs.
-            eapply IHm.
+            eapply andb_true_iff; split.
+            ++
+              eapply simulator_completeness.
+            ++
+              rewrite <-Hb, Heqs.
+              eapply IHm.
         Qed.
 
         Lemma fold_right_app :
@@ -3456,7 +3441,7 @@ Module Zkp.
       
       
         
-        (* completeness 
+        (* completeness *)
         Lemma construct_or_conversations_schnorr_completeness : 
           ∀ (us cs : Vector.t F (m + (1 + n))) (c : F),
           generalised_or_accepting_conversations 
@@ -3544,7 +3529,7 @@ Module Zkp.
           eapply construct_or_conversations_simulator_completeness.
           congruence.
         Qed.
-        *)
+
         (* finished completeness *)
          
           
