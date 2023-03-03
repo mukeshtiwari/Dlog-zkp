@@ -3432,12 +3432,17 @@ Module Zkp.
           (hsl : Vector.t G m) 
           (hsr : Vector.t G n) 
           (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
-
-        
+      
+      
+        Add Field field_tac : (@field_theory_for_stdlib_tactic F
+            eq zero one opp add mul sub inv div vector_space_field).
+          
         Lemma field_rewrite : 
           forall (c ca cb : F), 
           c = ca + (c - (ca + cb) + cb).
         Proof.
+          intros *.
+          (* Fail field. why did this fail? *)
           (* 
           pose proof commutative_group_is_commutative as Hj;
           rewrite Hj.
