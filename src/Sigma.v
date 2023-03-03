@@ -2965,7 +2965,7 @@ Module Zkp.
 
 
 
-        Local Definition generalised_or_accepting_conversations_t : 
+        Definition generalised_or_accepting_conversations_supp : 
           forall {n : nat}, 
           Vector.t G n -> Vector.t G n ->
           @sigma_proto n n n -> bool.
@@ -3009,7 +3009,7 @@ Module Zkp.
             match Fdec c (Vector.fold_right add cs zero) with 
             | left _ => 
                 (* now check sigma *)
-                generalised_or_accepting_conversations_t gs hs (a; cs; r)
+                generalised_or_accepting_conversations_supp gs hs (a; cs; r)
             | right _ => false (* if it's false, there is 
               no point for checking further *)
             end.
@@ -3017,6 +3017,7 @@ Module Zkp.
 
 
         (* distribution *)
+
          
           
           
@@ -3030,7 +3031,6 @@ Module Zkp.
 
       End Def.
 
-
       Section Proofs.
 
 
@@ -3041,19 +3041,161 @@ Module Zkp.
           accepting conversations and 
           hd c = sum of rest of c 
         *)
-        Lemma generalised_or_accepting_conversations_correctness_t_forward : 
-          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
-          (s :  @sigma_proto (m + (1 + n)) (m + (1 + n)) (m + (1 + n))),
-          generalised_or_accepting_conversations_t gs hs s = true ->
-          ∀ (f : Fin.t (m + (1 + n))), 
+        Lemma generalised_or_accepting_conversations_correctness_supp_forward : 
+          forall {n : nat} (gs hs : Vector.t G n)
+          (s :  @sigma_proto n n n),
+          generalised_or_accepting_conversations_supp gs hs s = true ->
+          ∀ f : Fin.t n, 
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
           end.
         Proof.
-        Admitted.
+          induction n as [|n IHn].
+          +
+            intros * Ha ?.
+            inversion f.
+          +
+            intros * Ha ?.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun Hb => _ 
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gsh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hd).
+            destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
+            destruct (fin_inv_S _ f) as [Hi | (fs & Hi)];
+            subst; simpl. 
+            ++
+              cbn in Ha.
+              eapply andb_true_iff in Ha.
+              destruct Ha as [Hal Har].
+              exact Hal.
+            ++
+              simpl in Ha;
+              eapply andb_true_iff in Ha.
+              destruct Ha as [Hal Har].
+              exact (IHn _ _ _ Har fs).
+        Qed.
 
+            
+          
+
+
+        Lemma generalised_or_accepting_conversations_correctness_supp_backward : 
+          forall {n : nat} (gs hs : Vector.t G n)
+          (s :  @sigma_proto n n n),
+          (∀ f : Fin.t n, 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = true
+          end) -> generalised_or_accepting_conversations_supp gs hs s = true.
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            rewrite (vector_inv_0 gs);
+            rewrite (vector_inv_0 hs);
+            cbn; reflexivity.
+          + 
+            intros * Ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun Hb => _ 
+              end eq_refl).
+            destruct (vector_inv_S gs) as (gsh & gstl & Hc).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hd).
+            destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
+            destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
+            subst; cbn. 
+            eapply andb_true_iff.
+            split.
+            ++ 
+              pose proof (Ha Fin.F1) as Hi.
+              cbn in Hi.
+              exact Hi.
+            ++
+              specialize (IHn gstl hstl (atl₁; ctl₁; rtl₁)).
+              assert (Hb : (∀ f : Fin.t n,
+              match (atl₁; ctl₁; rtl₁) with
+              | (a; c; r) =>
+                  accepting_conversation gstl[@f] hstl[@f]
+                    ([a[@f]]; [c[@f]]; [r[@f]]) = true
+              end)).
+              intros *; exact (Ha (Fin.FS f)).
+              exact (IHn Hb).
+        Qed.
+
+
+        Lemma generalised_or_accepting_conversations_correctness_supp : 
+          forall {n : nat} (gs hs : Vector.t G n)
+          (s :  @sigma_proto n n n),
+          generalised_or_accepting_conversations_supp gs hs s = true <->
+          ∀ f : Fin.t n, 
+          match s with 
+          | (a; c; r) => 
+            @accepting_conversation (nth gs f) (nth hs f) 
+              ([(nth a f)]; [nth c f]; [(nth r f)]) = true
+          end.
+        Proof.
+          intros *.
+          split; intros Ha.
+          +
+            eapply generalised_or_accepting_conversations_correctness_supp_forward;
+            exact Ha.
+          +
+            eapply generalised_or_accepting_conversations_correctness_supp_backward;
+            exact Ha.
+        Qed.
+        
+
+        
+        Lemma generalised_or_accepting_conversations_supp_app :
+          forall (n m : nat) 
+          (gsl hsl al : Vector.t G n) (gsr hsr ar : Vector.t G m)
+          (cl rl : Vector.t F n) (cr rr : Vector.t F m),
+          generalised_or_accepting_conversations_supp
+            (gsl ++ gsr) (hsl ++ hsr) 
+            ((al ++ ar); (cl ++ cr); (rl ++ rr)) = 
+          generalised_or_accepting_conversations_supp gsl hsl (al; cl; rl)  && 
+          generalised_or_accepting_conversations_supp gsr hsr (ar; cr; rr).
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros *.
+            rewrite (vector_inv_0 gsl).
+            rewrite (vector_inv_0 hsl).
+            rewrite (vector_inv_0 al).
+            rewrite (vector_inv_0 cl).
+            rewrite (vector_inv_0 rl).
+            cbn; reflexivity.
+          +
+            intros *.
+            destruct (vector_inv_S gsl) as (gslh & gsltl & Ha).
+            destruct (vector_inv_S hsl) as (hslh & hsltl & Hb).
+            destruct (vector_inv_S al) as (alh & altl & Hc).
+            destruct (vector_inv_S cl) as (clh & cltl & Hd).
+            destruct (vector_inv_S rl) as (rlh & rltl & He).
+            subst; cbn.
+            destruct (Gdec (gslh ^ rlh) (gop alh (hslh ^ clh))).
+            ++
+              cbn; eapply IHn.
+            ++
+              cbn; reflexivity.
+        Qed.
+
+        
+
+
+
+       
 
         Lemma generalised_or_accepting_conversations_correctness_forward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
@@ -3067,21 +3209,29 @@ Module Zkp.
               ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
           end.
         Proof.
-        Admitted.
+          intros * Ha f. 
+          unfold generalised_or_accepting_conversations in Ha.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (a₁; c₁; r₁) => fun Hb => _ 
+            end eq_refl).
+          rewrite Hb in Ha.
+          destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hc).
+          destruct (Fdec ch₁ (fold_right add ctl₁ zero)) eqn:Hd;
+          [|inversion Ha].
+          split.
+          +
+            rewrite Hc; cbn;
+            exact e.
+          +
+            rewrite Hc; cbn.
+            eapply generalised_or_accepting_conversations_correctness_supp_forward in
+            Ha; exact Ha.
+        Qed.
 
-
-        Lemma generalised_or_accepting_conversations_correctness_t_backward : 
-          forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
-          (s :  @sigma_proto (m + (1 + n)) (m + (1 + n)) (m + (1 + n))),
-          (∀ (f : Fin.t (m + (1 + n))), 
-          match s with 
-          | (a; c; r) => 
-            @accepting_conversation (nth gs f) (nth hs f) 
-              ([(nth a f)]; [nth c f]; [(nth r f)]) = true
-          end) -> generalised_or_accepting_conversations_t gs hs s = true.
-        Proof.
-        Admitted.
-
+        
+    
 
         Lemma generalised_or_accepting_conversations_correctness_backward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
@@ -3095,7 +3245,40 @@ Module Zkp.
           end) -> 
           generalised_or_accepting_conversations gs hs s = true.
         Proof.
-        Admitted.
+          intros * Ha.
+          unfold generalised_or_accepting_conversations.
+          refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (a₁; c₁; r₁) => fun Hb => _ 
+            end eq_refl).
+          destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hc).
+          assert (Hd : ch₁ = (fold_right add ctl₁ zero)).
+          rewrite Hb in Ha.
+          destruct m as [|m].
+          +
+            specialize (Ha Fin.F1).
+            destruct Ha as [Hal Har].
+            rewrite Hc in Hal; cbn 
+            in Hal; exact Hal.
+          +
+            specialize (Ha Fin.F1).
+            destruct Ha as [Hal Har].
+            rewrite Hc in Hal; cbn 
+            in Hal; exact Hal.
+          +
+            rewrite <-Hd.
+            destruct (Fdec ch₁ ch₁) eqn:He.
+            eapply generalised_or_accepting_conversations_correctness_supp;
+            intros f.
+            specialize (Ha f).
+            rewrite Hb in Ha.
+            destruct Ha as [Hal Har].
+            rewrite Hc in Har.
+            cbn in Har; cbn.
+            exact Har.
+            congruence.
+        Qed.
 
 
         Lemma generalised_or_accepting_conversations_correctness: 
@@ -3121,14 +3304,126 @@ Module Zkp.
         Qed.
         (* end of properties *)
 
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+      
+        Lemma construct_or_conversations_simulator_challenge : 
+          forall (n : nat) (gs hs : Vector.t G n)
+          (us cs : Vector.t F n) a c r,
+          (a; c; r) = construct_or_conversations_simulator gs hs us cs ->
+          cs = c.
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros * Ha.
+            rewrite (vector_inv_0 gs), 
+            (vector_inv_0 hs),
+            (vector_inv_0 us),
+            (vector_inv_0 cs) in Ha.
+            cbn in Ha; inversion Ha; subst.
+            rewrite ((vector_inv_0 cs)); 
+            reflexivity.
+          +
+            intros * Ha.
+            destruct (vector_inv_S gs) as (gsh & gstl & Hb).
+            destruct (vector_inv_S hs) as (hsh & hstl & Hc).
+            destruct (vector_inv_S a) as (ah & atl & Hd).
+            destruct (vector_inv_S c) as (ch & ctl & He).
+            destruct (vector_inv_S r) as (rh & rtl & Hf).
+            destruct (vector_inv_S us) as (ush & ustl & Hg).
+            destruct (vector_inv_S cs) as (csh & cstl & Hi).
+            subst; cbn in Ha.
+            remember (construct_or_conversations_simulator gstl hstl ustl cstl)
+            as s.
+            refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (a₁; c₁; r₁) => fun Hb => _ 
+            end eq_refl).
+            rewrite Hb in Ha;
+            inversion Ha; subst.
+            f_equal.
+            eapply Eqdep.EqdepTheory.inj_pair2 in H1, H3, H5.
+            eapply IHn.
+            apply eq_sym. 
+            rewrite <-H3 in Hb.
+            exact Hb.
+        Qed.
+
+
+
+
+
+        (* so in OR composition, we need simulator correctness first *)
+        Lemma construct_or_conversations_simulator_completeness :
+          forall (m : nat) (gsl hsl : Vector.t G m) (usa csa : Vector.t F m),
+          generalised_or_accepting_conversations_supp gsl hsl
+            (construct_or_conversations_simulator gsl hsl usa csa) = true.
+        Proof.
+          induction m as [|m' IHm].
+          +
+            intros *.
+            rewrite (vector_inv_0 gsl).
+            rewrite (vector_inv_0 hsl).
+            rewrite (vector_inv_0 usa).
+            rewrite (vector_inv_0 csa).
+            reflexivity.
+          +
+            intros *.
+            destruct (vector_inv_S gsl) as (gslh & gsltl & Ha).
+            destruct (vector_inv_S hsl) as (hslh & hsltl & Hb).
+            destruct (vector_inv_S usa) as (usah & usatl & Hc).
+            destruct (vector_inv_S csa) as (csah & csatl & Hd).
+            subst; cbn.
+            remember (construct_or_conversations_simulator gsltl hsltl usatl csatl)
+            as s.
+            refine 
+            (match s as s' return s = s' -> _ 
+            with 
+            | (a₁; c₁; r₁) => fun Hb => _ 
+            end eq_refl); cbn.
+            eapply andb_true_iff; split.
+            ++
+              eapply simulator_completeness.
+            ++
+              rewrite <-Hb, Heqs.
+              eapply IHm.
+        Qed.
+
+        Lemma fold_right_app :
+          forall (n m : nat) (ul : Vector.t F n)
+          (ur : Vector.t F m),
+          fold_right add (ul ++ ur) zero = 
+          add (fold_right add ul zero)
+            (fold_right add ur zero).
+        Proof.
+          induction n as [|n IHn].
+          +
+            intros *.
+            rewrite (vector_inv_0 ul);
+            cbn.
+            rewrite monoid_is_left_idenity;
+            reflexivity.
+          +
+            intros *.
+            destruct (vector_inv_S ul) as (ulh & ultl & Ha).
+            subst; cbn. 
+            rewrite IHn; cbn.
+            (* why is this rewrite not working? *)
+            pose proof monoid_is_associative as Hb.
+            rewrite Hb.
+            reflexivity.
+        Qed.
+
         (* Let's prove completeness *)
         (* gs := gsl ++ [g] ++ gsr *)
         (* hs := hsl ++ [h] ++ hsr *)
 
+
         
         Context
-          {Hvec: @vector_space F (@eq F) zero one add mul sub 
-            div opp inv G (@eq G) gid ginv gop gpow}
           {m n : nat}
           (gsl : Vector.t G m) 
           (gsr : Vector.t G n)
@@ -3137,6 +3432,8 @@ Module Zkp.
           (hsl : Vector.t G m) 
           (hsr : Vector.t G n) 
           (R : h = g ^ x).  (* Prover knows (m + 1)th relation *)
+
+        
 
         
         (* completeness *)
@@ -3173,20 +3470,74 @@ Module Zkp.
           return sb = s' -> _ with 
           |(a₂; c₂; r₂) => fun Hi => _  
           end eq_refl); cbn.
-          (* 
+          (*
           fold_right add (csa ++ csbb) zero = c₁ + c₂
           *)
-          destruct (Fdec c
-          (fold_right add
-             (c₁ ++ c - fold_right add (csa ++ csbb) zero :: c₂) zero)) 
-          as [Hj | Hj].
-          subst.
-          cbn in Ha, Hb.
+          assert (Hj : c = (fold_right add
+          (c₁ ++ c - fold_right add (csa ++ csbb) zero :: c₂) zero)).
+          remember (c - fold_right add (csa ++ csbb) zero :: c₂) as ct.
+          rewrite fold_right_app.
+          rewrite Heqct; cbn.
+          rewrite fold_right_app.
+          rewrite Hg in Heqsa;
+          eapply construct_or_conversations_simulator_challenge in Heqsa;
+          rewrite Heqsa.
+          rewrite Hi in Heqsb; 
+          eapply construct_or_conversations_simulator_challenge in Heqsb;
+          rewrite Heqsb.
+          remember (fold_right add c₁ zero) as ca.
+          remember (fold_right add c₂ zero) as cb.
+          pose proof commutative_group_is_commutative as Hj;
+          rewrite Hj.
+          pose proof monoid_is_associative as Hk;
+          rewrite <-Hk.
+          assert (Ht : ca + cb = cb + ca).
+          rewrite Hj. reflexivity.
+          rewrite Ht; clear Ht.
+          assert (Ht : opp (cb + ca) + (cb + ca) = zero).
+          unfold is_commutative in Hj.
+          pose proof (Hj (opp (cb + ca)) (cb + ca)).
+          rewrite <-Hj.
+          rewrite field_zero_iff_right; reflexivity.
+          rewrite <-ring_sub_0_l in Ht.
+          
+          admit.
+          rewrite <-Hj.
+          destruct (Fdec c c) as [Hk | Hk].
+          rewrite generalised_or_accepting_conversations_supp_app.
+          eapply andb_true_iff.
+          split.
+          (* use simulator correctness *)
+          rewrite <-Hg, Heqsa.
+          eapply construct_or_conversations_simulator_completeness.
+          cbn; eapply andb_true_iff.
+          split.
+          remember ((c - fold_right add (csa ++ csbb) zero)) as ct.
+          inversion Ha.
+          rewrite <-H0.
+          clear Hk; clear H0; clear H1.
+          rewrite dec_true, R.
+          assert (Hl : (g ^ x) ^ ct = (g ^ (x * ct))).
+          rewrite smul_pow_up; 
+          reflexivity.
+          rewrite Hl; clear Hl.
+          assert (Hxc : x * ct = ct * x).
+          rewrite commutative; reflexivity.
+          rewrite Hxc; clear Hxc.
+          rewrite (@vector_space_smul_distributive_fadd F (@eq F) 
+            zero one add mul sub div
+            opp inv G (@eq G) gid ginv gop gpow).
+          reflexivity.
+          exact Hvec.
+          (* simulator correctness *)
+          rewrite <-Hi, Heqsb.
           inversion Ha; subst.
           inversion Hb; subst.
           eapply Eqdep.EqdepTheory.inj_pair2 in H1, H2.
           subst.
-        Admitted. 
+          eapply construct_or_conversations_simulator_completeness.
+          congruence.
+        Admitted.
          
           
 
@@ -3225,6 +3576,15 @@ Module Zkp.
     Section And_Sigma.
     *)
 End Zkp.
+
+
+
+Require Import MetaCoq.Erasure.Loader.
+MetaCoq Erase (@Zkp.schnorr_protocol Z).
+
+Require Import Extraction.
+Extraction Language Haskell.
+Extraction Zkp.schnorr_protocol.
 
 
   
