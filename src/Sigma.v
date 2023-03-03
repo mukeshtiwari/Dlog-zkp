@@ -2864,6 +2864,29 @@ Module Zkp.
         end.
 
 
+        (* Does not involve the secret x *)
+        (* gs hs us rs *)
+        Definition construct_or_conversations_simulator :
+          forall {n : nat}, 
+          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
+          Vector.t F n -> @sigma_proto n n n.
+        Proof.
+          refine(fix Fn n {struct n} := 
+          match n with 
+          | 0 => fun gs hs us rs => _
+          | S n' => fun gs hs us rs  => _
+          end).
+          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            destruct (vector_inv_S gs) as (gsh & gstl & _).
+            destruct (vector_inv_S hs) as (hsh & hstl & _).
+            destruct (vector_inv_S us) as (ush & ustl & _).
+            destruct (vector_inv_S rs) as (rsh & rstl & _).
+            exact (compose_two_or_sigma_protocols 
+              (schnorr_simulator gsh hsh ush rsh)
+              (Fn _ gstl hstl ustl rstl)).
+        Defined.
+
         (* Prover knows the ith relation *)
         (* The way out is that the verifier may let the prover “cheat” a 
           little bit by allowing the prover to use the simulator of the 
@@ -2891,32 +2914,8 @@ Module Zkp.
           Verifier check the if all the individual 
           sigma protocols are valid and 
           challenges sum up to c.
-        *)
-
-        (* Does not involve the secret x *)
-        (* gs hs us rs *)
-        Definition construct_or_conversations_simulator :
-          forall {n : nat}, 
-          Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
-          Vector.t F n -> @sigma_proto n n n.
-        Proof.
-          refine(fix Fn n {struct n} := 
-          match n with 
-          | 0 => fun gs hs us rs => _
-          | S n' => fun gs hs us rs  => _
-          end).
-          + refine (mk_sigma _ _ _ [] [] []).
-          + 
-            destruct (vector_inv_S gs) as (gsh & gstl & _).
-            destruct (vector_inv_S hs) as (hsh & hstl & _).
-            destruct (vector_inv_S us) as (ush & ustl & _).
-            destruct (vector_inv_S rs) as (rsh & rstl & _).
-            exact (compose_two_or_sigma_protocols 
-              (schnorr_simulator gsh hsh ush rsh)
-              (Fn _ gstl hstl ustl rstl)).
-        Defined.
-
-        (* 
+       
+          
           intros m n x gs hs us rs c. 
           x is secret  
           gs and hs are public group elements 
@@ -3310,7 +3309,7 @@ Module Zkp.
             div opp inv G (@eq G) gid ginv gop gpow}.
 
         (* add field *)
-        Add Field field_tac : (@field_theory_for_stdlib_tactic F
+        Add Field field : (@field_theory_for_stdlib_tactic F
             eq zero one opp add mul sub inv div vector_space_field).
           
 
@@ -3572,12 +3571,11 @@ End Zkp.
 
 
 
-Require Import MetaCoq.Erasure.Loader.
-MetaCoq Erase (@Zkp.schnorr_protocol Z).
-
+(* 
 Require Import Extraction.
 Extraction Language Haskell.
 Extraction Zkp.schnorr_protocol.
-
+Recursive Extraction Zkp.construct_or_conversations_schnorr.
+*)
 
   
