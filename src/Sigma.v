@@ -1316,12 +1316,81 @@ Module Zkp.
             try assumption.
         Qed.
             
-
+        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
         (* zero-knowledge-proof *)
         
+        
+        Lemma generalised_parallel_schnorr_distribution_transcript_generic {n : nat} : 
+          forall (l : list (t F n * prob)) 
+          (trans : sigma_proto) (pr : prob) (cs : Vector.t F n),
+          List.In (trans, pr)
+            (Bind l (λ us : t F n,
+              Ret (construct_parallel_conversations_schnorr x g us cs))) → 
+          generalised_parallel_accepting_conversations g h trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              eapply construct_parallel_conversations_schnorr_completeness.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                eapply construct_parallel_conversations_schnorr_completeness.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+            
 
+
+        Lemma generalised_parallel_schnorr_distribution_probability_generic {n : nat} : 
+          forall (l : list (t F n * prob)) (trans : sigma_proto) 
+          (pr : prob) (cs : Vector.t F n) (m : nat),
+          (∀ (trx : Vector.t F n) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / m) -> 
+          List.In (trans, pr)
+            (Bind l (λ us : t F n,
+              Ret (construct_parallel_conversations_schnorr x g us cs))) → 
+          pr = 1 / m.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+        
         (* Every element in generalised schnorr distribution 
           is an accepting conversation and it's probability 1 / |lf|^n 
+          Maybe probabilistic notations but this one is more intuitive.
         *)
         Lemma generalised_parallel_special_honest_verifier_schnorr_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
@@ -1330,10 +1399,92 @@ Module Zkp.
             (generalised_parallel_schnorr_distribution lf Hlfn x g cs) ->
             (* it's an accepting conversation and probability is *)
           generalised_parallel_accepting_conversations g h a = true ∧ 
-          b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
+          b = 1 / (Nat.pow (List.length lf) n).
         Proof.
-        Admitted.
+          intros * Ha.
+          refine(conj _ _).
+          + 
+            eapply generalised_parallel_schnorr_distribution_transcript_generic; 
+            exact Ha.
+          +
+            eapply generalised_parallel_schnorr_distribution_probability_generic;
+            [intros * Hc;
+            eapply uniform_probability_multidraw_prob; exact Hc|
+            exact Ha].
+        Qed.
+        
 
+        (* fact about simultor *)
+        Lemma generalised_parallel_simulator_distribution_transcript_generic {n : nat} : 
+          forall (l : list (t F n * prob)) 
+          (trans : sigma_proto) (pr : prob) (cs : Vector.t F n),
+          List.In (trans, pr)
+            (Bind l (λ us : t F n,
+              Ret (construct_parallel_conversations_simulator g h us cs))) → 
+          generalised_parallel_accepting_conversations g h trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              eapply construct_parallel_conversations_simulator_completeness.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                eapply construct_parallel_conversations_simulator_completeness.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+            
+
+
+        Lemma generalised_parallel_simulator_distribution_probability_generic {n : nat} : 
+          forall (l : list (t F n * prob)) (trans : sigma_proto) 
+          (pr : prob) (cs : Vector.t F n) (m : nat),
+          (∀ (trx : Vector.t F n) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / m) -> 
+          List.In (trans, pr)
+            (Bind l (λ us : t F n,
+              Ret (construct_parallel_conversations_simulator g h us cs))) → 
+          pr = 1 / m.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+
+
+        (* *)
         Lemma generalised_parallel_special_honest_verifier_simulator_dist {n : nat}: 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (cs : Vector.t F n) a b, 
@@ -1343,12 +1494,20 @@ Module Zkp.
           generalised_parallel_accepting_conversations g h a = true ∧ 
           b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
         Proof.
-        Admitted.
+          intros * Ha.
+          refine(conj _ _).
+          + 
+            eapply generalised_parallel_simulator_distribution_transcript_generic; 
+            exact Ha.
+          +
+            eapply generalised_parallel_simulator_distribution_probability_generic;
+            [intros * Hc;
+            eapply uniform_probability_multidraw_prob; exact Hc|
+            exact Ha].
+        Qed.
         
 
       End Proofs.
-
-
     
     End Parallel.
 
