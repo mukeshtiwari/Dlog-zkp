@@ -758,7 +758,9 @@ Module Zkp.
           | 0 => fun x g us cs => _
           | S n' => fun x g us cs  => _
           end).
-          + refine (mk_sigma _ _ _ [] [] []).
+          + 
+            (* base case. *)
+            refine (mk_sigma _ _ _ [] [] []).
           + 
             destruct (vector_inv_S us) as (ush & ustl & _).
             destruct (vector_inv_S cs) as (csh & cstl & _).
@@ -3487,7 +3489,7 @@ Module Zkp.
           field.
           rewrite <-Hj.
           destruct (Fdec c c) as [Hk | Hk].
-          rewrite generalised_or_accepting_conversations_supp_app.
+          rewrite generalised_or_accepting_conversations_supplement_app.
           eapply andb_true_iff.
           split.
           (* use simulator correctness *)
