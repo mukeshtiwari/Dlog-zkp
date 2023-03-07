@@ -244,6 +244,67 @@ Section Vect.
     nth u f = nth v f.
 
   
+  Lemma vector_not_equal_implies_disjoint_someelem : 
+    forall (n : nat) (c d : Vector.t R n), 
+    c <> d -> two_challenge_vectors_disjoint_someelem c d.
+  Proof.
+    induction n as [| n IHn].
+    +
+      intros * Ha.
+      rewrite (vector_inv_0 c),
+      (vector_inv_0 d) in Ha.
+      pose proof (Ha eq_refl) as Hf.
+      congruence.
+    +
+      intros * Ha.
+      destruct (vector_inv_S c) as (hc & tc & Hb).
+      destruct (vector_inv_S d) as (hd & td & Hc).
+      rewrite Hb, Hc in Ha.
+      unfold two_challenge_vectors_disjoint_someelem.
+      destruct (Hdec hc hd) as [Hd | Hd].
+      rewrite Hd in Ha.
+      assert (He : tc <> td).
+      intro Hf; eapply Ha; 
+      rewrite Hf; reflexivity.
+      destruct (IHn _ _ He) as (f & Hf).
+      exists (Fin.FS f);
+      rewrite Hb, Hc;
+      cbn; exact Hf.
+      exists (Fin.F1); 
+      rewrite Hb, Hc; 
+      cbn; exact Hd.
+  Qed.
+
+
+  Lemma vector_same_implies_same_everyelem : 
+    forall (n : nat) (c d : Vector.t R n), 
+    c = d -> 
+    two_challenge_vectors_same_everyelem c d.
+  Proof.
+    induction n as [|n IHn].
+    +
+      intros * Ha Hb.
+      destruct (fin_inv_0 Hb).
+    +
+      intros * Ha Hb.
+      destruct (vector_inv_S c) as (hc & tc & Hc).
+      destruct (vector_inv_S d) as (hd & td & Hd).
+      rewrite Hc, Hd in Ha |- *.
+      destruct (fin_inv_S _ Hb) as [hf | (hf & He)].
+      ++
+        rewrite hf; cbn.
+        inversion Ha; 
+        reflexivity.
+      ++
+        rewrite He; cbn.
+        eapply IHn.
+        inversion Ha.
+        eapply Eqdep_dec.inj_pair2_eq_dec in H1.
+        exact H1.
+        eapply PeanoNat.Nat.eq_dec.
+  Qed.  
+
+
 
   (* Write Ltac *)
 

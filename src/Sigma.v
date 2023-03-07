@@ -1029,10 +1029,10 @@ Module Zkp.
             exact Hc.
         Qed.
 
-
+        
            
         (* special soundness *)
-        Lemma generalise_parallel_sigma_soundenss : 
+        Lemma generalise_parallel_sigma_soundenss_supplement : 
           ∀ (n : nat) 
           (s₁ s₂ : @sigma_proto (S n) (S n) (S n)),
           (match s₁, s₂ with 
@@ -1147,7 +1147,6 @@ Module Zkp.
             cbn in Hn;
             rewrite Hn;
             exact Hfl.
-          
             (* 
               induction case
             *)
@@ -1166,6 +1165,26 @@ Module Zkp.
             eapply IHn; 
             try assumption.
         Qed.
+
+
+        Lemma generalise_parallel_sigma_soundenss : 
+          ∀ (n : nat) (a : Vector.t G (1 + n)) 
+          (c₁ r₁ c₂ r₂ : Vector.t F (1 + n)),
+          c₁ <> c₂ -> 
+          (* accepting conversatation*)
+          generalised_parallel_accepting_conversations g h (a; c₁; r₁) = true -> 
+          (* accepting conversatation*)
+          generalised_parallel_accepting_conversations g h (a; c₂; r₂) = true ->
+          ∃ y : F, g^y = h.
+        Proof.
+          intros * Ha Hb Hc.
+          exact (generalise_parallel_sigma_soundenss_supplement n
+            (a; c₁; r₁) (a; c₂; r₂) 
+            (vector_same_implies_same_everyelem _ a a eq_refl)
+            (@vector_not_equal_implies_disjoint_someelem _ Fdec _ c₁ c₂ Ha) 
+            Hb Hc).
+        Qed.
+        
             
         Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
