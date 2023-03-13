@@ -1032,7 +1032,7 @@ Module Zkp.
         
            
         (* special soundness *)
-        Lemma generalise_parallel_sigma_soundenss_supplement : 
+        Lemma generalise_parallel_sigma_soundness_supplement : 
           ∀ (n : nat) 
           (s₁ s₂ : @sigma_proto (S n) (S n) (S n)),
           (match s₁, s₂ with 
@@ -1167,7 +1167,7 @@ Module Zkp.
         Qed.
 
 
-        Lemma generalise_parallel_sigma_soundenss : 
+        Lemma generalise_parallel_sigma_soundness : 
           ∀ (n : nat) (a : Vector.t G (1 + n)) 
           (c₁ r₁ c₂ r₂ : Vector.t F (1 + n)),
           c₁ <> c₂ -> 
@@ -1178,7 +1178,7 @@ Module Zkp.
           ∃ y : F, g^y = h.
         Proof.
           intros * Ha Hb Hc.
-          exact (generalise_parallel_sigma_soundenss_supplement n
+          exact (generalise_parallel_sigma_soundness_supplement n
             (a; c₁; r₁) (a; c₂; r₂) 
             (vector_same_implies_same_everyelem _ a a eq_refl)
             (@vector_not_equal_implies_disjoint_someelem _ Fdec _ c₁ c₂ Ha) 
@@ -2517,7 +2517,7 @@ Module Zkp.
 
         (* special soundness (proof of knowledge) *)
         (* This is bit challenging *)
-        Lemma generalise_eq_sigma_soundenss :
+        Lemma generalise_eq_sigma_soundness :
          forall (a : Vector.t G (1 + n)) 
          (c₁ c₂ : F) (r₁ r₂ : F),
          generalised_eq_accepting_conversations gs hs (a; [c₁]; [r₁]) = true ->
@@ -3558,6 +3558,135 @@ Module Zkp.
             field.
         Qed.
 
+
+        Lemma generalise_or_sigma_soundness_base_case :
+          forall (n : nat) gs hs 
+          (a : Vector.t G (1 + n)) (c₁ c₂ : F)
+          (cs₁ cs₂ : Vector.t F (1 + n))
+          (r₁ r₂ : Vector.t F (1 + n)),
+          @generalised_or_accepting_conversations 0 n 
+            gs hs (a; c₁ :: cs₁; r₁) = true ->
+          @generalised_or_accepting_conversations _ _
+            gs hs (a; c₂ :: cs₂; r₂) = true ->
+          c₁ <> c₂ -> 
+          (* I know an index where relation R is true and I can 
+            extract a witness out of it *)
+          ∃ (f : Fin.t (1 + n)) (y : F),
+          (nth gs f)^y = (nth hs f).
+        Proof.
+          intros * Ha Hb.
+          pose proof generalised_or_accepting_conversations_correctness_forward 
+            gs hs (a; c₁ :: cs₁; r₁) Ha as Hd.
+          pose proof generalised_or_accepting_conversations_correctness_forward 
+            gs hs (a; c₂ :: cs₂; r₂) Hb as He.
+          clear Ha; clear Hb.
+          generalize dependent n.
+          intros n gs hs a. revert c₂; revert c₁.
+          generalize dependent n.          
+          induction n as [|n IHn].
+          +
+            intros * Ha Hb Hc.
+            destruct Ha as (Hal & Har).
+            destruct Hb as (Hbl & Hbr).
+            exists Fin.F1.
+            destruct (vector_inv_S gs) as (gsh & gstl & Hf).
+            rewrite (vector_inv_0 gstl) in Hf. 
+            destruct (vector_inv_S hs) as (hsh & hstl & Hg).
+            rewrite (vector_inv_0 hstl) in Hg.
+            rewrite Hf, Hg; cbn.
+            specialize (Har Fin.F1).
+            specialize (Hbr Fin.F1).
+            cbn in * |- *.
+            rewrite dec_true, Hf, Hg in Har, Hbr.
+            destruct (vector_inv_S a) as (ah & atl & Hh).
+            rewrite (vector_inv_0 atl) in Hh.
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hi).
+            rewrite (vector_inv_0 rtl₁) in Hi.
+            destruct (vector_inv_S cs₁) as (csh₁ & cstl₁ & Hj).
+            rewrite (vector_inv_0 cstl₁) in Hj.
+            destruct (vector_inv_S r₂) as (rh₂ & rtl₂ & Hk).
+            rewrite (vector_inv_0 rtl₂) in Hk.
+            destruct (vector_inv_S cs₂) as (csh₂ & cstl₂ & Hl).
+            rewrite (vector_inv_0 cstl₂) in Hl.
+            subst.
+            assert (Hm : csh₁ <> csh₂).
+            intros Hm; eapply Hc; 
+            rewrite Hm; reflexivity.
+            eapply special_soundness_berry; cbn;
+            try (rewrite dec_true);
+            [exact Hm | exact Har | exact Hbr].
+          +
+            intros * Ha Hb Hc.
+            destruct Ha as (Hal & Har).
+            destruct Hb as (Hbl & Hbr).
+            cbn in Hal, Har, Hbl, Hbr.
+            destruct (vector_inv_S gs) as (gsh & gstl & Hd).
+            destruct (vector_inv_S hs) as (hsh & hstl & He).
+            destruct (vector_inv_S a) as (ah & atl & Hf).
+            destruct (vector_inv_S r₁) as (rh₁ & rtl₁ & Hg).
+            destruct (vector_inv_S cs₁) as (csh₁ & cstl₁ & Hh).
+            destruct (vector_inv_S r₂) as (rh₂ & rtl₂ & Hi).
+            destruct (vector_inv_S cs₂) as (csh₂ & cstl₂ & Hj).
+            subst; cbn in Hc.
+            remember (fold_right add cstl₁ zero) as hcl.
+            remember (fold_right add cstl₂ zero) as hcr.
+            (* case analysis on challenges *)
+            assert (Hd : csh₁ <> csh₂ ∨ 
+              (csh₁ = csh₂ ∧ (hcl <> hcr))).
+            case_eq (Fdec csh₁ csh₂);
+            intros Hd He.
+            right.
+            refine (conj Hd _).
+            intros Hf; eapply Hc;
+            rewrite Hd, Hf;
+            exact eq_refl. 
+            left; exact Hd.
+            (* I know that 
+            Hd: csh₁ ≠ csh₂ ∨ csh₁ = csh₂ ∧ hcl ≠ hcr*)
+            destruct Hd as [Hd | Hd].
+            ++
+              pose proof (Hbr Fin.F1) as Hk.
+              pose proof (Har Fin.F1) as Hj.
+              exists (Fin.F1).
+              cbn in Hj, Hk |- *.
+              rewrite dec_true in Hk, Hj. 
+              eapply special_soundness_berry; cbn;
+              try (rewrite dec_true);
+              [exact Hd | exact Hj | exact Hk].
+          ++
+            (* inductive case *)
+            cbn in IHn.
+            destruct Hd as (Hdl & Hdr).
+            assert (He : (∀ f : Fin.t (S n),
+            (if
+              Gdec (gstl[@f] ^ rtl₁[@f])
+                (gop atl[@f] (hstl[@f] ^ cstl₁[@f]))
+             then true
+             else false) = true)).
+            intro f;
+            specialize (Har (Fin.FS f));
+            exact Har.
+            assert (Hf : 
+            (∀ f : Fin.t (S n),
+               (if
+                 Gdec (gstl[@f] ^ rtl₂[@f])
+                   (gop atl[@f] (hstl[@f] ^ cstl₂[@f]))
+                then true
+                else false) = true)).
+            intro f; 
+            specialize (Hbr (Fin.FS f));
+            exact Hbr.
+            rewrite Heqhcl, Heqhcr in Hdr.
+            destruct (IHn gstl hstl atl
+              (fold_right add cstl₁ zero)
+              (fold_right add cstl₂ zero) cstl₁ cstl₂ rtl₁ rtl₂
+              (conj eq_refl He) (conj eq_refl Hf) Hdr) as 
+            (f & y & IH).
+            exists (Fin.FS f), y;
+            exact IH.
+        Qed.
+
+
         
         (* Let's prove completeness *)
         (* gs := gsl ++ [g] ++ gsr *)
@@ -3761,14 +3890,15 @@ Module Zkp.
 
         (* end of completeness *)
         (* special soundness *)
-        Lemma generalise_or_sigma_soundenss :
+        Lemma generalise_or_sigma_soundness :
          forall (a : Vector.t G (m + (1 + n))) 
-         (c₁ c₂ : Vector.t F (1 + (m + (1 + n)))) 
+         (c₁ c₂ : F)
+         (cs₁ cs₂ : Vector.t F (m + (1 + n)))
          (r₁ r₂ : Vector.t F (m + (1 + n))),
          generalised_or_accepting_conversations 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁; r₁) = true ->
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁ :: cs₁; r₁) = true ->
          generalised_or_accepting_conversations 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂; r₂) = true ->
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂ :: cs₂; r₂) = true ->
          c₁ <> c₂ -> 
          (* I know an index where relation R is true and I can 
           extract a witness out of it *)
@@ -3778,25 +3908,39 @@ Module Zkp.
           clear x R.
           intros * Ha Hb Hc.
           pose proof generalised_or_accepting_conversations_correctness_forward 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁; r₁) Ha as Hd.
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁ :: cs₁; r₁) Ha as Hd.
           pose proof generalised_or_accepting_conversations_correctness_forward 
-          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂; r₂) Hb as He.
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂ :: cs₂; r₂) Hb as He.
           cbn in Hd, He.
           destruct Hd as (Hdl & Hdr).
           destruct He as (Hel & Her).
-          destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
-          destruct (vector_inv_S c₂) as (ch₂ & ctl₂ & Hg).
-          rewrite Hf, Hg in Hc.
-          rewrite Hf in Hdl; cbn in Hdl.
-          rewrite Hg in Hel; cbn in Hel.
-          induction m.
+          rewrite Hdl, Hel in Hc.
+          (* from Hc, infer cs₁ <> cs₂ *)
+          assert (Hf : cs₁ <> cs₂).
+          intro Hf; eapply Hc.
+          rewrite Hf; exact eq_refl.
+          assert (Hg : two_challenge_vectors_disjoint_someelem cs₁ cs₂).
+          eapply vector_not_equal_implies_disjoint_someelem; 
+          exact Hf.
+          unfold two_challenge_vectors_disjoint_someelem in Hg.
+          destruct Hg as [f Hg].
+          (* induction on m *)
+          induction m as [|m' IHm].
           +
-            (* ch₁ :: ctl₁ <> ch₂ :: ctl₂ *)
-            
-            admit.
+            eapply generalise_or_sigma_soundness_base_case;
+            try assumption.
+            exact Ha.
+            exact Hb.
+            rewrite Hdl, Hel.
+            exact Hc.
           +
         Admitted.
 
+
+
+
+
+          
           
           
 
