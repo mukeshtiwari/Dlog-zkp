@@ -3184,24 +3184,30 @@ Module Zkp.
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
           generalised_or_accepting_conversations_supplement gs hs s = true ->
-          ∀ f : Fin.t n, 
-          match s with 
+          (match s with 
           | (a; c; r) => 
+            ∀ f : Fin.t n, 
             @accepting_conversation (nth gs f) (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
-          end.
+          end).
         Proof.
           induction n as [|n IHn].
           +
-            intros * Ha ?.
-            inversion f.
-          +
-            intros * Ha ?.
+            intros * Ha.
             refine 
               (match s as s' return s = s' -> _ 
               with 
               | (a₁; c₁; r₁) => fun Hb => _ 
               end eq_refl).
+            intros f;
+            inversion f.
+          +
+            intros * Ha.
+            refine 
+              (match s as s' return s = s' -> _ 
+              with 
+              | (a₁; c₁; r₁) => fun Hb => _ 
+              end eq_refl); intro f. 
             destruct (vector_inv_S gs) as (gsh & gstl & Hc).
             destruct (vector_inv_S hs) as (hsh & hstl & Hd).
             destruct (vector_inv_S a₁) as (ah₁ & atl₁ & He).
@@ -3220,17 +3226,15 @@ Module Zkp.
               destruct Ha as [Hal Har].
               exact (IHn _ _ _ Har fs).
         Qed.
+        
 
             
-          
-
-
         Lemma generalised_or_accepting_conversations_correctness_supplement_backward : 
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
-          (∀ f : Fin.t n, 
-          match s with 
+          (match s with 
           | (a; c; r) => 
+            ∀ f : Fin.t n,
             @accepting_conversation (nth gs f) (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
           end) -> generalised_or_accepting_conversations_supplement gs hs s = true.
@@ -3272,14 +3276,15 @@ Module Zkp.
               exact (IHn Hb).
         Qed.
 
+      
 
         Lemma generalised_or_accepting_conversations_correctness_supplement : 
           forall {n : nat} (gs hs : Vector.t G n)
           (s :  @sigma_proto n n n),
-          generalised_or_accepting_conversations_supplement gs hs s = true <->
-          ∀ f : Fin.t n, 
+          generalised_or_accepting_conversations_supplement gs hs s = true <-> 
           match s with 
           | (a; c; r) => 
+            ∀ f : Fin.t n,
             @accepting_conversation (nth gs f) (nth hs f) 
               ([(nth a f)]; [nth c f]; [(nth r f)]) = true
           end.
@@ -3330,25 +3335,21 @@ Module Zkp.
               cbn; reflexivity.
         Qed.
 
-        
 
-
-
-       
 
         Lemma generalised_or_accepting_conversations_correctness_forward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
-          generalised_or_accepting_conversations gs hs s = true ->
-          ∀ (f : Fin.t (m + (1 + n))), 
+          generalised_or_accepting_conversations gs hs s = true -> 
           match s with 
           | (a; c; r) => 
             Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            (∀ (f : Fin.t (m + (1 + n))),
             @accepting_conversation (nth gs f) (nth hs f) 
-              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true)
           end.
         Proof.
-          intros * Ha f. 
+          intros * Ha. 
           unfold generalised_or_accepting_conversations in Ha.
           refine 
             (match s as s' return s = s' -> _ 
@@ -3374,13 +3375,13 @@ Module Zkp.
 
         Lemma generalised_or_accepting_conversations_correctness_backward : 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
-          (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
-          (∀ (f : Fin.t (m + (1 + n))), 
-          match s with 
+          (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))), 
+          (match s with 
           | (a; c; r) => 
             Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            (∀ (f : Fin.t (m + (1 + n))),
             @accepting_conversation (nth gs f) (nth hs f) 
-              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true)
           end) -> 
           generalised_or_accepting_conversations gs hs s = true.
         Proof.
@@ -3396,13 +3397,13 @@ Module Zkp.
           rewrite Hb in Ha.
           destruct m as [|m].
           +
-            specialize (Ha Fin.F1).
             destruct Ha as [Hal Har].
+            specialize (Har Fin.F1).
             rewrite Hc in Hal; cbn 
             in Hal; exact Hal.
           +
-            specialize (Ha Fin.F1).
             destruct Ha as [Hal Har].
+            specialize (Har Fin.F1).
             rewrite Hc in Hal; cbn 
             in Hal; exact Hal.
           +
@@ -3410,10 +3411,10 @@ Module Zkp.
             destruct (Fdec ch₁ ch₁) eqn:He.
             eapply generalised_or_accepting_conversations_correctness_supplement;
             intros f.
-            specialize (Ha f).
             rewrite Hb in Ha.
             destruct Ha as [Hal Har].
             rewrite Hc in Har.
+            specialize (Har f).
             cbn in Har; cbn.
             exact Har.
             congruence.
@@ -3423,12 +3424,12 @@ Module Zkp.
         Lemma generalised_or_accepting_conversations_correctness: 
           forall {m n : nat} (gs hs : Vector.t G (m + (1 + n)))
           (s :  @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))),
-          (∀ (f : Fin.t (m + (1 + n))), 
-          match s with 
+          (match s with 
           | (a; c; r) => 
             Vector.hd c = Vector.fold_right add (Vector.tl c) zero ∧
+            (∀ (f : Fin.t (m + (1 + n))),
             @accepting_conversation (nth gs f) (nth hs f) 
-              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true
+              ([(nth a f)]; [nth c (Fin.FS f)]; [(nth r f)]) = true)
           end) <-> 
           generalised_or_accepting_conversations gs hs s = true.
         Proof.
@@ -3666,6 +3667,8 @@ Module Zkp.
           congruence.
         Qed.
 
+
+
         (* This proof basically hinges on simulator_supplement proof. It's 
         here clear presentation *)
         (*simulator completeness*)
@@ -3758,8 +3761,47 @@ Module Zkp.
 
         (* end of completeness *)
         (* special soundness *)
+        Lemma generalise_or_sigma_soundenss :
+         forall (a : Vector.t G (m + (1 + n))) 
+         (c₁ c₂ : Vector.t F (1 + (m + (1 + n)))) 
+         (r₁ r₂ : Vector.t F (m + (1 + n))),
+         generalised_or_accepting_conversations 
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁; r₁) = true ->
+         generalised_or_accepting_conversations 
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂; r₂) = true ->
+         c₁ <> c₂ -> 
+         (* I know an index where relation R is true and I can 
+          extract a witness out of it *)
+         ∃ (f : Fin.t (m + (1 + n))) (y : F),
+         (nth (gsl ++ [g] ++ gsr) f)^y = (nth (hsl ++ [h] ++ hsr) f).
+        Proof using -(x R).
+          clear x R.
+          intros * Ha Hb Hc.
+          pose proof generalised_or_accepting_conversations_correctness_forward 
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₁; r₁) Ha as Hd.
+          pose proof generalised_or_accepting_conversations_correctness_forward 
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) (a; c₂; r₂) Hb as He.
+          cbn in Hd, He.
+          destruct Hd as (Hdl & Hdr).
+          destruct He as (Hel & Her).
+          destruct (vector_inv_S c₁) as (ch₁ & ctl₁ & Hf).
+          destruct (vector_inv_S c₂) as (ch₂ & ctl₂ & Hg).
+          rewrite Hf, Hg in Hc.
+          rewrite Hf in Hdl; cbn in Hdl.
+          rewrite Hg in Hel; cbn in Hel.
+          induction m.
+          +
+            (* ch₁ :: ctl₁ <> ch₂ :: ctl₂ *)
+            
+            admit.
+          +
+        Admitted.
+
+          
+          
 
 
+         
         (* honest verifier zero knowledge proof *)
 
          
