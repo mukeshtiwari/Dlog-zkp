@@ -57,17 +57,16 @@ Module Zkp.
         log_{g} h = x. We will turn this into NIZK by Fiat-Shamir transform 
         (careful )*)
     
-      Record sigma_proto {n m r : nat} := 
+      Record sigma_proto {n m r : nat} : Type := 
         mk_sigma 
         {
           announcement : Vector.t G n; (* prover announcement*)
           challenge : Vector.t F m; (* verifier randomness *)
           response : Vector.t F r (* prover response *)
         }.
+
+       
     
-
-
-     
 
     End SigmaDefinition.
 
@@ -368,7 +367,8 @@ Module Zkp.
         
         Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
-
+        (* every triple in schnorr distribution has 
+          probability 1/n *)
         Lemma schnorr_distribution_probability_generic : 
           forall (l : dist F) (trans : sigma_proto) 
           (prob : Prob.prob) (c : F) (n : nat),
@@ -400,7 +400,8 @@ Module Zkp.
         Qed.
 
 
-
+        (* every triple in schnorr distribution is 
+          an accepting conversation *)
         Lemma schnorr_distribution_transcript_generic : 
           forall(l : dist F) (trans : sigma_proto) 
           (prob : Prob.prob) (c : F),
@@ -739,8 +740,8 @@ Module Zkp.
           (s₁ : @sigma_proto n m r) (s₂ : @sigma_proto u v w) :
           @sigma_proto (n + u) (m + v) (r + w) :=
         match s₁, s₂ with 
-        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ c₂ r₂) =>
-          mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
+        |(a₁; c₁; r₁), (a₂; c₂; r₂) =>
+          (a₁ ++ a₂; c₁ ++ c₂; r₁ ++ r₂)
         end.
 
 
@@ -748,6 +749,7 @@ Module Zkp.
           Construct parallel Sigma protocol for a 
           the relation R : h = g^x
         *)
+        (* input: x g us cs *)
         Definition construct_parallel_conversations_schnorr :
           forall {n : nat}, 
           F -> G ->  Vector.t F n -> Vector.t F n ->
@@ -760,7 +762,7 @@ Module Zkp.
           end).
           + 
             (* base case. *)
-            refine (mk_sigma _ _ _ [] [] []).
+            refine ([]; []; []).
           + 
             destruct (vector_inv_S us) as (ush & ustl & _).
             destruct (vector_inv_S cs) as (csh & cstl & _).
@@ -771,6 +773,7 @@ Module Zkp.
 
 
         (* Does not involve the secret x *)
+        (* input: g h us cs *)
         Definition construct_parallel_conversations_simulator :
           forall {n : nat}, 
           G ->  G -> Vector.t F n -> Vector.t F n -> @sigma_proto n n n.
@@ -780,7 +783,7 @@ Module Zkp.
           | 0 => fun g h us cs => _
           | S n' => fun g h us cs  => _
           end).
-          + refine (mk_sigma _ _ _ [] [] []).
+          + refine ([]; []; []).
           + 
             destruct (vector_inv_S us) as (ush & ustl & _).
             destruct (vector_inv_S cs) as (csh & cstl & _).
@@ -793,8 +796,8 @@ Module Zkp.
 
       
         Definition generalised_parallel_accepting_conversations : 
-          forall {n : nat}, G -> G ->
-          @sigma_proto n n n -> bool.
+          forall {n : nat}, 
+          G -> G -> @sigma_proto n n n -> bool.
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
@@ -860,8 +863,7 @@ Module Zkp.
           match s with 
           | (a; c; r) => 
             @accepting_conversation g h 
-              (mk_sigma 1 1 1
-                [(nth a f)] [(nth c f)] [(nth r f)]) = true
+              ([(nth a f)]; [(nth c f)]; [(nth r f)]) = true
           end.
         Proof using -(x R).
           clear x R. (* This is not needed in this proof 
@@ -905,8 +907,7 @@ Module Zkp.
             match s with 
             | (a; c; r) => 
               @accepting_conversation g h 
-                (mk_sigma 1 1 1
-                  [(nth a f)] [(nth c f)] [(nth r f)]) = true 
+                ([(nth a f)]; [(nth c f)]; [(nth r f)]) = true 
             end) -> 
           @generalised_parallel_accepting_conversations n g h s = true.
         Proof using -(x R).
@@ -942,8 +943,7 @@ Module Zkp.
             match s with 
             | (a; c; r) => 
               @accepting_conversation g h 
-                (mk_sigma 1 1 1
-                  [(nth a f)] [(nth c f)] [(nth r f)]) = true 
+                ([(nth a f)]; [(nth c f)]; [(nth r f)]) = true 
             end) <-> 
           @generalised_parallel_accepting_conversations n g h s = true.
         Proof using -(x R).
@@ -957,8 +957,8 @@ Module Zkp.
         (* completeness *)
         Lemma construct_parallel_conversations_schnorr_completeness : 
           forall (n : nat) (us cs : Vector.t F n),
-          @generalised_parallel_accepting_conversations n g h
-            (@construct_parallel_conversations_schnorr n x g us cs) = true.
+          generalised_parallel_accepting_conversations g h
+            (construct_parallel_conversations_schnorr x g us cs) = true.
         Proof.
           induction n as [|n IHn];
           [intros ? ?;
@@ -994,8 +994,8 @@ Module Zkp.
 
         Lemma construct_parallel_conversations_simulator_completeness : 
           forall (n : nat) (us cs : Vector.t F n),
-          @generalised_parallel_accepting_conversations n g h
-            (@construct_parallel_conversations_simulator n g h us cs) = true.
+          generalised_parallel_accepting_conversations g h
+            (construct_parallel_conversations_simulator g h us cs) = true.
         Proof using -(x R).
           clear x R. (* clear the relation *)
           induction n as [|n IHn];
@@ -1388,8 +1388,8 @@ Module Zkp.
           (s₁ : @sigma_proto 1 1 1) (s₂ : @sigma_proto n 1 n) :
           @sigma_proto (1 + n) 1 (1 + n) :=
         match s₁, s₂ with 
-        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ _ r₂) =>
-          mk_sigma _ _ _ (a₁ ++ a₂) c₁ (r₁ ++ r₂)
+        |(a₁; c₁; r₁), (a₂; _; r₂) =>
+          (a₁ ++ a₂; c₁; r₁ ++ r₂)
         end.
          
        (*
@@ -1400,7 +1400,7 @@ Module Zkp.
           c : single challenge 
         *)
 
-       
+       (* input: xs gs us c *)
         Definition construct_and_conversations_schnorr :
           forall {n : nat}, 
           Vector.t F n -> Vector.t G n -> 
@@ -1425,6 +1425,7 @@ Module Zkp.
 
 
         (* Does not involve the secret x *)
+        (*input: gs hs us c *)
         Definition construct_and_conversations_simulator :
           forall {n : nat}, 
           Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
@@ -1502,12 +1503,12 @@ Module Zkp.
         Lemma generalised_and_accepting_conversations_correctness_forward : 
           forall (n : nat) (gs hs : Vector.t G n) (s : @sigma_proto n 1 n),
           generalised_and_accepting_conversations gs hs s = true ->
-          ∀ (f : Fin.t n), 
+          (∀ (f : Fin.t n), 
           match s with 
           | (a; c; r) => 
             @accepting_conversation (nth gs f) (nth hs f)
               ([(nth a f)]; c; [(nth r f)]) = true
-          end.
+          end).
         Proof.
           unfold accepting_conversation.
           induction n as [|n IHn];
@@ -1674,7 +1675,7 @@ Module Zkp.
         (* end of same challenge *)
 
         (*
-          ∃ x₁ x₂ x₃ : F : g₁ = h₁^x₁ ∧ g₂ = h₂^x₂ ∧ g₃ = h₃^x₃ ..... 
+          ∃ x₁ x₂ x₃ : F : h₁ = g₁^x₁ ∧ h₂ = g₂^x₂ ∧ h₃ = g₃^x₃ ..... 
         *)
         Context
           {Hvec: @vector_space F (@eq F) zero one add mul sub 
@@ -1685,8 +1686,8 @@ Module Zkp.
           (R : forall (f : Fin.t n), 
             (Vector.nth gs f)^(Vector.nth xs f) = Vector.nth hs f).
 
+        
         (* completeness *)
-       
         Lemma construct_and_conversations_schnorr_completeness : 
           forall (us : Vector.t F n) (c : F),
           generalised_and_accepting_conversations gs hs
@@ -1782,6 +1783,8 @@ Module Zkp.
           generalised_and_accepting_conversations gs hs (a; c₁; r₁) = true ->
           generalised_and_accepting_conversations gs hs (a; c₂; r₂) = true ->
           c₁ <> c₂ ->
+          (* we can extract a vector of wintess such that 
+            all the individual relations hold gi^xi = hi *)
           (∃ ys : Vector.t F n, ∀ (f : Fin.t n), 
             (nth gs f)^(nth ys f) = (nth hs f)).
         Proof using -(xs R).
@@ -2047,7 +2050,7 @@ Module Zkp.
 
 
 
-         (* special honest verifier zero-knowledge *)
+        (* special honest verifier zero-knowledge *)
         (* Every element in generalised schnorr distribution 
           is an accepting conversation and it's probability 1 / |lf|^n 
         *)
@@ -2090,17 +2093,17 @@ Module Zkp.
           (s₁ : @sigma_proto 1 1 1) (s₂ : @sigma_proto n 1 1) :
           @sigma_proto (1 + n) 1 1 :=
         match s₁, s₂ with 
-        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ _ _) =>
-          mk_sigma _ _ _ (a₁ ++ a₂) c₁ r₁
+        |(a₁; c₁; r₁), (a₂; _; _) =>
+          (a₁ ++ a₂; c₁; r₁)
         end.
+
+
 
         (* 
           x : common witness for all relations
           gs and hs : public inputs 
           c : single challenge
         *)
-
-       
         Definition construct_eq_conversations_schnorr :
           forall {n : nat}, 
           F -> Vector.t G (1 + n) -> F  -> 
@@ -2128,6 +2131,7 @@ Module Zkp.
 
 
         (* Does not involve the secret x *)
+        (* input gs hs u c *)
         Definition construct_eq_conversations_simulator :
           forall {n : nat}, 
           Vector.t G (1 + n) ->  Vector.t G (1 + n) -> 
@@ -2186,24 +2190,24 @@ Module Zkp.
          
 
 
-         (* Check the definition *)
-         Definition generalised_eq_schnorr_distribution  
-          {n : nat} (lf : list F)  (Hlfn : lf <> List.nil) (x : F) 
-          (gs : Vector.t G (1 + n)) (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
-          (* draw u randomly *)
-          u <- (uniform_with_replacement lf Hlfn) ;;
-          Ret (construct_eq_conversations_schnorr x gs u c).
+          (* Check the definition *)
+          Definition generalised_eq_schnorr_distribution  
+            {n : nat} (lf : list F)  (Hlfn : lf <> List.nil) (x : F) 
+            (gs : Vector.t G (1 + n)) (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
+            (* draw u randomly *)
+            u <- (uniform_with_replacement lf Hlfn) ;;
+            Ret (construct_eq_conversations_schnorr x gs u c).
+          
         
-       
-       
-       (* without secret *)
-        Definition generalised_eq_simulator_distribution 
-          {n : nat} (lf : list F) 
-          (Hlfn : lf <> List.nil) (gs hs : Vector.t G (1 + n)) 
-          (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
-          (* draw u random  *)
-          u <- uniform_with_replacement lf Hlfn ;;
-          Ret (construct_eq_conversations_simulator gs hs u c).
+        
+          (* without secret *)
+          Definition generalised_eq_simulator_distribution 
+            {n : nat} (lf : list F) 
+            (Hlfn : lf <> List.nil) (gs hs : Vector.t G (1 + n)) 
+            (c : F) : dist (@sigma_proto (1 + n) 1 1) :=
+            (* draw u random  *)
+            u <- uniform_with_replacement lf Hlfn ;;
+            Ret (construct_eq_conversations_simulator gs hs u c).
 
         
 
@@ -2420,8 +2424,8 @@ Module Zkp.
           (R : forall (f : Fin.t (1 + n)), 
             (Vector.nth gs f)^x = Vector.nth hs f).
 
+        
         (* completeness *)
-
         Lemma construct_eq_conversations_schnorr_completeness : 
           forall (u c : F),
           generalised_eq_accepting_conversations gs hs
@@ -2872,7 +2876,7 @@ Module Zkp.
       *)
       (* Generalised Or composition? 
       
-        ∃ x : g₁^w = h₁ ∨ g₂^w = h₂ ∨ g₃^w = h₃ ... 
+        ∃ x : g₁^x = h₁ ∨ g₂^x = h₂ ∨ g₃^wx= h₃ ... 
 
         One witness out of n statements
       
@@ -2883,8 +2887,8 @@ Module Zkp.
           (s₁ : @sigma_proto n m r) (s₂ : @sigma_proto u v w) :
           @sigma_proto (n + u) (m + v) (r + w) :=
         match s₁, s₂ with 
-        |(mk_sigma _ _ _ a₁ c₁ r₁), (mk_sigma _ _ _ a₂ c₂ r₂) =>
-          mk_sigma _ _ _ (a₁ ++ a₂) (c₁ ++ c₂) (r₁ ++ r₂)
+        |(a₁; c₁; r₁), (a₂; c₂; r₂) =>
+          (a₁ ++ a₂; c₁ ++ c₂; r₁ ++ r₂)
         end.
 
         (* Does not involve the secret x *)
@@ -2941,20 +2945,29 @@ Module Zkp.
 
 
         (* 
-          intros m n x gs hs us rs c. 
+          x gs hs us rs c. 
           x is secret  
           gs and hs are public group elements 
           and prover knows the (m + 1)th relation.
           us and cs --verifier let prover cheat -- are randomness 
           c is challenge
+
+          One way to simplify this API is 
+          to combine us and cs into a single Vector. 
+          In that case, in our DSL we don't need to 
+          think about OR as an special case because 
+          all our API will be uniform. 
+
+          Important:Discuss this with Berry. 
         *)  
-        Definition construct_or_conversations_schnorr :
-          forall {m n : nat}, 
+        Definition construct_or_conversations_schnorr {m n : nat} :
           F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
+          (* If I combine these two below randomness us and cs, we 
+            can easily develop a DSL *)
           Vector.t F (m + (1 + n)) -> Vector.t F (m + (1 + n)) -> 
           F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
-          intros ? ? x gs hs us cs c.
+          intros x gs hs us cs c.
           destruct (splitat m gs) as (gsl & gsrt).
           destruct (vector_inv_S gsrt) as (g & gsr & _).
           destruct (splitat m hs) as (hsl & hsrt).
@@ -3042,6 +3055,7 @@ Module Zkp.
 
 
         (* distribution *)
+        
 
          
           
