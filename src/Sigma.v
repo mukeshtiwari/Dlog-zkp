@@ -3944,8 +3944,9 @@ Module Zkp.
           congruence.
         Qed.
 
-
         (* end of completeness *)
+
+
         (* special soundness *)
         Lemma generalise_or_sigma_soundness :
          forall (a : Vector.t G (m + (1 + n))) 
@@ -4045,13 +4046,16 @@ Module Zkp.
         Qed.
 
 
-            
+
 
         (* Every element in generalised schnorr distribution 
           is an accepting conversation and it's probability 1 / |lf|^n 
           Maybe probabilistic notations but this one is more intuitive.
         *)
         (* This proof is very nice. *)
+        (* From Berry's notes : we have (m = 0 ∧ n = 1) ∨
+          (m = 1 ∧ n = 0). In both cases, probability is 
+          1 / |lf|^3 *)
         Lemma generalised_or_special_honest_verifier_schnorr_dist : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) a b, 
@@ -4076,9 +4080,109 @@ Module Zkp.
         Qed.
 
 
+        Lemma generalised_or_simulator_distribution_probability_generic : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
+          (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / q) -> 
+          List.In (trans, pr)
+            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_or_conversations_simulator 
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
+          pr = 1 / q.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
 
-         
-          
+
+
+        Lemma generalised_or_simulator_distribution_transcript_generic : 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
+          (trans : sigma_proto) (pr : prob) (c : F),
+          List.In (trans, pr)
+            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
+              Ret (construct_or_conversations_simulator
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
+          generalised_or_accepting_conversations 
+            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              eapply construct_or_conversations_simulator_completeness.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                eapply construct_or_conversations_simulator_completeness.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+
+
+
+
+        (* Every element in generalised simulator distribution 
+          is an accepting conversation and it's probability 1 / |lf|^n 
+          Maybe probabilistic notations but this one is more intuitive.
+        *)
+        (* This proof is very nice. *)
+        (* From Berry's notes : we have (m = 0 ∧ n = 1) ∨
+          (m = 1 ∧ n = 0). In both cases, probability is 
+          1 / |lf|^3 *)
+        Lemma generalised_or_special_honest_verifier_simulator_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_or_simulator_distribution lf Hlfn 
+            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) ->
+            (* it's an accepting conversation and probability is *)
+          generalised_or_accepting_conversations 
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
+          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
+        Proof.
+          intros * Ha.
+          refine(conj _ _).
+          + 
+            eapply generalised_or_simulator_distribution_transcript_generic; 
+            exact Ha.
+          +
+            eapply generalised_or_simulator_distribution_probability_generic.
+            intros * Hc.
+            eapply uniform_probability_multidraw_prob; exact Hc.
+            exact Ha.
+        Qed.
 
 
       End Proofs.
