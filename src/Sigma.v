@@ -2957,7 +2957,6 @@ Module Zkp.
         (* In this one, I combine the us and cs *)
         Definition construct_or_conversations_schnorr {m n : nat} :
           F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
-          (* combine the randomness us and cs *)
           Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
@@ -3000,7 +2999,6 @@ Module Zkp.
         (* does not involve secret x *)
         Definition construct_or_conversations_simulator {m n : nat} :
           Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
-          (* I combine the randomness us and cs *)
           Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
