@@ -10,7 +10,7 @@ Here is my plan to proceed:
     Field and show that it respects the vector-space axioms. (Finished)
 3. Now that we have all the concrete implementation, we can 
    demonstrate that they are efficient. (Finished)
-4. Formalise others, e.g., AND, OR sigma protocol
+4. Formalise others, e.g., Parallel, EQ, AND, OR sigma protocol (Finished)
 5. Formalise some vote counting method where we can use our 
    sigma protocol library to demonstrate usability. 
 
