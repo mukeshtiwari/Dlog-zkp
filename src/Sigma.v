@@ -3747,6 +3747,7 @@ Module Zkp.
         Qed.
 
 
+        
 
         
         (* Let's prove completeness *)
@@ -3973,10 +3974,113 @@ Module Zkp.
         Qed. 
         
 
-
-
          
         (* honest verifier zero knowledge proof *)
+
+        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+
+        Lemma generalised_or_schnorr_distribution_probability_generic : 
+          forall (l : dist (t F (m + (1 + n) + (m + (1 + n))))) 
+          (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
+          (∀ (trx : Vector.t F (m + (1 + n) + (m + (1 + n)))) (prx : prob), 
+            List.In (trx, prx) l → prx = 1 / q) -> 
+          List.In (trans, pr)
+            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + (1 + n))),
+              Ret (construct_or_conversations_schnorr x 
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
+          pr = 1 / q.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          + intros * Ha Hin.
+            simpl in Hin.
+            inversion Hin.
+          + intros * Ha Hin.
+            pose proof (Ha a p (or_introl eq_refl)).
+            destruct Hin as [Hwa | Hwb].
+            inversion Hwa; subst; 
+            clear Hwa.
+            unfold mul_prob, 
+            Prob.one; simpl.
+            f_equal.
+            nia.
+            simpl in Hwb.
+            eapply IHl.
+            intros ? ? Hinn.
+            exact (Ha trx prx (or_intror Hinn)).
+            exact Hwb.
+        Qed.
+
+        
+
+        Lemma generalised_or_schnorr_distribution_transcript_generic : 
+          forall (l : dist (t F (m + (1 + n) + (m + (1 + n))))) 
+          (trans : sigma_proto) (pr : prob) (c : F),
+          List.In (trans, pr)
+            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + (1 + n))),
+              Ret (construct_or_conversations_schnorr x 
+              (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
+          generalised_or_accepting_conversations 
+            (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) trans = true.
+        Proof.
+          induction l as [|(a, p) l IHl].
+          +
+            intros * Ha.
+            cbn in Ha; 
+            inversion Ha.
+          +
+            (* destruct l *)
+            destruct l as [|(la, lp) l].
+            ++
+              intros * Ha.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha];
+              inversion Ha.
+              eapply construct_or_conversations_schnorr_completeness.
+            ++
+              intros * Ha.
+              remember (((la, lp) :: l)%list) as ls.
+              cbn in Ha.
+              destruct Ha as [Ha | Ha].
+              +++
+                inversion Ha.
+                eapply construct_or_conversations_schnorr_completeness.
+              +++
+                eapply IHl; try assumption.
+                exact Ha.
+        Qed.
+
+
+            
+
+        (* Every element in generalised schnorr distribution 
+          is an accepting conversation and it's probability 1 / |lf|^n 
+          Maybe probabilistic notations but this one is more intuitive.
+        *)
+        (* This proof is very nice. *)
+        Lemma generalised_or_special_honest_verifier_schnorr_dist : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) 
+          (c : F) a b, 
+          List.In (a, b) 
+            (generalised_or_schnorr_distribution lf Hlfn 
+            x (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) ->
+            (* it's an accepting conversation and probability is *)
+          generalised_or_accepting_conversations 
+          (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
+          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + (1 + n)))).
+        Proof.
+          intros * Ha.
+          refine(conj _ _).
+          + 
+            eapply generalised_or_schnorr_distribution_transcript_generic; 
+            exact Ha.
+          +
+            eapply generalised_or_schnorr_distribution_probability_generic.
+            intros * Hc.
+            eapply uniform_probability_multidraw_prob; exact Hc.
+            exact Ha.
+        Qed.
+
+
 
          
           
