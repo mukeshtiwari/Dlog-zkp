@@ -841,15 +841,7 @@ Module Zkp.
 
       Section Proofs. 
 
-        Context
-          {Hvec: @vector_space F (@eq F) zero one add mul sub 
-            div opp inv G (@eq G) gid ginv gop gpow} (* vector space *)
-          (x : F) (* secret witness *)
-          (g h : G) (* public values *) 
-          (R : h = g ^ x). (* relation that 
-          prover trying to establish, or convince a verifier*)
-
-
+        
        
         (* 
           when generalised_accepting_conversations return true 
@@ -857,7 +849,7 @@ Module Zkp.
           accepting conversations.
         *)
         Lemma generalised_parallel_accepting_conversations_correctness_forward : 
-          forall (n : nat) (s : @sigma_proto n n n),
+          forall (n : nat) g h (s : @sigma_proto n n n),
           @generalised_parallel_accepting_conversations n g h s = true ->
           ∀ (f : Fin.t n), 
           match s with 
@@ -865,18 +857,15 @@ Module Zkp.
             @accepting_conversation g h 
               ([(nth a f)]; [(nth c f)]; [(nth r f)]) = true
           end.
-        Proof using -(x R).
-          clear x R. (* This is not needed in this proof 
-          and therefore I remove it to make this lemma 
-          more generic *)
+        Proof.
           unfold accepting_conversation.
           induction n as [|n IHn];
           simpl.
           +  
-            intros ? Ha f.
+            intros * Ha f.
             refine (match f with end).
           +
-            intros ? Ha f.
+            intros * Ha f.
             refine
             (match s as s'
             return s = s' -> _ with 
@@ -894,7 +883,7 @@ Module Zkp.
             subst ; simpl.
             eapply andb_true_iff in Ha.
             destruct Ha as (_ & Ha).
-            exact (IHn _ Ha hf).
+            exact (IHn _ _ _ Ha hf).
         Qed.
      
           
@@ -902,7 +891,7 @@ Module Zkp.
         generalised_accepting accepts it.
         *)
         Lemma generalised_parallel_accepting_conversations_correctness_backward : 
-          forall (n : nat) (s : @sigma_proto n n n), 
+          forall (n : nat) g h (s : @sigma_proto n n n), 
           (forall (f : Fin.t n),
             match s with 
             | (a; c; r) => 
@@ -910,16 +899,15 @@ Module Zkp.
                 ([(nth a f)]; [(nth c f)]; [(nth r f)]) = true 
             end) -> 
           @generalised_parallel_accepting_conversations n g h s = true.
-        Proof using -(x R).
-          clear x R.
+        Proof.
           unfold accepting_conversation.
           induction n as [|n IHn];
           simpl.
           +
-            intros ? Ha.
+            intros * Ha.
             reflexivity.
           +
-            intros ? Ha.
+            intros * Ha.
             refine
             (match s as s'
             return s = s' -> _ with 
@@ -938,7 +926,7 @@ Module Zkp.
 
 
         Lemma generalised_parallel_accepting_conversations_correctness : 
-          forall (n : nat) (s : @sigma_proto n n n), 
+          forall (n : nat) g h (s : @sigma_proto n n n), 
           (forall (f : Fin.t n),
             match s with 
             | (a; c; r) => 
@@ -946,12 +934,21 @@ Module Zkp.
                 ([(nth a f)]; [(nth c f)]; [(nth r f)]) = true 
             end) <-> 
           @generalised_parallel_accepting_conversations n g h s = true.
-        Proof using -(x R).
-          clear x R.
+        Proof.
           split;
           [apply generalised_parallel_accepting_conversations_correctness_backward |
           apply generalised_parallel_accepting_conversations_correctness_forward].
         Qed.
+
+
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow} (* vector space *)
+          (x : F) (* secret witness *)
+          (g h : G) (* public values *) 
+          (R : h = g ^ x). (* relation that 
+          prover trying to establish, or convince a verifier*)
+
 
 
         (* completeness *)
@@ -969,7 +966,7 @@ Module Zkp.
           specialize (IHn tus tcs).
           pose proof 
           generalised_parallel_accepting_conversations_correctness_forward
-          _ _ IHn as Hc.
+          _ _ _ _ IHn as Hc.
           eapply 
           generalised_parallel_accepting_conversations_correctness_backward.
           intros ?; cbn.
@@ -992,6 +989,7 @@ Module Zkp.
         Qed.
         
 
+        (* simulator completeness *)
         Lemma construct_parallel_conversations_simulator_completeness : 
           forall (n : nat) (us cs : Vector.t F n),
           generalised_parallel_accepting_conversations g h
@@ -1007,7 +1005,7 @@ Module Zkp.
           specialize (IHn tus tcs).
           pose proof 
           generalised_parallel_accepting_conversations_correctness_forward
-          _ _ IHn as Hc.
+          _ _ _ _ IHn as Hc.
           eapply 
           generalised_parallel_accepting_conversations_correctness_backward.
           intros ?; cbn.
@@ -1031,7 +1029,7 @@ Module Zkp.
 
         
            
-        (* special soundness *)
+        (* special soundness helper *)
         Lemma generalise_parallel_sigma_soundness_supplement : 
           ∀ (n : nat) 
           (s₁ s₂ : @sigma_proto (S n) (S n) (S n)),
@@ -1167,6 +1165,7 @@ Module Zkp.
         Qed.
 
 
+        (* special soundness *)
         Lemma generalise_parallel_sigma_soundness : 
           ∀ (n : nat) (a : Vector.t G (1 + n)) 
           (c₁ r₁ c₂ r₂ : Vector.t F (1 + n)),
@@ -1176,7 +1175,8 @@ Module Zkp.
           (* accepting conversatation*)
           generalised_parallel_accepting_conversations g h (a; c₂; r₂) = true ->
           ∃ y : F, g^y = h.
-        Proof.
+        Proof using -(x R).
+          clear x R.
           intros * Ha Hb Hc.
           exact (generalise_parallel_sigma_soundness_supplement n
             (a; c₁; r₁) (a; c₂; r₂) 
@@ -3094,7 +3094,7 @@ Module Zkp.
         Defined.
 
 
-        (* distribution *)
+        (* schnorr distribution *)
         Definition generalised_or_schnorr_distribution  
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
           (x : F) (gs hs : Vector.t G (m + (1 + n))) 
@@ -3104,7 +3104,7 @@ Module Zkp.
             (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + (1 + n))) ;;
           Ret (construct_or_conversations_schnorr x gs hs usrs c).
 
-        (* simulator *)
+        (* simulator distribution *)
         Definition generalised_or_simulator_distribution  
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
           (gs hs : Vector.t G (m + (1 + n))) 
