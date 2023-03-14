@@ -2958,7 +2958,7 @@ Module Zkp.
         Definition construct_or_conversations_schnorr {m n : nat} :
           F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
           (* combine the randomness us and cs *)
-          Vector.t F ((m + (1 + n)) + (m + (1 + n))) -> 
+          Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
           intros x gs hs usrs c.
@@ -2972,9 +2972,7 @@ Module Zkp.
           destruct (splitat m us) as (usl & rurt).
           destruct (vector_inv_S rurt) as (u_i & usr & _).
           (* rs := rsl ++ [_] ++ rsr *)
-          destruct (splitat m rs) as (rsl & rsrt).
-          (* discard r_i *)
-          destruct (vector_inv_S rsrt) as (__ & rsr & _).
+          destruct (splitat m rs) as (rsl & rsr).
           (* compute r_i  *)
           remember (c - (Vector.fold_right add (rsl ++ rsr) zero)) 
           as r_i.
@@ -2996,13 +2994,14 @@ Module Zkp.
             end.
         Defined.
 
+        
 
         (* simulator *)
         (* does not involve secret x *)
         Definition construct_or_conversations_simulator {m n : nat} :
           Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
           (* I combine the randomness us and cs *)
-          Vector.t F ((m + (1 + n)) + (m + (1 + n))) -> 
+          Vector.t F ((m + (1 + n)) + (m + n)) -> 
           F -> @sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n)).
         Proof.
           intros gs hs usrs c.
@@ -3015,9 +3014,7 @@ Module Zkp.
           destruct (splitat m us) as (usl & rurt).
           destruct (vector_inv_S rurt) as (u_i & usr & _).
           (* rs := rsl ++ [_] ++ rsr *)
-          destruct (splitat m rs) as (rsl & rsrt).
-          (* discard r_i *)
-          destruct (vector_inv_S rsrt) as (__ & rsr & _).
+          destruct (splitat m rs) as (rsl & rsr).
           (* compute r_i  *)
           remember (c - (Vector.fold_right add (rsl ++ rsr) zero)) 
           as r_i.
@@ -3097,21 +3094,21 @@ Module Zkp.
         (* schnorr distribution *)
         Definition generalised_or_schnorr_distribution  
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-          (x : F) (gs hs : Vector.t G (m + (1 + n))) 
-          (c : F) : dist (@sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
-          (* draw n + n random elements *)
+          (x : F) (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
+          dist (@sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
+          (* draw ((m + (1 + n)) + (m + n)) random elements *)
           usrs <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + (1 + n))) ;;
+            (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
           Ret (construct_or_conversations_schnorr x gs hs usrs c).
 
         (* simulator distribution *)
         Definition generalised_or_simulator_distribution  
           {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-          (gs hs : Vector.t G (m + (1 + n))) 
-          (c : F) : dist (@sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
-          (* draw n + n random elements *)
+          (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
+          dist (@sigma_proto (m + (1 + n)) (1 + (m + (1 + n))) (m + (1 + n))) :=
+          (* draw ((m + (1 + n)) + (m + n)) random elements *)
           usrs <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + (1 + n))) ;;
+            (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
           Ret (construct_or_conversations_simulator gs hs usrs c).
 
          
@@ -3770,7 +3767,7 @@ Module Zkp.
         
         (* completeness *)
         Lemma construct_or_conversations_schnorr_completeness : 
-          ∀ (uscs : Vector.t F (m + (1 + n) + (m + (1 + n)))) (c : F),
+          ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
           generalised_or_accepting_conversations 
             (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
             (construct_or_conversations_schnorr x
@@ -3787,7 +3784,6 @@ Module Zkp.
           destruct (splitat m us) as (usa & usb) eqn:Hc.
           destruct (vector_inv_S usb) as (usba & usbb & Hd).
           destruct (splitat m cs) as (csa & csb) eqn:He.
-          destruct (vector_inv_S csb) as (csba & csbb & Hf).
           remember (construct_or_conversations_simulator_supplement gsl hsl usa csa)
           as sa.
           refine
@@ -3796,7 +3792,7 @@ Module Zkp.
           |(a₁; c₁; r₁) => fun Hg => _  
           end eq_refl).
           unfold schnorr_protocol.
-          remember (construct_or_conversations_simulator_supplement gt ht usbb csbb)
+          remember (construct_or_conversations_simulator_supplement gt ht usbb csb)
           as sb. 
           refine
           (match sb as s'
@@ -3807,8 +3803,8 @@ Module Zkp.
           fold_right add (csa ++ csbb) zero = c₁ + c₂
           *)
           assert (Hj : c = (fold_right add
-          (c₁ ++ c - fold_right add (csa ++ csbb) zero :: c₂) zero)).
-          remember (c - fold_right add (csa ++ csbb) zero :: c₂) as ct.
+          (c₁ ++ c - fold_right add (csa ++ csb) zero :: c₂) zero)).
+          remember (c - fold_right add (csa ++ csb) zero :: c₂) as ct.
           rewrite fold_right_app.
           rewrite Heqct; cbn.
           rewrite fold_right_app.
@@ -3831,7 +3827,7 @@ Module Zkp.
           eapply construct_or_conversations_simulator_completeness_supplement.
           cbn; eapply andb_true_iff.
           split.
-          remember ((c - fold_right add (csa ++ csbb) zero)) as ct.
+          remember ((c - fold_right add (csa ++ csb) zero)) as ct.
           inversion Ha.
           rewrite <-H0.
           clear Hk; clear H0; clear H1.
@@ -3864,7 +3860,7 @@ Module Zkp.
         here clear presentation *)
         (*simulator completeness*)
         Lemma construct_or_conversations_simulator_completeness : 
-          ∀ (uscs : Vector.t F (m + (1 + n) + (m + (1 + n)))) (c : F),
+          ∀ (uscs : Vector.t F (m + (1 + n) + (m + n))) (c : F),
           generalised_or_accepting_conversations 
             (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr)
             (construct_or_conversations_simulator
@@ -3882,7 +3878,6 @@ Module Zkp.
           destruct (splitat m us) as (usa & usb) eqn:Hc.
           destruct (vector_inv_S usb) as (usba & usbb & Hd).
           destruct (splitat m cs) as (csa & csb) eqn:He.
-          destruct (vector_inv_S csb) as (csba & csbb & Hf).
           remember (construct_or_conversations_simulator_supplement gsl hsl usa csa)
           as sa.
           refine
@@ -3891,7 +3886,7 @@ Module Zkp.
           |(a₁; c₁; r₁) => fun Hg => _  
           end eq_refl).
           unfold schnorr_simulator.
-          remember (construct_or_conversations_simulator_supplement gt ht usbb csbb)
+          remember (construct_or_conversations_simulator_supplement gt ht usbb csb)
           as sb. 
           refine
           (match sb as s'
@@ -3899,8 +3894,8 @@ Module Zkp.
           |(a₂; c₂; r₂) => fun Hi => _  
           end eq_refl); cbn.
           assert (Hj : c = (fold_right add
-          (c₁ ++ c - fold_right add (csa ++ csbb) zero :: c₂) zero)).
-          remember (c - fold_right add (csa ++ csbb) zero :: c₂) as ct.
+          (c₁ ++ c - fold_right add (csa ++ csb) zero :: c₂) zero)).
+          remember (c - fold_right add (csa ++ csb) zero :: c₂) as ct.
           rewrite fold_right_app.
           rewrite Heqct; cbn.
           rewrite fold_right_app.
@@ -3923,7 +3918,7 @@ Module Zkp.
           eapply construct_or_conversations_simulator_completeness_supplement.
           cbn; eapply andb_true_iff.
           split.
-          remember ((c - fold_right add (csa ++ csbb) zero)) as ct.
+          remember ((c - fold_right add (csa ++ csb) zero)) as ct.
           inversion Ha.
           rewrite <-H0.
           clear Hk; clear H0; clear H1.
@@ -3980,12 +3975,12 @@ Module Zkp.
         Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
         Lemma generalised_or_schnorr_distribution_probability_generic : 
-          forall (l : dist (t F (m + (1 + n) + (m + (1 + n))))) 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F) (q : nat),
-          (∀ (trx : Vector.t F (m + (1 + n) + (m + (1 + n)))) (prx : prob), 
+          (∀ (trx : Vector.t F (m + (1 + n) + (m + n))) (prx : prob), 
             List.In (trx, prx) l → prx = 1 / q) -> 
           List.In (trans, pr)
-            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + (1 + n))),
+            (Bind l (λ uscs :  Vector.t F (m + (1 + n) + (m + n)),
               Ret (construct_or_conversations_schnorr x 
               (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
           pr = 1 / q.
@@ -4013,10 +4008,10 @@ Module Zkp.
         
 
         Lemma generalised_or_schnorr_distribution_transcript_generic : 
-          forall (l : dist (t F (m + (1 + n) + (m + (1 + n))))) 
+          forall (l : dist (t F (m + (1 + n) + (m + n)))) 
           (trans : sigma_proto) (pr : prob) (c : F),
           List.In (trans, pr)
-            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + (1 + n))),
+            (Bind l (λ uscs : Vector.t F (m + (1 + n) + (m + n)),
               Ret (construct_or_conversations_schnorr x 
               (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) uscs c))) → 
           generalised_or_accepting_conversations 
@@ -4066,7 +4061,7 @@ Module Zkp.
             (* it's an accepting conversation and probability is *)
           generalised_or_accepting_conversations 
           (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a = true ∧ 
-          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + (1 + n)))).
+          b = 1 / (Nat.pow (List.length lf) (m + (1 + n) + (m + n))).
         Proof.
           intros * Ha.
           refine(conj _ _).
