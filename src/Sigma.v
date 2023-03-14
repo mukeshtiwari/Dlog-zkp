@@ -1738,7 +1738,8 @@ Module Zkp.
           forall (us : Vector.t F n) (c : F),
           generalised_and_accepting_conversations gs hs
             (construct_and_conversations_simulator gs hs us c) = true.
-        Proof.
+        Proof using -(xs R).
+          clear xs R. 
           induction n as [|n' IHn].
           +
             intros *;
@@ -1749,7 +1750,6 @@ Module Zkp.
             destruct (vector_inv_S gs) as (gsa & gstl & Ha).
             destruct (vector_inv_S hs) as (hsa & hstl & Hb).
             destruct (vector_inv_S us) as (usa & ustl & Hc).
-            destruct (vector_inv_S xs) as (xsa & xstl & Hd).
             remember (construct_and_conversations_simulator gstl hstl ustl c) 
             as s. 
             refine
@@ -1763,11 +1763,7 @@ Module Zkp.
               subst.
               now eapply simulator_completeness.
             ++
-              specialize (IHn xstl gstl hstl).
-              assert (Hg : (∀ f : Fin.t n', gstl[@f] ^ xstl[@f] = hstl[@f])).
-              intros f; subst.
-              exact (R (Fin.FS f)).
-              specialize (IHn Hg ustl c).
+              specialize (IHn gstl hstl ustl c).
               rewrite <-Heqs, Hd in IHn.
               rewrite Hd in Heqs.
               eapply construct_and_conversations_simulator_challenge in Heqs.
@@ -2477,13 +2473,14 @@ Module Zkp.
           forall (u c : F),
           generalised_eq_accepting_conversations gs hs
             (construct_eq_conversations_simulator gs hs u c) = true.
-        Proof.
+        Proof using -(x R).
+          clear x R.
           induction n as [|n' IHn].
           +
             intros *.
             destruct (vector_inv_S gs) as (gsa & gstl & Ha).
             destruct (vector_inv_S hs) as (hsa & hstl & Hb).
-            specialize (R Fin.F1); subst; cbn in R |- *.
+            subst.
             eapply simulator_completeness.
           +
             intros *; cbn.
@@ -2501,11 +2498,7 @@ Module Zkp.
             ++
               eapply simulator_completeness.
             ++
-              specialize (IHn gstl hstl).
-              assert (Hg : (∀ f : Fin.t (1 + n'), gstl[@f] ^ x = hstl[@f])).
-              intros f; subst.
-              exact (R (Fin.FS f)).
-              specialize (IHn Hg u c).
+              specialize (IHn gstl hstl u c).
               rewrite <-Heqs, Hd in IHn.
               rewrite Hd in Heqs.
               eapply construct_eq_conversations_simulator_challenge_and_response
