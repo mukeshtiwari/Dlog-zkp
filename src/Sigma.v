@@ -4198,12 +4198,62 @@ Module Zkp.
           ∧ x₁ <> x₂ ∧ x₂ <> x₃ <> .... 
         *)
 
+         
+        (* xs gs hs usgs ushs c *)
+        #[local] 
+        Definition construct_neq_conversations_schnorr_supplement :
+          ∀ {n : nat}, Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
+          Vector.t G (2 + n) -> Vector.t F (1 + n) ->
+          Vector.t F  (1 + n) -> F -> 
+          @sigma_proto (1 + n) 1 (2 * (1 + n)).
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun xs gs hs usgs ushs c => _
+            | S n' => fun xs gs hs usgs ushs c => _ 
+            end).
+          +
+          destruct (vector_inv_S xs) as (x₁ & xstl & _).
+          destruct (vector_inv_S xstl) as (x₂ & _).
+          destruct (vector_inv_S gs) as (g₁ & gstl & _).
+          destruct (vector_inv_S gstl) as (g₂ & _).
+          destruct (vector_inv_S hs) as (h₁ & hstl & _).
+          destruct (vector_inv_S hstl) as (h₂ & _).
+          destruct (vector_inv_S usgs) as (u₁ & _).
+          destruct (vector_inv_S ushs) as (u₂ & _).
+          exact
+          ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)]; [c];
+            [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)]).
+          +
+            cbn in * |- *.
+            destruct (vector_inv_S xs) as (x₁ & xstl & _).
+            destruct (vector_inv_S xstl) as (x₂ & _).
+            destruct (vector_inv_S gs) as (g₁ & gstl & _).
+            destruct (vector_inv_S gstl) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₁ & hstl & _).
+            destruct (vector_inv_S hstl) as (h₂ & _).
+            destruct (vector_inv_S usgs) as (u₁ & usgstl & _).
+            destruct (vector_inv_S ushs) as (u₂ & ushstl & _).
+            refine
+            (match Fn _ xstl gstl hstl usgstl ushstl c with 
+            | (a; _; r) => 
+              ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; _)
+            end).
+            assert (Ha : ((2 + S (n' + S (n' + 0))) = 
+              (S (S (n' + S (S (n' + 0))))))%nat) by abstract nia.
+            exact (@eq_rect _ ((2 + S (n' + S (n' + 0)))%nat) _ 
+            ([u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ r)
+            ((S (S (n' + S (S (n' + 0)))))%nat)
+            Ha).
+        Defined.
+            
+        
         (* input xs, gs, hs, us, c *)
         Definition construct_neq_conversations_schnorr {n : nat} : 
           Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
           Vector.t G (2 + n) -> 
           Vector.t F ((2 + n) + ((1 + n) + (1 + n))) -> F ->
-          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + ((1 + n) + (1 + n))).
+          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n))).
         Proof.
           (* first I compute AND protocol *)
           intros xs gs hs us c.
@@ -4218,47 +4268,14 @@ Module Zkp.
             g₁g₂, g₂g₃, ... 
             h₁h₂, h₂h₃, ...
           *)
-          assert (Ha : (2 + n = (1 + n) + 1)%nat).
-          abstract nia. rewrite Ha in gs, hs.
-          destruct (splitat (1 + n) gs) as (gsl & _).
-          destruct (splitat (1 + n) hs) as (hsl & _).
-          rewrite <-Ha in gs, hs.
-          destruct (splitat 1 gs) as (_ & gsr).
-          destruct (splitat 1 hs) as (_ & hsr).
-          (* now zip gsl and gsr using gop *)
-          remember (zip_with gop gsl gsr) as gslr.
-          remember (zip_with gop hsl hsr) as hslr.
-          (* now zip gslr and hslr *)
-          remember (zip_with  (λ x y, (x, y)) gslr hslr) as gshslr.
-          (* split the randomness usr *)
-          destruct (splitat (1 + n) usr) as (usrl & usrr).
-          (*zip the randomness *)
-          remember (zip_with (λ x y, (x, y)) usrl usrr) as uszip.
-          (* now compute the rest of the commitment *)
-          remember (zip_with (λ '(g, h) '(u, v), gop (g^u) (h^v))
-            gshslr uszip) as a₁. (* I am going to stick this 
-          to the end of a *)
-          (* compute the rest of the response *)
-          (* split the secrets and zip them *)
-          rewrite Ha in xs.
-          destruct (splitat (1 + n) xs) as (xsl & _).
-          rewrite <-Ha in xs.
-          destruct (splitat 1 xs) as (_ & xsr).
-          remember (zip_with (λ x y, (x, y)) xsl xsr) as xslr.
-          remember (zip_with (λ '(x₁, x₂) '(u, v), 
-            (u + c * x₁ * inv (x₁ - x₂), v + c * inv (x₂ - x₁)))
-            xslr uszip) as rAx.
-          remember (flatten_pair rAx) as r₁.
-          exact (a ++ a₁; [c]; r ++ r₁).
-      Defined.
-          
-          
-          
-
-
-
-
-
+          (* split the randomness usr into usgs and ushs *)
+          destruct (splitat (1 + n) usr) as (usgs & ushs).
+          (refine 
+            match construct_neq_conversations_schnorr_supplement 
+              xs gs hs usgs ushs c with 
+            | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
+            end).
+        Defined.
 
 
       End Def.
