@@ -2953,8 +2953,6 @@ Module Zkp.
           Important:Discuss this with Berry. 
         *)
 
-
-        (* In this one, I combine the us and cs *)
         Definition construct_or_conversations_schnorr {m n : nat} :
           F -> Vector.t G (m + (1 + n)) -> Vector.t G (m + (1 + n)) ->
           Vector.t F ((m + (1 + n)) + (m + n)) -> 
@@ -4193,6 +4191,75 @@ Module Zkp.
 
       (* generalised NEQ *)
       Section Def.
+
+        (* 
+          In this section, we prove that 
+          ∃ x₁ x₂ x₃ : g^x₁ = h₁ ∧ g^x₂ = h₂ ∧ g^x₃ = h₃ .... 
+          ∧ x₁ <> x₂ ∧ x₂ <> x₃ <> .... 
+        *)
+
+        (* input xs, gs, hs, us, c *)
+        Definition construct_neq_conversations_schnorr {n : nat} : 
+          Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
+          Vector.t G (2 + n) -> 
+          Vector.t F ((2 + n) + ((1 + n) + (1 + n))) -> F ->
+          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + ((1 + n) + (1 + n))).
+        Proof.
+          (* first I compute AND protocol *)
+          intros xs gs hs us c.
+          (* split the randomness us at 2 + n *)
+          destruct (splitat (2 + n) us) as (usl & usr).
+          (* Now run AND protocol *)
+          (refine 
+            match construct_and_conversations_schnorr xs gs usl c with 
+            | (a; _; r) => _ 
+            end).
+          (* Now compute pairwise product of gs and hs 
+            g₁g₂, g₂g₃, ... 
+            h₁h₂, h₂h₃, ...
+          *)
+          assert (Ha : (2 + n = (1 + n) + 1)%nat).
+          abstract nia. rewrite Ha in gs, hs.
+          destruct (splitat (1 + n) gs) as (gsl & _).
+          destruct (splitat (1 + n) hs) as (hsl & _).
+          rewrite <-Ha in gs, hs.
+          destruct (splitat 1 gs) as (_ & gsr).
+          destruct (splitat 1 hs) as (_ & hsr).
+          (* now zip gsl and gsr using gop *)
+          remember (zip_with gop gsl gsr) as gslr.
+          remember (zip_with gop hsl hsr) as hslr.
+          (* now zip gslr and hslr *)
+          remember (zip_with  (λ x y, (x, y)) gslr hslr) as gshslr.
+          (* split the randomness usr *)
+          destruct (splitat (1 + n) usr) as (usrl & usrr).
+          (*zip the randomness *)
+          remember (zip_with (λ x y, (x, y)) usrl usrr) as uszip.
+          (* now compute the rest of the commitment *)
+          remember (zip_with (λ '(g, h) '(u, v), gop (g^u) (h^v))
+            gshslr uszip) as a₁. (* I am going to stick this 
+          to the end of a *)
+          (* compute the rest of the response *)
+          (* split the secrets and zip them *)
+          rewrite Ha in xs.
+          destruct (splitat (1 + n) xs) as (xsl & _).
+          rewrite <-Ha in xs.
+          destruct (splitat 1 xs) as (_ & xsr).
+          remember (zip_with (λ x y, (x, y)) xsl xsr) as xslr.
+          remember (zip_with (λ '(x₁, x₂) '(u, v), 
+            (u + c * x₁ * inv (x₁ - x₂), v + c * inv (x₂ - x₁)))
+            xslr uszip) as rAx.
+          remember (flatten_pair rAx) as r₁.
+          exact (a ++ a₁; [c]; r ++ r₁).
+      Defined.
+          
+          
+          
+
+
+
+
+
+
 
       End Def.
 

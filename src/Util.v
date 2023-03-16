@@ -1,5 +1,6 @@
 Require Import Vector 
-  Fin Coq.Bool.Bool Coq.Unicode.Utf8.
+  Fin Coq.Bool.Bool Coq.Unicode.Utf8
+  Psatz.
 
 Import VectorNotations.
 
@@ -218,6 +219,57 @@ Section Vect.
     | S n' => w :: repeat_ntimes n' w 
     end.
 
+
+  Definition take : forall (n : nat) {m : nat}, 
+    Vector.t R (n + m) -> Vector.t R n.
+  Proof.
+    refine(
+      fix Fn n {struct n} :=
+      match n with 
+      | 0 => fun _ _ => []
+      | S n' => fun _ v => _
+      end).
+    cbn in v.
+    destruct (vector_inv_S v) as (vh & vtl & _).
+    exact (vh :: Fn _ _ vtl).
+  Defined.
+
+
+  Definition drop : forall (n : nat) {m : nat}, 
+    Vector.t R (n + m) -> Vector.t R m.
+  Proof.
+    refine(
+      fix Fn n {struct n} :=
+      match n with 
+      | 0 => fun _ v => v
+      | S n' => fun _ v => _
+      end).
+    cbn in v.
+    destruct (vector_inv_S v) as (_ & vtl & _).
+    exact (Fn _ _ vtl).
+  Defined.
+    
+  
+  Definition flatten_pair {U : Type} {n : nat} :
+    Vector.t (U * U) n ->  Vector.t U (n + n).
+  Proof.
+    revert n.
+    refine(fix Fn n v {struct v} := 
+      match v as v' in Vector.t _ n' 
+      return _  
+      with 
+      | [] =>  _
+      | (vhl, vhr) :: vtl => _ 
+      end).
+      +
+        exact [].
+      +
+        assert (Hc : S n0 + S n0 = S (S (n0 + n0))). 
+        abstract nia. rewrite Hc.
+        exact (vhl :: vhr :: Fn _ vtl).
+  Defined.
+
+  
   
   (* Two challenge vectors are same pointwise *)
   Definition two_challenge_vectors_same_everyelem {n : nat} :
