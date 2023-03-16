@@ -4237,14 +4237,12 @@ Module Zkp.
             refine
             (match Fn _ xstl gstl hstl usgstl ushstl c with 
             | (a; _; r) => 
-              ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; _)
+              ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
+              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ _)
             end).
-            assert (Ha : ((2 + S (n' + S (n' + 0))) = 
-              (S (S (n' + S (S (n' + 0))))))%nat) by abstract nia.
-            exact (@eq_rect _ ((2 + S (n' + S (n' + 0)))%nat) _ 
-            ([u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ r)
-            ((S (S (n' + S (S (n' + 0)))))%nat)
-            Ha).
+            assert (Ha : ((S (n' + S (n' + 0))) = 
+              (n' + S (S (n' + 0))))%nat) by abstract nia.
+            exact (@eq_rect _ _  _ r _  Ha).
         Defined.
             
         
