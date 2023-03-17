@@ -18,7 +18,7 @@ Require Import Setoid
 Import MonadNotation 
   VectorNotations.
 
-Local Open Scope monad_scope.
+#[local] Open Scope monad_scope.
 
 Module Zkp.
 
@@ -44,11 +44,11 @@ Module Zkp.
       (* decidable equality on G *)
      
 
-    Local Infix "^" := gpow.
-    Local Infix "*" := mul.
-    Local Infix "/" := div.
-    Local Infix "+" := add.
-    Local Infix "-" := sub.
+    #[local] Infix "^" := gpow.
+    #[local] Infix "*" := mul.
+    #[local] Infix "/" := div.
+    #[local] Infix "+" := add.
+    #[local] Infix "-" := sub.
 
 
     Section SigmaDefinition.
@@ -70,7 +70,7 @@ Module Zkp.
 
     End SigmaDefinition.
 
-    Local Notation "( a ; c ; r )" := 
+    #[local] Notation "( a ; c ; r )" := 
       (@mk_sigma _ _ _ a c r).
 
     
@@ -365,7 +365,7 @@ Module Zkp.
         *)
       
         
-        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
         (* every triple in schnorr distribution has 
           probability 1/n *)
@@ -1186,7 +1186,7 @@ Module Zkp.
         Qed.
         
             
-        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
         (* Honest Verifier zero-knowledge-proof *)
         Lemma generalised_parallel_schnorr_distribution_transcript_generic {n : nat} : 
@@ -1878,7 +1878,7 @@ Module Zkp.
 
 
 
-        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
         (* zero-knowledge-proof *)
         
         
@@ -2664,7 +2664,7 @@ Module Zkp.
         Qed.
 
 
-        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
         (* zero-knowledge *)
         Lemma generalised_eq_schnorr_distribution_transcript_generic : 
@@ -2886,6 +2886,7 @@ Module Zkp.
 
         (* Does not involve the secret x *)
         (* gs hs us rs *)
+        #[local]
         Definition construct_or_conversations_simulator_supplement :
           forall {n : nat}, 
           Vector.t G n ->  Vector.t G n -> Vector.t F n -> 
@@ -3035,7 +3036,7 @@ Module Zkp.
 
 
 
-
+        #[local]
         Definition generalised_or_accepting_conversations_supplement : 
           forall {n : nat}, 
           Vector.t G n -> Vector.t G n ->
@@ -3446,6 +3447,7 @@ Module Zkp.
 
 
         (* so in OR composition, we need simulator correctness first *)
+        #[local]
         Lemma construct_or_conversations_simulator_completeness_supplement :
           forall (m : nat) (gsl hsl : Vector.t G m) (usa csa : Vector.t F m),
           generalised_or_accepting_conversations_supplement gsl hsl
@@ -3969,7 +3971,7 @@ Module Zkp.
          
         (* honest verifier zero knowledge proof *)
 
-        Local Notation "p / q" := (mk_prob p (Pos.of_nat q)).
+        #[local] Notation "p / q" := (mk_prob p (Pos.of_nat q)).
 
         Lemma generalised_or_schnorr_distribution_probability_generic : 
           forall (l : dist (t F (m + (1 + n) + (m + n)))) 
@@ -4198,9 +4200,29 @@ Module Zkp.
           ∧ x₁ <> x₂ ∧ x₂ <> x₃ <> .... 
         *)
 
-         
-        (* xs gs hs usgs ushs c *)
-        #[local] 
+        (* Just to make sure  that my proof is transparent *)
+        #[local]
+        Definition nat_succ_eq : 
+          ∀ (n m : nat), S (Nat.add n (S m)) = Nat.add n (S (S m)).
+        Proof.
+          refine(fix Fn n {struct n} :=
+            match n with 
+            | 0 => fun m => eq_refl 
+            | S n' => fun m => eq_ind_r 
+              (fun w => S w = S (n' + S (S m))) eq_refl (Fn n' m)
+            end).
+        Defined.
+            
+          
+
+        
+        (* 
+          xs : secrets 
+          gs  hs : public values such h := g^x 
+          usgs ushs : randomness 
+          c : challenge  
+        *)
+        #[local]
         Definition construct_neq_conversations_schnorr_supplement :
           ∀ {n : nat}, Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
           Vector.t G (2 + n) -> Vector.t F (1 + n) ->
@@ -4211,21 +4233,20 @@ Module Zkp.
             match n with 
             | 0 => fun xs gs hs usgs ushs c => _
             | S n' => fun xs gs hs usgs ushs c => _ 
-            end).
+            end); cbn in * |- *.
           +
-          destruct (vector_inv_S xs) as (x₁ & xstl & _).
-          destruct (vector_inv_S xstl) as (x₂ & _).
-          destruct (vector_inv_S gs) as (g₁ & gstl & _).
-          destruct (vector_inv_S gstl) as (g₂ & _).
-          destruct (vector_inv_S hs) as (h₁ & hstl & _).
-          destruct (vector_inv_S hstl) as (h₂ & _).
-          destruct (vector_inv_S usgs) as (u₁ & _).
-          destruct (vector_inv_S ushs) as (u₂ & _).
-          exact
-          ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)]; [c];
-            [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)]).
+            destruct (vector_inv_S xs) as (x₁ & xstl & _).
+            destruct (vector_inv_S xstl) as (x₂ & _).
+            destruct (vector_inv_S gs) as (g₁ & gstl & _).
+            destruct (vector_inv_S gstl) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₁ & hstl & _).
+            destruct (vector_inv_S hstl) as (h₂ & _).
+            destruct (vector_inv_S usgs) as (u₁ & _).
+            destruct (vector_inv_S ushs) as (u₂ & _).
+            exact
+            ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)]; [c];
+              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)]).
           +
-            cbn in * |- *.
             destruct (vector_inv_S xs) as (x₁ & xstl & _).
             destruct (vector_inv_S xstl) as (x₂ & _).
             destruct (vector_inv_S gs) as (g₁ & gstl & _).
@@ -4238,11 +4259,9 @@ Module Zkp.
             (match Fn _ xstl gstl hstl usgstl ushstl c with 
             | (a; _; r) => 
               ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
-              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ _)
+              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ 
+                (@eq_rect nat _ _ r _  (nat_succ_eq n' (n' + 0))))
             end).
-            assert (Ha : ((S (n' + S (n' + 0))) = 
-              (n' + S (S (n' + 0))))%nat) by abstract nia.
-            exact (@eq_rect _ _  _ r _  Ha).
         Defined.
             
         
@@ -4274,6 +4293,79 @@ Module Zkp.
             | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
             end).
         Defined.
+
+
+
+        (* simulator *)
+
+        #[local]
+        Definition construct_neq_conversations_simulator_supplement :
+          ∀ {n : nat}, Vector.t G (2 + n) -> 
+          Vector.t G (2 + n) -> Vector.t F (1 + n) ->
+          Vector.t F  (1 + n) -> F -> @sigma_proto (1 + n) 1 (2 * (1 + n)).
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun gs hs usgs ushs c => _
+            | S n' => fun gs hs usgs ushs c => _ 
+            end); cbn in * |- *.
+          +
+            destruct (vector_inv_S gs) as (g₁ & gstl & _).
+            destruct (vector_inv_S gstl) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₁ & hstl & _).
+            destruct (vector_inv_S hstl) as (h₂ & _).
+            destruct (vector_inv_S usgs) as (u₁ & _).
+            destruct (vector_inv_S ushs) as (u₂ & _).
+            exact
+            ([gop ((gop g₁ g₂)^u₁) (gop ((gop h₁ h₂)^u₂) g₂^(opp c))]; [c];
+              [u₁; u₂]).
+          +
+            destruct (vector_inv_S gs) as (g₁ & gstl & _).
+            destruct (vector_inv_S gstl) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₁ & hstl & _).
+            destruct (vector_inv_S hstl) as (h₂ & _).
+            destruct (vector_inv_S usgs) as (u₁ & usgstl & _).
+            destruct (vector_inv_S ushs) as (u₂ & ushstl & _).
+            refine
+            (match Fn _ gstl hstl usgstl ushstl c with 
+            | (a; _; r) => 
+              ([gop ((gop g₁ g₂)^u₁) (gop ((gop h₁ h₂)^u₂) g₂^(opp c))] ++ a; [c]; 
+              [u₁; u₂] ++ (@eq_rect nat _ _ r _  (nat_succ_eq n' (n' + 0))))
+            end).
+        Defined.
+
+            
+        (* input gs, hs, us, c *)
+        Definition construct_neq_conversations_simulator {n : nat} : 
+          Vector.t G (2 + n) -> Vector.t G (2 + n) -> 
+          Vector.t F ((2 + n) + ((1 + n) + (1 + n))) -> F ->
+          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n))).
+        Proof.
+          (* first I compute AND protocol simulator *)
+          intros gs hs us c.
+          (* split the randomness us at 2 + n *)
+          destruct (splitat (2 + n) us) as (usl & usr).
+          (* run AND protocol simulator *)
+          (refine 
+            match construct_and_conversations_simulator gs hs usl c with 
+            | (a; _; r) => _ 
+            end).
+          (* Now compute pairwise product of gs and hs 
+            g₁g₂, g₂g₃, ... 
+            h₁h₂, h₂h₃, ...
+            simulator 
+          *)
+          (* split the randomness usr into usgs and ushs *)
+          destruct (splitat (1 + n) usr) as (usgs & ushs).
+          (refine 
+            match construct_neq_conversations_simulator_supplement 
+              gs hs usgs ushs c with 
+            | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
+            end).
+        Defined.
+
+        (* distribution (zero-knowledge)*)
+        
 
 
       End Def.
