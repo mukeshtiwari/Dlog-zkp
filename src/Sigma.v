@@ -89,8 +89,8 @@ Module Zkp.
         (* Relation: R := h = g^x *)
         (* A prover convinces a verified that they know 
           x such that h := g^x *)
-      
-
+        
+        
         (* Real transcript, using randomness u and (secret) witness x *)
         Definition schnorr_protocol (x : F) (g : G) (u c : F) : @sigma_proto 1 1 1 :=  
           ([g^u]; [c]; [u + c * x]).
@@ -4366,6 +4366,7 @@ Module Zkp.
 
         (* distribution (zero-knowledge)*)
         
+        
 
 
       End Def.
@@ -4397,8 +4398,8 @@ End Zkp.
 (* 
 Require Import Extraction.
 Extraction Language Haskell.
-Extraction Zkp.schnorr_protocol.
-Recursive Extraction Zkp.construct_or_conversations_schnorr.
+Recursive Extraction Zkp.sigma_proto.
+Recursive Extraction Zkp.construct_and_conversations_schnorr.
 *)
 
   
