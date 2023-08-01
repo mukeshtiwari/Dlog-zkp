@@ -3056,7 +3056,7 @@ Module Zkp.
           destruct (vector_inv_S a₁) as (a & asr & _).
           destruct (vector_inv_S c₁) as (c & csr & _).
           destruct (vector_inv_S r₁) as (r & rsr & _).
-          exact ((accepting_conversation g h ([a]; [c]; [r])) && (* https://github.com/benadida/helios-server/blob/master/helios/crypto/elgamal.py#L393-L397 *)
+          exact ((accepting_conversation g h ([a]; [c]; [r])) && 
             (Fn _ gsr hsr (asr; csr; rsr))).
         Defined.
           
@@ -4365,6 +4365,33 @@ Module Zkp.
             end).
         Defined.
 
+
+        (* verification equation *)
+        Definition construct_neq_accepting_conversations {n : nat} :
+          Vector.t G (2 + n) -> Vector.t G (2 + n) ->
+          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n))) -> bool.
+        Proof.
+          intros gs hs sig.
+          (* split the sig at (2 + n) *)
+          refine 
+            match sig with 
+            |(a; c; r) => _ 
+            end.
+          (* split commitments at (2 + n )*)
+          destruct (splitat (2 + n) a) as (al & ar).
+          (* split responses at (2 + n)*)
+          destruct (splitat (2 + n) r) as (rl & rr).
+          (* Run AND verifier on (al; c; rl) *)
+          remember (generalised_and_accepting_conversations gs hs (al; c; rl)) as 
+          andl.
+          (* run Okamoto verifier on (ar; c; rr) *)
+        Admitted.
+
+
+
+
+
+
         (* distribution (zero-knowledge) *)
 
         Definition generalised_neq_schnorr_distribution  
@@ -4393,6 +4420,22 @@ Module Zkp.
       Section Proofs.
       
 
+        Context
+          {Hvec: @vector_space F (@eq F) zero one add mul sub 
+            div opp inv G (@eq G) gid ginv gop gpow}.
+
+        (* add field *)
+        Add Field field : (@field_theory_for_stdlib_tactic F
+            eq zero one opp add mul sub inv div vector_space_field).
+        
+        (* completeness *)
+
+
+        (* special soundness *)
+
+
+        (* zero-knowledge proof *)
+
 
       End Proofs.
 
@@ -4403,22 +4446,6 @@ Module Zkp.
 
   End DL.
 
-    (* 
-    Parallel Composition
-    AND composition
-    EQ Composition
-    OR Composition  
-    Section And_Sigma.
-    *)
 End Zkp.
 
 
-
-(* 
-Require Import Extraction.
-Extraction Language Haskell.
-Recursive Extraction Zkp.sigma_proto.
-Recursive Extraction Zkp.construct_and_conversations_schnorr.
-*)
-
-  
