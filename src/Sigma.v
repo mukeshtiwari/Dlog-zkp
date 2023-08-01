@@ -1,5 +1,5 @@
 Require Import Setoid
-  Coq.setoid_ring.Field_tac
+  Coq.setoid_ring.Field
   Sigma.Algebra.Hierarchy
   Sigma.Algebra.Group Sigma.Algebra.Monoid
   Sigma.Algebra.Field Sigma.Algebra.Integral_domain
@@ -4297,7 +4297,7 @@ Module Zkp.
 
 
         (* simulator *)
-
+      
         #[local]
         Definition construct_neq_conversations_simulator_supplement :
           ∀ {n : nat}, Vector.t G (2 + n) -> 
@@ -4336,6 +4336,7 @@ Module Zkp.
 
             
         (* input gs, hs, us, c *)
+        (* does not involve secret *)
         Definition construct_neq_conversations_simulator {n : nat} : 
           Vector.t G (2 + n) -> Vector.t G (2 + n) -> 
           Vector.t F ((2 + n) + ((1 + n) + (1 + n))) -> F ->
@@ -4364,15 +4365,33 @@ Module Zkp.
             end).
         Defined.
 
-        (* distribution (zero-knowledge)*)
-        
-        
+        (* distribution (zero-knowledge) *)
+
+        Definition generalised_neq_schnorr_distribution  
+          {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+          (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) (c : F) : 
+          dist (@sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n)))) :=
+          (* draw ((2 + n) + ((1 + n) + (1 + n))) random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) ((2 + n) + ((1 + n) + (1 + n))) ;;
+          Ret (construct_neq_conversations_schnorr xs gs hs us c).
+
+
+        Definition generalised_neq_simulator_distribution  
+          {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+          (gs hs : Vector.t G (2 + n)) (c : F) : 
+          dist (@sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n)))) :=
+          (* draw ((2 + n) + ((1 + n) + (1 + n))) random elements *)
+          us <- repeat_dist_ntimes_vector 
+            (uniform_with_replacement lf Hlfn) ((2 + n) + ((1 + n) + (1 + n))) ;;
+          Ret (construct_neq_conversations_simulator gs hs us c).
 
 
       End Def.
 
 
       Section Proofs.
+      
 
 
       End Proofs.
