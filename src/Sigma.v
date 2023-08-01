@@ -4197,10 +4197,11 @@ Module Zkp.
         (* 
           In this section, we prove that 
           ∃ x₁ x₂ x₃ : g^x₁ = h₁ ∧ g^x₂ = h₂ ∧ g^x₃ = h₃ .... 
-          ∧ x₁ <> x₂ ∧ x₂ <> x₃ <> .... 
+          ∧ x₁ <> x₂ ∧ x₁ <> x₃ ∧ x₁ <> ..... ∧ 
+          x₂ <> x₃ <> x₂ <> x₄ ...... 
         *)
 
-        (* Just to make sure  that my proof is transparent *)
+        (* Just to make sure  that my proofs are transparent *)
         #[local]
         Definition nat_succ_eq : 
           ∀ (n m : nat), S (Nat.add n (S m)) = Nat.add n (S (S m)).
@@ -4213,9 +4214,88 @@ Module Zkp.
             end).
         Defined.
             
-          
-
         
+        #[local]
+        Definition nat_eq_succ : 
+          ∀ (n m : nat), S (Nat.add n (S m)) = S (S (Nat.add n m)).
+        Proof.
+          refine(fix Fn n {struct n} :=
+            match n with 
+            | 0 => fun m => eq_refl 
+            | S n' => fun m => @eq_ind_r _ _  
+              (λ x : nat, S x = S (S (S (n' + m)))) eq_refl _ (Fn n' m)
+            end).
+        Defined.
+      
+        #[local]
+        Theorem subst_vector {A : Type} : forall {n m : nat},
+          Vector.t A n -> n = m -> Vector.t A m.
+        Proof.
+          intros * u Ha.
+          exact (@eq_rect nat n (fun x => Vector.t A x) u m Ha).
+        Defined.
+        
+        (*
+          g₁ h₁ x₁ gs hs xs us c
+          Proves that x₁ is not equal to any element in xs, i.e.,
+          ∀ x : F, In x xs -> x <> x₁
+          using Okamoto protocol
+        *)
+        (* don't reuse the random numbers! *)
+        (* can I use the same challenge? *)
+        #[local]
+        Definition generalised_construct_neq_conversations_okamoto :
+          ∀ {n : nat}, G -> G -> F ->    
+          Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
+          Vector.t F (1 + n) -> Vector.t F  (2 + n + n) -> F -> 
+          @sigma_proto (1 + n) 1 (2 * (1 + n)).
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun  g₁ h₁ x₁ gs hs xs us c => _
+            | S n' => fun  g₁ h₁ x₁ gs hs xs us c => _ 
+            end); cbn in * |- *.
+          +
+            (* base case *)
+            destruct (vector_inv_S xs) as (x₂ & _).
+            destruct (vector_inv_S gs) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₂ & _).
+            destruct (vector_inv_S us) as (u₁ & ustl & _).
+            destruct (vector_inv_S ustl) as (u₂ & _).
+            exact ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)]; [c];
+              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)]).
+          +
+            (* induction case *)
+            destruct (vector_inv_S gs) as (g₂ & gstl & _).
+            destruct (vector_inv_S hs) as (h₂ & hstl & _).
+            destruct (vector_inv_S xs) as (x₂ & xstl & _).
+            destruct (vector_inv_S us) as (u₁ & ustl & _).
+            destruct (vector_inv_S ustl) as (u₂ & ustll & _).
+            refine 
+              match (Fn _ g₁ h₁ x₁ gstl hstl xstl 
+                (@subst_vector F _ (S (S (n' + n'))) ustll (nat_eq_succ n' n')) c)
+              with 
+              | (a; _ ; r) => ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
+                [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ 
+                (@eq_rect nat _ _ r _  (nat_succ_eq n' (n' + 0))))
+              end.
+        Defined.
+
+
+        (* verification equation of Okamoto protocol *)
+        (* g₁ h₁ gs hs sigma_proof *)
+        #[local]
+        Definition generalised_verify_neq_conversations_okamoto :
+          ∀ {n : nat}, G -> G ->    
+          Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
+          @sigma_proto (1 + n) 1 (2 * (1 + n)) -> bool.
+        Proof.
+        Admitted. 
+
+        (* Everthing is good upto here *)
+
+
+
         (* 
           xs : secrets 
           gs  hs : public values such h := g^x 
