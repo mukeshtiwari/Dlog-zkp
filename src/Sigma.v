@@ -4245,15 +4245,16 @@ Module Zkp.
         (* can I use the same challenge? *)
         #[local]
         Definition generalised_construct_neq_conversations_okamoto :
-          ∀ {n : nat}, G -> G -> F ->    
+          ∀ {n : nat}, F -> G -> G ->     
+          Vector.t F (1 + n) ->
           Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
-          Vector.t F (1 + n) -> Vector.t F  (2 * (1 + n)) -> F -> 
+          Vector.t F  (2 * (1 + n)) -> F -> 
           @sigma_proto (1 + n) 1 (2 * (1 + n)).
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
-            | 0 => fun  g₁ h₁ x₁ gs hs xs us c => _
-            | S n' => fun  g₁ h₁ x₁ gs hs xs us c => _ 
+            | 0 => fun  x₁ g₁ h₁ xs gs hs  us c => _
+            | S n' => fun  x₁ g₁ h₁  xs gs hs  us c => _ 
             end); cbn in * |- *.
           +
             (* base case *)
@@ -4272,7 +4273,7 @@ Module Zkp.
             destruct (vector_inv_S us) as (u₁ & ustl & _).
             destruct (vector_inv_S ustl) as (u₂ & ustll & _).
             refine 
-              match (Fn _ g₁ h₁ x₁ gstl hstl xstl 
+              match (Fn _ x₁ g₁ h₁  xstl gstl hstl  
                 (@subst_vector F _ _ ustll (eq_sym (nat_succ_eq n' (n' + 0)))) c)
               with 
               | (a; _ ; r) => ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
@@ -4352,8 +4353,63 @@ Module Zkp.
           
         (* first proof everthing construct in Okamoto verifies 
           by verify function *)
-        (* Everthing is good upto here *)
+        
 
+        Lemma divmod_eq : 
+          forall (x y q u : nat),
+          fst (Nat.divmod x y q u) = (q + fst (Nat.divmod x y 0 u))%nat.
+        Proof.
+          induction x;
+          intros *; simpl;
+          [nia | destruct u; rewrite IHx].
+          +
+            erewrite IHx with (q := 1);
+            nia.
+          +
+            erewrite IHx; nia.
+        Qed.
+
+
+       
+
+        Lemma nat_divmod : 
+          forall (n : nat),
+          fst (Nat.divmod (n + S (S (n + S (S (n + n * S (S n)))))) 1 1 1) =
+          (1 + S n + fst (Nat.divmod (n + S (n + n * S n)) 1 0 0))%nat.
+        Proof.
+          intros n.
+          rewrite divmod_eq;
+          simpl; f_equal.
+          assert (Ha : 1 <= 1) by nia.
+          pose proof PeanoNat.Nat.divmod_spec 
+          (n + S (S (n + S (S (n + n * S (S n))))))%nat 1 0 1 Ha as Hb.
+          destruct (PeanoNat.Nat.divmod 
+            (n + S (S (n + S (S (n + n * S (S n)))))) 1 0 1) as 
+          (qa & qb) eqn:Hc; simpl.
+          assert (Hd : 0 <= 1) by nia.
+          pose proof PeanoNat.Nat.divmod_spec
+          (n + S (n + n * S n)) 1 0 0 Hd as He.
+          destruct (Nat.divmod (n + S (n + n * S n)) 1 0 0) as 
+          (qaa & qbb) eqn:Hf; simpl.
+          destruct Hb as (Hbl & Hbr);
+          destruct He as (Hel & Her).
+          replace ((n + S (S (n + S (S (n + n * S (S n))))) + 2 * 0 + (1 - 1))%nat)
+          with (n * n + 5 * n + 4)%nat in Hbl.
+          replace (n + S (n + n * S n) + 2 * 0 + (1 - 0))%nat with 
+          (S n + S n + n * S n)%nat in Hel.
+          replace (S n + S n + n * S n)%nat with 
+          ((1 + n) * (2 + n))%nat in Hel.
+          (*
+            it's true but the reasoning is complicated. 
+          
+          *)
+
+
+          admit.
+          nia.
+          nia.
+          nia.
+      Admitted.
 
 
         (* 
@@ -4376,27 +4432,27 @@ Module Zkp.
           This function is going to call 
           generalised_construct_neq_conversations_okamoto
           for each pair 
-          
-
         *)
-        Require Import Psatz.
+        
         #[local]
         Definition construct_neq_conversations_schnorr_supplement :
-          ∀ {n : nat}, Vector.t G (2 + n) -> 
-          Vector.t G (2 + n) -> Vector.t F (2 + n) -> 
+          ∀ {n : nat}, Vector.t F (2 + n) -> 
+          Vector.t G (2 + n) -> 
+          Vector.t G (2 + n) ->  
           Vector.t F ((2 + n) * (1 + n))-> F -> 
-          @sigma_proto (1 + n) 1 ((2 + n) * (1 + n)).
+          @sigma_proto (Nat.div ((2 + n) * (1 + n)) 2) 
+            1 ((2 + n) * (1 + n)).
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
-            | 0 => fun gs hs xs us c => _
-            | S n' => fun gs hs xs us c => _ 
+            | 0 => fun xs gs hs us c => _
+            | S n' => fun xs gs hs us c => _ 
             end); cbn in * |- *.
           +
             (* call Okamoto construction *)
             refine 
               (generalised_construct_neq_conversations_okamoto 
-                (hd gs) (hd hs) (hd xs) (tl gs) (tl hs) (tl xs) us c).
+              (hd xs) (hd gs) (hd hs) (tl xs) (tl gs) (tl hs) us c).
           +
             (* Wow! Look at assumptions *)
             (* requires some complicated reasoning about arithmatic *)
@@ -4408,32 +4464,39 @@ Module Zkp.
             destruct (splitat (2 * (1 + S n')) us) as (usl & usr).
             refine
               match (generalised_construct_neq_conversations_okamoto 
-                (hd gs) (hd hs) (hd xs) (tl gs) (tl hs) (tl xs) usl c)
+              (hd xs) (hd gs) (hd hs) (tl xs) (tl gs) (tl hs) usl c)
               with
               |(a₁; _; r₁) => _ 
               end.
             refine 
-              match Fn _ (tl gs) (tl hs) (tl xs) usr c
+              match Fn _ (tl xs) (tl gs) (tl hs)  usr c
               with 
               |(a₂; _; r₂) => _ 
               end.
-              
-             
+            set (r := r₁ ++ r₂);
+            clearbody r.
+            set (a := a₁ ++ a₂);
+            clearbody a.
+            (* massage a *)
+            replace ((1 + S n' + fst (Nat.divmod (n' + S (n' + n' * S n')) 1 0 0)))%nat
+            with (fst (Nat.divmod (n' + S (S (n' + S (S (n' + n' * S (S n')))))) 1 1 1))
+            in a.
+            (* massage r *)
+            replace (2 * (1 + S n') + S (n' + S (n' + n' * S n')))%nat with 
+            (S (S (n' + S (S (n' + S (S (n' + n' * S (S n')))))))) in r.
+            refine (a; [c]; r).
+            all:try nia.
+            eapply nat_divmod.
+        Defined.
 
 
-
-
-
-
-        Admitted.
-            
-        
         (* input xs, gs, hs, us, c *)
         Definition construct_neq_conversations_schnorr {n : nat} : 
           Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
           Vector.t G (2 + n) -> 
-          Vector.t F ((2 + n) + ((1 + n) + (1 + n))) -> F ->
-          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n))).
+          Vector.t F ((2 + n) + ((2 + n) * (1 + n))) -> F ->
+          @sigma_proto ((2 + n) + Nat.div ((2 + n) * (1 + n)) 2) 1
+            ((2 + n) + (2 + n) * (1 + n)).
         Proof.
           (* first I compute AND protocol *)
           intros xs gs hs us c.
@@ -4448,14 +4511,16 @@ Module Zkp.
             g₁g₂, g₂g₃, ... 
             h₁h₂, h₂h₃, ...
           *)
-          (* split the randomness usr into usgs and ushs *)
-          destruct (splitat (1 + n) usr) as (usgs & ushs).
           (refine 
             match construct_neq_conversations_schnorr_supplement 
-              xs gs hs usgs ushs c with 
+              xs gs hs usr c with 
             | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
             end).
         Defined.
+        
+        (* Everthing is good upto here *)
+
+
 
 
 
