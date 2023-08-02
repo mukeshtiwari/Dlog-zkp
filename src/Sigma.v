@@ -4277,7 +4277,8 @@ Module Zkp.
               with 
               | (a; _ ; r) => ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
                 [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ 
-                (@eq_rect nat _ _ r _  (nat_succ_eq n' (n' + 0))))
+                (@eq_rect nat (S (n' + S (n' + 0)))
+                  (fun x => Vector.t F x) r _  (nat_succ_eq n' (n' + 0))))
               end.
         Defined.
 
@@ -4290,8 +4291,67 @@ Module Zkp.
           Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
           @sigma_proto (1 + n) 1 (2 * (1 + n)) -> bool.
         Proof.
-        Admitted. 
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun  g₁ h₁ gs hs us => _
+            | S n' => fun  g₁ h₁ gs hs us => _ 
+            end); cbn in * |- *.
+          +
+            refine 
+              match us with 
+              |(a; c; r) => _ 
+              end.
+            (*
+              Verifies the following equation
+              (g₁ * g₂)^r₁ * (h₁ * h₂)^r₂ = a₁ * g₂^c₁
+            *)
+            destruct (vector_inv_S gs) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₂ & _).
+            destruct (vector_inv_S a) as (a₁ & _).
+            destruct (vector_inv_S c) as (c₁ & _).
+            destruct (vector_inv_S r) as (r₁ & rtl & _).
+            destruct (vector_inv_S rtl) as (r₂ & _).
+            refine 
+              match Gdec 
+                (gop ((gop g₁ g₂)^r₁) ((gop h₁ h₂)^r₂)) 
+                (gop a₁ (g₂^c₁))
+              with 
+              | left _ => true 
+              | right _ => false 
+              end.
+          +
+            refine 
+              match us with 
+              |(a; c; r) => _ 
+              end.
+            destruct (vector_inv_S gs) as (g₂ & gstl & _).
+            destruct (vector_inv_S hs) as (h₂ & hstl & _).
+            destruct (vector_inv_S a) as (a₁ & atl & _).
+            destruct (vector_inv_S c) as (c₁ & _).
+            destruct (vector_inv_S r) as (r₁ & rtl & _).
+            destruct (vector_inv_S rtl) as (r₂ & rtll & _).
+            refine 
+              match Gdec 
+                (gop ((gop g₁ g₂)^r₁) ((gop h₁ h₂)^r₂)) 
+                (gop a₁ (g₂^c₁))
+              with
+              | left _ => Fn _ g₁ h₁ gstl hstl (atl; c; _) (* check the rest *)
+              | right _ => false (* no point of checking the rest *)
+              end.
+            (* 
+              massage rtll to the goal
+            *)
+            refine 
+              (@eq_rect nat (n' + S (S (n' + 0)))%nat 
+                (fun x => Vector.t F x) rtll (S (n' + S (n' + 0)))
+                (eq_sym (nat_succ_eq n' (n' + 0)))).
+        Defined.
+        
+             
+      
 
+        (* first proof everthing construct in Okamoto verifies 
+          by verify function *)
         (* Everthing is good upto here *)
 
 
@@ -4301,6 +4361,9 @@ Module Zkp.
           gs  hs : public values such h := g^x 
           usgs ushs : randomness 
           c : challenge  
+
+          O (n^2) proof terms! 
+          Is there efficient way to model NEQ
         *)
         #[local]
         Definition construct_neq_conversations_schnorr_supplement :
