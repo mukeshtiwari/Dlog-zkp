@@ -4247,7 +4247,7 @@ Module Zkp.
         Definition generalised_construct_neq_conversations_okamoto :
           ∀ {n : nat}, G -> G -> F ->    
           Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
-          Vector.t F (1 + n) -> Vector.t F  (2 + n + n) -> F -> 
+          Vector.t F (1 + n) -> Vector.t F  (2 * (1 + n)) -> F -> 
           @sigma_proto (1 + n) 1 (2 * (1 + n)).
         Proof.
           refine(fix Fn n {struct n} := 
@@ -4273,7 +4273,7 @@ Module Zkp.
             destruct (vector_inv_S ustl) as (u₂ & ustll & _).
             refine 
               match (Fn _ g₁ h₁ x₁ gstl hstl xstl 
-                (@subst_vector F _ (S (S (n' + n'))) ustll (nat_eq_succ n' n')) c)
+                (@subst_vector F _ _ ustll (eq_sym (nat_succ_eq n' (n' + 0)))) c)
               with 
               | (a; _ ; r) => ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
                 [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ 
@@ -4346,10 +4346,10 @@ Module Zkp.
                 (fun x => Vector.t F x) rtll (S (n' + S (n' + 0)))
                 (eq_sym (nat_succ_eq n' (n' + 0)))).
         Defined.
-        
-             
-      
 
+
+        
+          
         (* first proof everthing construct in Okamoto verifies 
           by verify function *)
         (* Everthing is good upto here *)
@@ -4359,53 +4359,73 @@ Module Zkp.
         (* 
           xs : secrets 
           gs  hs : public values such h := g^x 
-          usgs ushs : randomness 
+          us: randomness 
           c : challenge  
 
           O (n^2) proof terms! 
           Is there efficient way to model NEQ
+        
+          Key question: how much randomness I need? 
+          We have (2 + n) gs and hs and for 
+          (2 * (1 + n) + 2 * n + ...... + 2 = 
+          (1 + n) (2 + n)
+
+          The amount of randomenss I need is : (1 + n) * (2 + n)
         *)
+        (* 
+          This function is going to call 
+          generalised_construct_neq_conversations_okamoto
+          for each pair 
+          
+
+        *)
+        Require Import Psatz.
         #[local]
         Definition construct_neq_conversations_schnorr_supplement :
-          ∀ {n : nat}, Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
-          Vector.t G (2 + n) -> Vector.t F (1 + n) ->
-          Vector.t F  (1 + n) -> F -> 
-          @sigma_proto (1 + n) 1 (2 * (1 + n)).
+          ∀ {n : nat}, Vector.t G (2 + n) -> 
+          Vector.t G (2 + n) -> Vector.t F (2 + n) -> 
+          Vector.t F ((2 + n) * (1 + n))-> F -> 
+          @sigma_proto (1 + n) 1 ((2 + n) * (1 + n)).
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
-            | 0 => fun xs gs hs usgs ushs c => _
-            | S n' => fun xs gs hs usgs ushs c => _ 
+            | 0 => fun gs hs xs us c => _
+            | S n' => fun gs hs xs us c => _ 
             end); cbn in * |- *.
           +
-            destruct (vector_inv_S xs) as (x₁ & xstl & _).
-            destruct (vector_inv_S xstl) as (x₂ & _).
-            destruct (vector_inv_S gs) as (g₁ & gstl & _).
-            destruct (vector_inv_S gstl) as (g₂ & _).
-            destruct (vector_inv_S hs) as (h₁ & hstl & _).
-            destruct (vector_inv_S hstl) as (h₂ & _).
-            destruct (vector_inv_S usgs) as (u₁ & _).
-            destruct (vector_inv_S ushs) as (u₂ & _).
-            exact
-            ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)]; [c];
-              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)]).
+            (* call Okamoto construction *)
+            refine 
+              (generalised_construct_neq_conversations_okamoto 
+                (hd gs) (hd hs) (hd xs) (tl gs) (tl hs) (tl xs) us c).
           +
-            destruct (vector_inv_S xs) as (x₁ & xstl & _).
-            destruct (vector_inv_S xstl) as (x₂ & _).
-            destruct (vector_inv_S gs) as (g₁ & gstl & _).
-            destruct (vector_inv_S gstl) as (g₂ & _).
-            destruct (vector_inv_S hs) as (h₁ & hstl & _).
-            destruct (vector_inv_S hstl) as (h₂ & _).
-            destruct (vector_inv_S usgs) as (u₁ & usgstl & _).
-            destruct (vector_inv_S ushs) as (u₂ & ushstl & _).
+            (* Wow! Look at assumptions *)
+            (* requires some complicated reasoning about arithmatic *)
+            (* inductive case *)
+            (* massage the goal *)
+            replace (S (S (n' + S (S (n' + S (S (n' + n' * S (S n')))))))) 
+            with ((2 * (2 + n')) + (S (n' + S (n' + n' * S n'))))%nat in us.
+             (* Take 2 * (S (S n')) from us *)
+            destruct (splitat (2 * (1 + S n')) us) as (usl & usr).
             refine
-            (match Fn _ xstl gstl hstl usgstl ushstl c with 
-            | (a; _; r) => 
-              ([gop ((gop g₁ g₂)^u₁) ((gop h₁ h₂)^u₂)] ++ a; [c]; 
-              [u₁ + c * x₁ * inv (x₁ - x₂); u₂ + c * inv (x₂ - x₁)] ++ 
-                (@eq_rect nat _ _ r _  (nat_succ_eq n' (n' + 0))))
-            end).
-        Defined.
+              match (generalised_construct_neq_conversations_okamoto 
+                (hd gs) (hd hs) (hd xs) (tl gs) (tl hs) (tl xs) usl c)
+              with
+              |(a₁; _; r₁) => _ 
+              end.
+            refine 
+              match Fn _ (tl gs) (tl hs) (tl xs) usr c
+              with 
+              |(a₂; _; r₂) => _ 
+              end.
+              
+             
+
+
+
+
+
+
+        Admitted.
             
         
         (* input xs, gs, hs, us, c *)
