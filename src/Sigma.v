@@ -4361,16 +4361,11 @@ Module Zkp.
         Proof.
           induction x;
           intros *; simpl;
-          [nia | destruct u; rewrite IHx].
-          +
-            erewrite IHx with (q := 1);
-            nia.
-          +
-            erewrite IHx; nia.
+          [ | destruct u; rewrite IHx;
+          [erewrite IHx with (q := 1) | erewrite IHx]];
+          try nia.
         Qed.
 
-
-       
 
         Lemma nat_divmod : 
           forall (n : nat),
@@ -4507,17 +4502,14 @@ Module Zkp.
             match construct_and_conversations_schnorr xs gs usl c with 
             | (a; _; r) => _ 
             end).
-          (* Now compute pairwise product of gs and hs 
-            g₁g₂, g₂g₃, ... 
-            h₁h₂, h₂h₃, ...
-          *)
+          (* Now call supplement protocol *)
           (refine 
             match construct_neq_conversations_schnorr_supplement 
               xs gs hs usr c with 
             | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
             end).
         Defined.
-        
+
         (* Everthing is good upto here *)
 
 
