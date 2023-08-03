@@ -4240,6 +4240,9 @@ Module Zkp.
           exact (@eq_rect nat n (fun x => Vector.t A x) u m Ha).
         Defined.
 
+    
+      
+
         Lemma divmod_simplification : 
           forall (x y q u : nat),
           fst (Nat.divmod x y q u) = (q + fst (Nat.divmod x y 0 u))%nat.
@@ -4259,39 +4262,24 @@ Module Zkp.
         Proof.
           intros n.
           rewrite divmod_simplification;
-          simpl; f_equal.
+          simpl; f_equal. 
           assert (Ha : 1 <= 1) by nia.
           pose proof PeanoNat.Nat.divmod_spec 
           (n + S (S (n + S (S (n + n * S (S n))))))%nat 1 0 1 Ha as Hb.
           destruct (PeanoNat.Nat.divmod 
             (n + S (S (n + S (S (n + n * S (S n)))))) 1 0 1) as 
           (qa & qb) eqn:Hc; simpl.
-          assert (Hd : 0 <= 1) by nia.
+          assert (Hd : 0 <= 1) by nia. 
           pose proof PeanoNat.Nat.divmod_spec
-          (n + S (n + n * S n)) 1 0 0 Hd as He.
+          (n + S (n + n * S n)) 1 0 0 Hd as He. 
           destruct (Nat.divmod (n + S (n + n * S n)) 1 0 0) as 
-          (qaa & qbb) eqn:Hf; simpl.
-          destruct Hb as (Hbl & Hbr);
-          destruct He as (Hel & Her).
-          replace ((n + S (S (n + S (S (n + n * S (S n))))) + 2 * 0 + (1 - 1))%nat)
-          with ((1 + n) * (4 + n))%nat in Hbl.
-          replace (n + S (n + n * S n) + 2 * 0 + (1 - 0))%nat with 
-          (S n + S n + n * S n)%nat in Hel.
-          replace (S n + S n + n * S n)%nat with 
-          ((1 + n) * (2 + n))%nat in Hel.
-          (*
-            it's true but the reasoning is complicated. 
-            Case analysis on n. 
-            ∃ m : nat, {n = 2 * m} + {n = 2 * m + 1} 
-          *)
-          admit.
+          (qaa & qbb) eqn:Hf; simpl. 
           nia.
-          nia.
-          nia.
-        Admitted.
+        Defined.
+          
         (* end of proofs *)
 
-        
+
         
         (*
           g₁ h₁ x₁ gs hs xs us c
