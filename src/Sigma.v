@@ -4199,8 +4199,12 @@ Module Zkp.
           ∃ x₁ x₂ x₃ : g^x₁ = h₁ ∧ g^x₂ = h₂ ∧ g^x₃ = h₃ .... 
           ∧ x₁ <> x₂ ∧ x₁ <> x₃ ∧ x₁ <> ..... ∧ 
           x₂ <> x₃ <> x₂ <> x₄ ...... 
+          ...
+          ..
+          .
         *)
 
+        (* begin proofs for computations *)
         (* Just to make sure  that my proofs are transparent *)
         #[local]
         Definition nat_succ_eq : 
@@ -4235,6 +4239,59 @@ Module Zkp.
           intros * u Ha.
           exact (@eq_rect nat n (fun x => Vector.t A x) u m Ha).
         Defined.
+
+        Lemma divmod_simplification : 
+          forall (x y q u : nat),
+          fst (Nat.divmod x y q u) = (q + fst (Nat.divmod x y 0 u))%nat.
+        Proof.
+          induction x;
+          intros *; simpl;
+          [ | destruct u; rewrite IHx;
+          [erewrite IHx with (q := 1) | erewrite IHx]];
+          try nia.
+        Defined.
+
+
+        Lemma nat_divmod : 
+          forall (n : nat),
+          fst (Nat.divmod (n + S (S (n + S (S (n + n * S (S n)))))) 1 1 1) =
+          (1 + S n + fst (Nat.divmod (n + S (n + n * S n)) 1 0 0))%nat.
+        Proof.
+          intros n.
+          rewrite divmod_simplification;
+          simpl; f_equal.
+          assert (Ha : 1 <= 1) by nia.
+          pose proof PeanoNat.Nat.divmod_spec 
+          (n + S (S (n + S (S (n + n * S (S n))))))%nat 1 0 1 Ha as Hb.
+          destruct (PeanoNat.Nat.divmod 
+            (n + S (S (n + S (S (n + n * S (S n)))))) 1 0 1) as 
+          (qa & qb) eqn:Hc; simpl.
+          assert (Hd : 0 <= 1) by nia.
+          pose proof PeanoNat.Nat.divmod_spec
+          (n + S (n + n * S n)) 1 0 0 Hd as He.
+          destruct (Nat.divmod (n + S (n + n * S n)) 1 0 0) as 
+          (qaa & qbb) eqn:Hf; simpl.
+          destruct Hb as (Hbl & Hbr);
+          destruct He as (Hel & Her).
+          replace ((n + S (S (n + S (S (n + n * S (S n))))) + 2 * 0 + (1 - 1))%nat)
+          with ((1 + n) * (4 + n))%nat in Hbl.
+          replace (n + S (n + n * S n) + 2 * 0 + (1 - 0))%nat with 
+          (S n + S n + n * S n)%nat in Hel.
+          replace (S n + S n + n * S n)%nat with 
+          ((1 + n) * (2 + n))%nat in Hel.
+          (*
+            it's true but the reasoning is complicated. 
+            Case analysis on n. 
+            ∃ m : nat, {n = 2 * m} + {n = 2 * m + 1} 
+          *)
+          admit.
+          nia.
+          nia.
+          nia.
+        Admitted.
+        (* end of proofs *)
+
+        
         
         (*
           g₁ h₁ x₁ gs hs xs us c
@@ -4283,63 +4340,6 @@ Module Zkp.
                   (fun x => Vector.t F x) r _  (nat_succ_eq n' (n' + 0))))
               end.
         Defined.
-
-
-        
-        
-         
-
-        Lemma divmod_simplification : 
-          forall (x y q u : nat),
-          fst (Nat.divmod x y q u) = (q + fst (Nat.divmod x y 0 u))%nat.
-        Proof.
-          induction x;
-          intros *; simpl;
-          [ | destruct u; rewrite IHx;
-          [erewrite IHx with (q := 1) | erewrite IHx]];
-          try nia.
-        Defined.
-
-
-        Lemma nat_divmod : 
-          forall (n : nat),
-          fst (Nat.divmod (n + S (S (n + S (S (n + n * S (S n)))))) 1 1 1) =
-          (1 + S n + fst (Nat.divmod (n + S (n + n * S n)) 1 0 0))%nat.
-        Proof.
-          intros n.
-          rewrite divmod_simplification;
-          simpl; f_equal.
-          assert (Ha : 1 <= 1) by nia.
-          pose proof PeanoNat.Nat.divmod_spec 
-          (n + S (S (n + S (S (n + n * S (S n))))))%nat 1 0 1 Ha as Hb.
-          destruct (PeanoNat.Nat.divmod 
-            (n + S (S (n + S (S (n + n * S (S n)))))) 1 0 1) as 
-          (qa & qb) eqn:Hc; simpl.
-          assert (Hd : 0 <= 1) by nia.
-          pose proof PeanoNat.Nat.divmod_spec
-          (n + S (n + n * S n)) 1 0 0 Hd as He.
-          destruct (Nat.divmod (n + S (n + n * S n)) 1 0 0) as 
-          (qaa & qbb) eqn:Hf; simpl.
-          destruct Hb as (Hbl & Hbr);
-          destruct He as (Hel & Her).
-          replace ((n + S (S (n + S (S (n + n * S (S n))))) + 2 * 0 + (1 - 1))%nat)
-          with ((1 + n) * (4 + n))%nat in Hbl.
-          replace (n + S (n + n * S n) + 2 * 0 + (1 - 0))%nat with 
-          (S n + S n + n * S n)%nat in Hel.
-          replace (S n + S n + n * S n)%nat with 
-          ((1 + n) * (2 + n))%nat in Hel.
-          (*
-            it's true but the reasoning is complicated. 
-            Case analysis on n. 
-            ∃ m : nat, {n = 2 * m} + {n = 2 * m + 1} 
-          *)
-
-
-          admit.
-          nia.
-          nia.
-          nia.
-      Admitted.
 
 
         (* 
@@ -4567,7 +4567,7 @@ Module Zkp.
             end.
         Defined.
 
-        (* Everthing is good upto here *)
+        (* end simulator *)
 
 
         (* verification equation *)
@@ -4649,7 +4649,36 @@ Module Zkp.
             | S n' => fun gs hs sig => _ 
             end); cbn in * |- *.
           +
-        Admitted.
+            (* call Okamoto verification *)
+            refine 
+              (generalised_neq_conversations_okamoto 
+                (hd gs) (hd hs) (tl gs) (tl hs) sig).
+          +
+            (* inductive case *)
+            refine 
+              match sig with 
+              |(a; c; r) => _ 
+              end.
+            destruct (vector_inv_S gs) as (g₁ & gstl & _).
+            destruct (vector_inv_S hs) as (h₁ & hstl & _).
+            rewrite nat_divmod in a.
+            destruct (splitat (2 + n') a) as (al & ar).
+            replace (S (S (n' + S (S (n' + S (S (n' + n' * S (S n')))))))) 
+            with ((2 * (2 + n')) + (S (n' + S (n' + n' * S n'))))%nat in r.
+            destruct (splitat (2 * (2 + n')) r) as (rl & rr).
+            (* 
+              Call generalised_neq_conversations_okamoto and if it 
+              returns true than continue checking else 
+              break. 
+            *)
+            refine 
+              match generalised_neq_conversations_okamoto g₁ h₁ gstl hstl (al; c; rl)
+              with 
+              | true => Fn _ gstl hstl (ar ; c; rr)
+              | _ => false
+              end.
+            nia.
+        Defined.
 
 
 
@@ -4681,28 +4710,30 @@ Module Zkp.
           exact (generalised_neq_conversations_supplement gs hs (ar; c; rr)).
         Defined.
           
-
+        (* end verification *)
 
         (* distribution (zero-knowledge) *)
 
         Definition generalised_neq_schnorr_distribution  
           {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
           (xs : Vector.t F (2 + n)) (gs hs : Vector.t G (2 + n)) (c : F) : 
-          dist (@sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n)))) :=
+          dist (@sigma_proto ((2 + n) + Nat.div ((2 + n) * (1 + n)) 2) 1
+          ((2 + n) + (2 + n) * (1 + n))) :=
           (* draw ((2 + n) + ((1 + n) + (1 + n))) random elements *)
           us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) ((2 + n) + ((1 + n) + (1 + n))) ;;
-          Ret (construct_neq_conversations_schnorr xs gs hs us c).
+            (uniform_with_replacement lf Hlfn) ((2 + n) + ((2 + n) * (1 + n))) ;;
+          Ret (generalised_construct_neq_conversations_schnorr xs gs hs us c).
 
 
         Definition generalised_neq_simulator_distribution  
           {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
           (gs hs : Vector.t G (2 + n)) (c : F) : 
-          dist (@sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n)))) :=
+          dist (@sigma_proto ((2 + n) + Nat.div ((2 + n) * (1 + n)) 2) 1
+          ((2 + n) + (2 + n) * (1 + n))) :=
           (* draw ((2 + n) + ((1 + n) + (1 + n))) random elements *)
           us <- repeat_dist_ntimes_vector 
-            (uniform_with_replacement lf Hlfn) ((2 + n) + ((1 + n) + (1 + n))) ;;
-          Ret (construct_neq_conversations_simulator gs hs us c).
+            (uniform_with_replacement lf Hlfn) ((2 + n) + ((2 + n) * (1 + n))) ;;
+          Ret (generalised_construct_neq_conversations_simulator gs hs us c).
 
 
       End Def.
