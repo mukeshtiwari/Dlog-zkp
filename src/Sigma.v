@@ -4227,6 +4227,7 @@ Module Zkp.
             end).
         Defined.
       
+
         #[local]
         Theorem subst_vector {A : Type} : forall {n m : nat},
           Vector.t A n -> n = m -> Vector.t A m.
@@ -4355,7 +4356,7 @@ Module Zkp.
           by verify function *)
         
 
-        Lemma divmod_eq : 
+        Lemma divmod_simplification : 
           forall (x y q u : nat),
           fst (Nat.divmod x y q u) = (q + fst (Nat.divmod x y 0 u))%nat.
         Proof.
@@ -4364,7 +4365,7 @@ Module Zkp.
           [ | destruct u; rewrite IHx;
           [erewrite IHx with (q := 1) | erewrite IHx]];
           try nia.
-        Qed.
+        Defined.
 
 
         Lemma nat_divmod : 
@@ -4373,7 +4374,7 @@ Module Zkp.
           (1 + S n + fst (Nat.divmod (n + S (n + n * S n)) 1 0 0))%nat.
         Proof.
           intros n.
-          rewrite divmod_eq;
+          rewrite divmod_simplification;
           simpl; f_equal.
           assert (Ha : 1 <= 1) by nia.
           pose proof PeanoNat.Nat.divmod_spec 
@@ -4389,14 +4390,15 @@ Module Zkp.
           destruct Hb as (Hbl & Hbr);
           destruct He as (Hel & Her).
           replace ((n + S (S (n + S (S (n + n * S (S n))))) + 2 * 0 + (1 - 1))%nat)
-          with (n * n + 5 * n + 4)%nat in Hbl.
+          with ((1 + n) * (4 + n))%nat in Hbl.
           replace (n + S (n + n * S n) + 2 * 0 + (1 - 0))%nat with 
           (S n + S n + n * S n)%nat in Hel.
           replace (S n + S n + n * S n)%nat with 
           ((1 + n) * (2 + n))%nat in Hel.
           (*
             it's true but the reasoning is complicated. 
-          
+            Case analysis on n. 
+            ∃ m : nat, {n = 2 * m} + {n = 2 * m + 1} 
           *)
 
 
@@ -4430,7 +4432,7 @@ Module Zkp.
         *)
         
         #[local]
-        Definition construct_neq_conversations_schnorr_supplement :
+        Definition generalised_construct_neq_conversations_schnorr_supplement :
           ∀ {n : nat}, Vector.t F (2 + n) -> 
           Vector.t G (2 + n) -> 
           Vector.t G (2 + n) ->  
@@ -4486,7 +4488,10 @@ Module Zkp.
 
 
         (* input xs, gs, hs, us, c *)
-        Definition construct_neq_conversations_schnorr {n : nat} : 
+        (* size of proofs is O(n^2) for NEQ if 
+        we have n statements. 
+        *)
+        Definition generalised_construct_neq_conversations_schnorr {n : nat} : 
           Vector.t F (2 + n) -> Vector.t G (2 + n) -> 
           Vector.t G (2 + n) -> 
           Vector.t F ((2 + n) + ((2 + n) * (1 + n))) -> F ->
@@ -4504,63 +4509,114 @@ Module Zkp.
             end).
           (* Now call supplement protocol *)
           (refine 
-            match construct_neq_conversations_schnorr_supplement 
+            match generalised_construct_neq_conversations_schnorr_supplement 
               xs gs hs usr c with 
             | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
             end).
         Defined.
 
-        (* Everthing is good upto here *)
-
-
-
 
 
         (* simulator *)
-      
+        (* Does not involve secret *)
+        (* g₁ h₁ gh hs us c *)
         #[local]
-        Definition construct_neq_conversations_simulator_supplement :
-          ∀ {n : nat}, Vector.t G (2 + n) -> 
-          Vector.t G (2 + n) -> Vector.t F (1 + n) ->
-          Vector.t F  (1 + n) -> F -> @sigma_proto (1 + n) 1 (2 * (1 + n)).
+        Definition generalised_construct_neq_conversations_simulator_okamoto :
+          ∀ {n : nat}, G -> G ->
+          Vector.t G (1 + n) -> 
+          Vector.t G (1 + n) -> 
+          Vector.t F  (2 * (1 + n)) -> F -> 
+          @sigma_proto (1 + n) 1 (2 * (1 + n)).
         Proof.
           refine(fix Fn n {struct n} := 
             match n with 
-            | 0 => fun gs hs usgs ushs c => _
-            | S n' => fun gs hs usgs ushs c => _ 
+            | 0 => fun g₁ h₁ gs hs us c => _
+            | S n' => fun g₁ h₁ gs hs us c => _ 
             end); cbn in * |- *.
           +
-            destruct (vector_inv_S gs) as (g₁ & gstl & _).
-            destruct (vector_inv_S gstl) as (g₂ & _).
-            destruct (vector_inv_S hs) as (h₁ & hstl & _).
-            destruct (vector_inv_S hstl) as (h₂ & _).
-            destruct (vector_inv_S usgs) as (u₁ & _).
-            destruct (vector_inv_S ushs) as (u₂ & _).
+            destruct (vector_inv_S gs) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₂ & _).
+            destruct (vector_inv_S us) as (u₁ & ustl & _).
+            destruct (vector_inv_S ustl) as (u₂ & _).
             exact
             ([gop ((gop g₁ g₂)^u₁) (gop ((gop h₁ h₂)^u₂) g₂^(opp c))]; [c];
               [u₁; u₂]).
           +
-            destruct (vector_inv_S gs) as (g₁ & gstl & _).
-            destruct (vector_inv_S gstl) as (g₂ & _).
-            destruct (vector_inv_S hs) as (h₁ & hstl & _).
-            destruct (vector_inv_S hstl) as (h₂ & _).
-            destruct (vector_inv_S usgs) as (u₁ & usgstl & _).
-            destruct (vector_inv_S ushs) as (u₂ & ushstl & _).
-            refine
-            (match Fn _ gstl hstl usgstl ushstl c with 
-            | (a; _; r) => 
-              ([gop ((gop g₁ g₂)^u₁) (gop ((gop h₁ h₂)^u₂) g₂^(opp c))] ++ a; [c]; 
-              [u₁; u₂] ++ (@eq_rect nat _ _ r _  (nat_succ_eq n' (n' + 0))))
-            end).
+            destruct (vector_inv_S gs) as (g₂ & gstl & _).
+            destruct (vector_inv_S hs) as (h₂ & hstl & _).
+            destruct (vector_inv_S us) as (u₁ & ustl & _).
+            destruct (vector_inv_S ustl) as (u₂ & ustll & _).
+            refine 
+              match Fn _ g₁ h₁ gstl hstl 
+                (@subst_vector F _ _ ustll (eq_sym (nat_succ_eq n' (n' + 0)))) c 
+              with 
+              | (a; _; r) => 
+                ([gop ((gop g₁ g₂)^u₁) (gop ((gop h₁ h₂)^u₂) g₂^(opp c))] ++ a; [c]; _)
+              end.
+            replace (S (n' + S (n' + 0)))%nat with 
+            (n' + S (S (n' + 0)))%nat in r.
+            exact ([u₁; u₂] ++ r).
+            nia.
         Defined.
+
+        
+        (* gs hs us c *)
+        #[local]
+        Definition generalised_construct_neq_conversations_simulator_supplement :
+          ∀ {n : nat}, 
+          Vector.t G (2 + n) -> 
+          Vector.t G (2 + n) -> 
+          Vector.t F ((2 + n) * (1 + n))-> F -> 
+          @sigma_proto (Nat.div ((2 + n) * (1 + n)) 2) 1 ((2 + n) * (1 + n)).
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun gs hs us c => _
+            | S n' => fun gs hs us c => _ 
+            end); cbn in * |- *.
+          +
+            exact (generalised_construct_neq_conversations_simulator_okamoto
+            (hd gs) (hd hs) (tl gs) (tl hs) us c).
+          +
+            replace (S (S (n' + S (S (n' + S (S (n' + n' * S (S n')))))))) 
+            with ((2 * (2 + n')) + (S (n' + S (n' + n' * S n'))))%nat in us.
+             (* Take 2 * (S (S n')) from us *)
+            destruct (splitat (2 * (1 + S n')) us) as (usl & usr).
+            refine
+              match (generalised_construct_neq_conversations_simulator_okamoto 
+              (hd gs) (hd hs) (tl gs) (tl hs) usl c)
+              with
+              |(a₁; _; r₁) => _ 
+              end.
+            refine 
+              match Fn _ (tl gs) (tl hs) usr c
+              with 
+              |(a₂; _; r₂) => _ 
+              end.
+            set (r := r₁ ++ r₂);
+            clearbody r.
+            set (a := a₁ ++ a₂);
+            clearbody a.
+            replace ((1 + S n' + fst (Nat.divmod (n' + S (n' + n' * S n')) 1 0 0)))%nat
+            with (fst (Nat.divmod (n' + S (S (n' + S (S (n' + n' * S (S n')))))) 1 1 1))
+            in a.
+            (* massage r *)
+            replace (2 * (1 + S n') + S (n' + S (n' + n' * S n')))%nat with 
+            (S (S (n' + S (S (n' + S (S (n' + n' * S (S n')))))))) in r.
+            refine (a; [c]; r).
+            all:try nia.
+            eapply nat_divmod.
+        Defined.
+
 
             
         (* input gs, hs, us, c *)
         (* does not involve secret *)
-        Definition construct_neq_conversations_simulator {n : nat} : 
+        Definition generalised_construct_neq_conversations_simulator {n : nat} : 
           Vector.t G (2 + n) -> Vector.t G (2 + n) -> 
-          Vector.t F ((2 + n) + ((1 + n) + (1 + n))) -> F ->
-          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n))).
+          Vector.t F ((2 + n) + ((2 + n) * (1 + n))) -> F ->
+          @sigma_proto ((2 + n) + Nat.div ((2 + n) * (1 + n)) 2) 1
+            ((2 + n) + (2 + n) * (1 + n)).
         Proof.
           (* first I compute AND protocol simulator *)
           intros gs hs us c.
@@ -4571,19 +4627,15 @@ Module Zkp.
             match construct_and_conversations_simulator gs hs usl c with 
             | (a; _; r) => _ 
             end).
-          (* Now compute pairwise product of gs and hs 
-            g₁g₂, g₂g₃, ... 
-            h₁h₂, h₂h₃, ...
-            simulator 
-          *)
-          (* split the randomness usr into usgs and ushs *)
-          destruct (splitat (1 + n) usr) as (usgs & ushs).
+  
           (refine 
-            match construct_neq_conversations_simulator_supplement 
-              gs hs usgs ushs c with 
+            match generalised_construct_neq_conversations_simulator_supplement 
+              gs hs usr c with 
             | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
             end).
         Defined.
+
+        (* Everthing is good upto here *)
 
 
         (* verification equation *)
