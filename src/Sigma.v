@@ -4285,76 +4285,9 @@ Module Zkp.
         Defined.
 
 
-        (* verification equation of Okamoto protocol *)
-        (* g₁ h₁ gs hs sigma_proof *)
-        #[local]
-        Definition generalised_verify_neq_conversations_okamoto :
-          ∀ {n : nat}, G -> G ->    
-          Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
-          @sigma_proto (1 + n) 1 (2 * (1 + n)) -> bool.
-        Proof.
-          refine(fix Fn n {struct n} := 
-            match n with 
-            | 0 => fun  g₁ h₁ gs hs us => _
-            | S n' => fun  g₁ h₁ gs hs us => _ 
-            end); cbn in * |- *.
-          +
-            refine 
-              match us with 
-              |(a; c; r) => _ 
-              end.
-            (*
-              Verifies the following equation
-              (g₁ * g₂)^r₁ * (h₁ * h₂)^r₂ = a₁ * g₂^c₁
-            *)
-            destruct (vector_inv_S gs) as (g₂ & _).
-            destruct (vector_inv_S hs) as (h₂ & _).
-            destruct (vector_inv_S a) as (a₁ & _).
-            destruct (vector_inv_S c) as (c₁ & _).
-            destruct (vector_inv_S r) as (r₁ & rtl & _).
-            destruct (vector_inv_S rtl) as (r₂ & _).
-            refine 
-              match Gdec 
-                (gop ((gop g₁ g₂)^r₁) ((gop h₁ h₂)^r₂)) 
-                (gop a₁ (g₂^c₁))
-              with 
-              | left _ => true 
-              | right _ => false 
-              end.
-          +
-            refine 
-              match us with 
-              |(a; c; r) => _ 
-              end.
-            destruct (vector_inv_S gs) as (g₂ & gstl & _).
-            destruct (vector_inv_S hs) as (h₂ & hstl & _).
-            destruct (vector_inv_S a) as (a₁ & atl & _).
-            destruct (vector_inv_S c) as (c₁ & _).
-            destruct (vector_inv_S r) as (r₁ & rtl & _).
-            destruct (vector_inv_S rtl) as (r₂ & rtll & _).
-            refine 
-              match Gdec 
-                (gop ((gop g₁ g₂)^r₁) ((gop h₁ h₂)^r₂)) 
-                (gop a₁ (g₂^c₁))
-              with
-              | left _ => Fn _ g₁ h₁ gstl hstl (atl; c; _) (* check the rest *)
-              | right _ => false (* no point of checking the rest *)
-              end.
-            (* 
-              massage rtll to the goal
-            *)
-            refine 
-              (@eq_rect nat (n' + S (S (n' + 0)))%nat 
-                (fun x => Vector.t F x) rtll (S (n' + S (n' + 0)))
-                (eq_sym (nat_succ_eq n' (n' + 0)))).
-        Defined.
-
-
         
-          
-        (* first proof everthing construct in Okamoto verifies 
-          by verify function *)
         
+         
 
         Lemma divmod_simplification : 
           forall (x y q u : nat),
@@ -4623,25 +4556,108 @@ Module Zkp.
           (* split the randomness us at 2 + n *)
           destruct (splitat (2 + n) us) as (usl & usr).
           (* run AND protocol simulator *)
-          (refine 
+          refine 
             match construct_and_conversations_simulator gs hs usl c with 
             | (a; _; r) => _ 
-            end).
-  
-          (refine 
+            end.
+          refine 
             match generalised_construct_neq_conversations_simulator_supplement 
               gs hs usr c with 
             | (a₁; _; r₁) => (a ++ a₁; [c]; r ++ r₁)
-            end).
+            end.
         Defined.
 
         (* Everthing is good upto here *)
 
 
         (* verification equation *)
-        Definition construct_neq_accepting_conversations {n : nat} :
+
+        (* verification equation of Okamoto protocol *)
+        (* g₁ h₁ gs hs sigma_proof *)
+        #[local]
+        Definition generalised_neq_conversations_okamoto :
+          ∀ {n : nat}, G -> G ->    
+          Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
+          @sigma_proto (1 + n) 1 (2 * (1 + n)) -> bool.
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun  g₁ h₁ gs hs us => _
+            | S n' => fun  g₁ h₁ gs hs us => _ 
+            end); cbn in * |- *.
+          +
+            refine 
+              match us with 
+              |(a; c; r) => _ 
+              end.
+            (*
+              Verifies the following equation
+              (g₁ * g₂)^r₁ * (h₁ * h₂)^r₂ = a₁ * g₂^c₁
+            *)
+            destruct (vector_inv_S gs) as (g₂ & _).
+            destruct (vector_inv_S hs) as (h₂ & _).
+            destruct (vector_inv_S a) as (a₁ & _).
+            destruct (vector_inv_S c) as (c₁ & _).
+            destruct (vector_inv_S r) as (r₁ & rtl & _).
+            destruct (vector_inv_S rtl) as (r₂ & _).
+            refine 
+              match Gdec 
+                (gop ((gop g₁ g₂)^r₁) ((gop h₁ h₂)^r₂)) 
+                (gop a₁ (g₂^c₁))
+              with 
+              | left _ => true 
+              | right _ => false 
+              end.
+          +
+            refine 
+              match us with 
+              |(a; c; r) => _ 
+              end.
+            destruct (vector_inv_S gs) as (g₂ & gstl & _).
+            destruct (vector_inv_S hs) as (h₂ & hstl & _).
+            destruct (vector_inv_S a) as (a₁ & atl & _).
+            destruct (vector_inv_S c) as (c₁ & _).
+            destruct (vector_inv_S r) as (r₁ & rtl & _).
+            destruct (vector_inv_S rtl) as (r₂ & rtll & _).
+            refine 
+              match Gdec 
+                (gop ((gop g₁ g₂)^r₁) ((gop h₁ h₂)^r₂)) 
+                (gop a₁ (g₂^c₁))
+              with
+              | left _ => Fn _ g₁ h₁ gstl hstl (atl; c; _) (* check the rest *)
+              | right _ => false (* no point of checking the rest *)
+              end.
+            (* 
+              massage rtll to the goal
+            *)
+            refine 
+              (@eq_rect nat (n' + S (S (n' + 0)))%nat 
+                (fun x => Vector.t F x) rtll (S (n' + S (n' + 0)))
+                (eq_sym (nat_succ_eq n' (n' + 0)))).
+        Defined.
+
+
+        Definition generalised_neq_conversations_supplement :
+          forall {n : nat}, 
           Vector.t G (2 + n) -> Vector.t G (2 + n) ->
-          @sigma_proto ((2 + n) + (1 + n)) 1 ((2 + n) + (2 * (1 + n))) -> bool.
+          @sigma_proto (Nat.div ((2 + n) * (1 + n)) 2) 1
+            ((2 + n) * (1 + n)) -> bool.
+        Proof.
+          refine(fix Fn n {struct n} := 
+            match n with 
+            | 0 => fun gs hs sig => _
+            | S n' => fun gs hs sig => _ 
+            end); cbn in * |- *.
+          +
+        Admitted.
+
+
+
+
+        Definition generalised_neq_accepting_conversations {n : nat} :
+          Vector.t G (2 + n) -> Vector.t G (2 + n) ->
+          @sigma_proto ((2 + n) + Nat.div ((2 + n) * (1 + n)) 2) 1
+            ((2 + n) + (2 + n) * (1 + n)) -> bool.
         Proof.
           intros gs hs sig.
           (* split the sig at (2 + n) *)
@@ -4654,14 +4670,17 @@ Module Zkp.
           (* split responses at (2 + n)*)
           destruct (splitat (2 + n) r) as (rl & rr).
           (* Run AND verifier on (al; c; rl) *)
-          remember (generalised_and_accepting_conversations gs hs (al; c; rl)) as 
-          andl.
+          refine 
+            match 
+              generalised_and_accepting_conversations gs hs (al; c; rl)
+            with 
+            | true => _ 
+            | _ => false (* No point of checking futher *) 
+            end.
           (* run Okamoto verifier on (ar; c; rr) *)
-        Admitted.
-
-
-
-
+          exact (generalised_neq_conversations_supplement gs hs (ar; c; rr)).
+        Defined.
+          
 
 
         (* distribution (zero-knowledge) *)
