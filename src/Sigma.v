@@ -4739,7 +4739,14 @@ Module Zkp.
           eq zero one opp add mul sub inv div vector_space_field).
         
         (* completeness *)
-        
+        Lemma construct_neq_conversations_schnorr_completeness : 
+          forall (n : nat) (xs : t F (2 + n)) (gs hs : t G (2 + n)) 
+          (us : t F (2 + n + (2 + n) * (1 + n))) (c : F),
+          generalised_neq_accepting_conversations gs hs
+            (generalised_construct_neq_conversations_schnorr xs gs hs us c) = true.
+        Proof.
+          
+        Admitted.
 
 
         (* special soundness *)
