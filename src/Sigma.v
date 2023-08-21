@@ -4563,7 +4563,7 @@ Module Zkp.
         (* verification equation of Okamoto protocol *)
         (* g₁ h₁ gs hs sigma_proof *)
         #[local]
-        Definition generalised_neq_conversations_okamoto :
+        Definition generalised_neq_accepting_conversations_okamoto :
           ∀ {n : nat}, G -> G ->    
           Vector.t G (1 + n) -> Vector.t G (1 + n) -> 
           @sigma_proto (1 + n) 1 (2 * (1 + n)) -> bool.
@@ -4625,7 +4625,7 @@ Module Zkp.
         Defined.
 
 
-        Definition generalised_neq_conversations_supplement :
+        Definition generalised_neq_accepting_conversations_supplement :
           forall {n : nat}, 
           Vector.t G (2 + n) -> Vector.t G (2 + n) ->
           @sigma_proto (Nat.div ((2 + n) * (1 + n)) 2) 1
@@ -4639,7 +4639,7 @@ Module Zkp.
           +
             (* call Okamoto verification *)
             refine 
-              (generalised_neq_conversations_okamoto 
+              (generalised_neq_accepting_conversations_okamoto 
                 (hd gs) (hd hs) (tl gs) (tl hs) sig).
           +
             (* inductive case *)
@@ -4660,7 +4660,7 @@ Module Zkp.
               break. 
             *)
             refine 
-              match generalised_neq_conversations_okamoto g₁ h₁ gstl hstl (al; c; rl)
+              match generalised_neq_accepting_conversations_okamoto g₁ h₁ gstl hstl (al; c; rl)
               with 
               | true => Fn _ gstl hstl (ar ; c; rr)
               | _ => false
@@ -4695,7 +4695,7 @@ Module Zkp.
             | _ => false (* No point of checking futher *) 
             end.
           (* run Okamoto verifier on (ar; c; rr) *)
-          exact (generalised_neq_conversations_supplement gs hs (ar; c; rr)).
+          exact (generalised_neq_accepting_conversations_supplement gs hs (ar; c; rr)).
         Defined.
           
         (* end verification *)
@@ -4736,9 +4736,10 @@ Module Zkp.
 
         (* add field *)
         Add Field field : (@field_theory_for_stdlib_tactic F
-            eq zero one opp add mul sub inv div vector_space_field).
+          eq zero one opp add mul sub inv div vector_space_field).
         
         (* completeness *)
+        
 
 
         (* special soundness *)
