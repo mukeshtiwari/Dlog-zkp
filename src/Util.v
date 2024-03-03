@@ -357,10 +357,45 @@ Section Vect.
   Qed.  
 
 
-
   (* Write Ltac *)
 
 End Vect. 
+
+Require Import List.
+Section ListUtil.
+
+ 
+  Import ListNotations.
+  Theorem map_ext_eq : 
+    forall {A B : Type} (f : A -> bool) 
+    (la lb : list (A * B)) (z : B),
+    List.length la = List.length lb ->
+    (forall x y, List.In (x, y) la -> f x = true ∧ y = z) ->
+    (forall x y, List.In (x, y) lb -> f x = true ∧ y = z) ->
+    List.map (fun '(a, p) => (f a, p)) la = 
+    List.map (fun '(a, p) => (f a, p)) lb.
+  Proof.
+    intros ? ? ?. 
+    induction la as [| (a, p) la IHla];
+    intros lb z Ha Hb Hc.
+    +
+     assert(Hd : lb = []) by (destruct lb; auto; inversion Ha).
+     subst; reflexivity.
+    +
+      destruct lb as [| (b, q) lb]; 
+      simpl in * |- *. 
+      ++ congruence. 
+      ++
+         assert (Hd : f a = true ∧ p = z) by (apply Hb; auto).
+         assert (He : f b = true ∧ q = z) by (apply Hc; auto).
+         destruct Hd as [Hd1 Hd2];
+         destruct He as [He1 He2].
+         f_equal. 
+         +++ rewrite Hd1, He1; subst; reflexivity.
+         +++ eapply IHla; auto.
+  Qed. 
+
+End ListUtil.
 
 Require Import Coq.PArith.PArith 
   Coq.ZArith.ZArith Lia
