@@ -536,6 +536,14 @@ Module Zkp.
           lf the list of Field element from which the 
           random r is drawn and it's an accepting 
           conversation *)
+        (*
+          forall f la lb z, 
+          (forall x y List.In (x, y) la -> f x = true ∧ y = z) ->
+          (forall x y, List.In (x, y) lb -> f x = true ∧ y = z) ->
+          List.map (fun '(a, p) => (f a, p)) la = 
+          List.map (fun '(a, p) => (f a, p)) lb.
+
+        *)
         Lemma probability_simulator_distribution : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) (a₁ : t G 1) (c₁ r₁ : t F 1) 
@@ -567,110 +575,10 @@ Module Zkp.
             eapply simulator_distribution_transcript_generic;
             exact Hl.
         Qed.
-       
-      
-        (* Do I still need this? Keep it because it shows how 
-        two distributions are identical modulo accepting_conversation
-        function *)
-        Lemma generic_distribution : 
-          forall (l : dist F) (c : F),
-          List.map (λ '(a, p), (accepting_conversation g h a, p))
-            (Bind l (λ u : F, Ret (schnorr_protocol x g u c))) =
-          List.map (λ '(a, p), (accepting_conversation g h a, p))
-            (Bind l (λ u : F, Ret (schnorr_simulator g h u c))).
-        Proof.
-          induction l. 
-          + simpl; intros ?.
-            reflexivity.
-          + simpl; intros ?.
-            destruct a as (a, b);
-            simpl.
-            f_equal.
-            rewrite R.
-            assert (Hg : (g ^ x) ^ c = (g ^ (x * c))).
-            rewrite smul_pow_up. 
-            reflexivity.
-            rewrite Hg; 
-            clear Hg.
-            assert (Hg : (g ^ x) ^ opp c = (g ^ (x * opp c))).
-            rewrite smul_pow_up. 
-            reflexivity.
-            rewrite Hg; 
-            clear Hg.
-            assert (Ht : 
-              (gop (gop (g ^ a) (g ^ (x * opp c))) (g ^ (x * c)) = 
-            (gop (g ^ a) (gop (g ^ (x * opp c)) (g ^ (x * c)))))).
-            rewrite <- (@monoid_is_associative G (@eq G) gop gid).
-            reflexivity. 
-            typeclasses eauto.
-            rewrite Ht; clear Ht. 
-            assert (Ht : (gop (g ^ a) (g ^ (x * c))) = 
-              g^(a + x * c)).
-            rewrite (@vector_space_smul_distributive_fadd 
-              F (@eq F) zero one add mul sub div 
-              opp inv G (@eq G) gid ginv gop gpow).
-            reflexivity.
-            typeclasses eauto.
-            rewrite Ht; 
-            clear Ht.
-            rewrite <-(@vector_space_smul_distributive_fadd 
-              F (@eq F) zero one add mul sub div 
-              opp inv G (@eq G) gid ginv gop gpow).
-            assert (Ht : (x * opp c + x * c) = 
-              x * (opp c + c)).
-            (* why rewrite not working? *)
-            pose proof ring_is_left_distributive.
-            unfold is_left_distributive in H.
-            specialize (H x (opp c) c).
-            symmetry.
-            exact H.
-            rewrite Ht; clear Ht.
-            assert (Ht : (opp c) + c = c + opp c).
-            rewrite (@commutative_group_is_commutative F 
-            (@eq F) add zero opp).
-            reflexivity.
-            typeclasses eauto.
-            rewrite Ht; 
-            clear Ht.
-            assert (Ht : (c + opp c) = zero).
-            rewrite field_zero_iff_right.
-            reflexivity.
-            rewrite Ht; clear Ht.
-            assert (Ht : x * zero = zero).
-            rewrite ring_mul_0_r;
-            reflexivity.
-            rewrite Ht; 
-            clear Ht.
-            assert (Ht : (g ^ zero) = gid).
-            rewrite vector_space_field_zero.
-            reflexivity.
-            rewrite Ht; 
-            clear Ht.
-            assert (Ht : (gop (g ^ a) gid) = g^a).
-            rewrite monoid_is_right_identity.
-            reflexivity.
-            rewrite Ht;
-            clear Ht.
-            assert (Ht : c * x = x * c).
-            rewrite (@commutative_ring_is_commutative F (@eq F) zero 
-              one opp add sub mul).
-            reflexivity.
-            typeclasses eauto.
-            rewrite Ht; 
-            clear Ht.
-            rewrite (@commutative_group_is_commutative F 
-            (@eq F) add zero opp).
-            rewrite !dec_eq_true.
-            reflexivity.
-            typeclasses eauto.
-            typeclasses eauto.
-            apply IHl.
-        Qed.
-            
+          
 
 
-
-        (* it's identical *)
+        (* it's identical (information theoretic zero-knowledge proof) *)
         (* Under the hood, it is modelled as a list and looks like:
             [((a; c; r), prob); ((a; c; r), prob) ......].
           We map accepting_conversation to crunch the first pair, 
@@ -688,11 +596,21 @@ Module Zkp.
               (@simulator_distribution lf Hlfn g h c).
         Proof.
           intros ? ? ?.
-          unfold schnorr_distribution, 
-          simulator_distribution.
-          cbn.
-          apply generic_distribution.
-        Qed.
+          eapply map_ext_eq.
+          + unfold schnorr_distribution, simulator_distribution;
+            cbn. admit. 
+          +
+            intros (aa, cc, rr) y Ha. 
+            eapply and_comm.
+            eapply schnorr_distribution_probability.
+            auto. exact Ha.
+          + 
+            intros (aa, cc, rr) y Ha. 
+            eapply and_comm.
+            eapply probability_simulator_distribution.
+            reflexivity. 
+            exact Ha. 
+        Admitted.
         
       
 
@@ -1362,7 +1280,33 @@ Module Zkp.
             exact Ha].
         Qed.
 
-        (* distribution is identical *)
+
+        (* distributions is identical (information theoretic soundenss because 
+        the most powerful computer can't also distinguish between the two) *)
+        Lemma generalised_parallel_special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (n : nat) 
+          (cs : Vector.t F n),
+          List.map (fun '(a, p) => 
+            (generalised_parallel_accepting_conversations g h a, p))
+            (@generalised_parallel_schnorr_distribution n lf Hlfn x g cs) = 
+          List.map (fun '(a, p) => 
+            (generalised_parallel_accepting_conversations g h a, p))
+            (@generalised_parallel_simulator_distribution n lf Hlfn g h cs).
+        Proof.
+          intros ? ? ? ?.
+          eapply map_ext_eq.
+          + unfold generalised_parallel_schnorr_distribution, 
+            generalised_parallel_simulator_distribution; cbn. admit.
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_parallel_special_honest_verifier_schnorr_dist.
+            exact Ha.
+          + 
+            intros (aa, cc, rr) y Ha. 
+            eapply generalised_parallel_special_honest_verifier_simulator_dist.
+            exact Ha.
+        Admitted.
+
         
         
 
