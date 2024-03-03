@@ -536,14 +536,6 @@ Module Zkp.
           lf the list of Field element from which the 
           random r is drawn and it's an accepting 
           conversation *)
-        (*
-          forall f la lb z, 
-          (forall x y List.In (x, y) la -> f x = true ∧ y = z) ->
-          (forall x y, List.In (x, y) lb -> f x = true ∧ y = z) ->
-          List.map (fun '(a, p) => (f a, p)) la = 
-          List.map (fun '(a, p) => (f a, p)) lb.
-
-        *)
         Lemma probability_simulator_distribution : 
           forall (lf : list F) (Hlfn : lf <> List.nil) 
           (c : F) (a₁ : t G 1) (c₁ r₁ : t F 1) 
