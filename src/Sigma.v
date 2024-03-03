@@ -104,8 +104,7 @@ Module Zkp.
           is accepting or not. It checks if g^r = a * h^c
         *)
         Definition accepting_conversation 
-          (g h : G)
-          (v : @sigma_proto 1 1 1) : bool :=
+          (g h : G) (v : @sigma_proto 1 1 1) : bool :=
           match v with
           | (a; c; r) =>  
             match Gdec (g^(hd r)) (gop (hd a) (h^(hd c))) with 
@@ -130,7 +129,6 @@ Module Zkp.
           u <- (uniform_with_replacement lf Hlfn) ;;
           Ret (schnorr_simulator g h u c).
   
-      
       End Def.
 
       Section Proofs.
@@ -372,11 +370,8 @@ Module Zkp.
         Lemma schnorr_distribution_probability_generic : 
           forall (l : dist F) (trans : sigma_proto) 
           (prob : Prob.prob) (c : F) (n : nat),
-          (forall trx prx, List.In (trx, prx) l -> 
-            prx = 1 / n) ->  
-          List.In (trans, prob)
-            (Bind l
-              (λ u : F, Ret (schnorr_protocol x g u c))) ->
+          (forall trx prx, List.In (trx, prx) l -> prx = 1 / n) ->  
+          List.In (trans, prob) (Bind l (λ u : F, Ret (schnorr_protocol x g u c))) ->
           prob = 1 / n.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -405,9 +400,7 @@ Module Zkp.
         Lemma schnorr_distribution_transcript_generic : 
           forall(l : dist F) (trans : sigma_proto) 
           (prob : Prob.prob) (c : F),
-          List.In (trans, prob)
-            (Bind l
-              (λ u : F, Ret (schnorr_protocol x g u c))) ->
+          List.In (trans, prob) (Bind l (λ u : F, Ret (schnorr_protocol x g u c))) ->
           accepting_conversation g h trans = true.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -482,11 +475,8 @@ Module Zkp.
         Lemma simulator_distribution_probability_generic : 
           forall (l : dist F) (trans : sigma_proto) 
           (prob : Prob.prob) (c : F) (n : nat),
-          (forall trx prx, List.In (trx, prx) l -> 
-            prx = 1 / n) ->  
-          List.In (trans, prob)
-            (Bind l
-              (λ u : F, Ret (schnorr_simulator g h u c))) ->
+          (forall trx prx, List.In (trx, prx) l -> prx = 1 / n) ->  
+          List.In (trans, prob) (Bind l (λ u : F, Ret (schnorr_simulator g h u c))) ->
           prob = 1 / n.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -513,9 +503,7 @@ Module Zkp.
         Lemma simulator_distribution_transcript_generic : 
           forall (l : dist F) (trans : sigma_proto) 
           (prob : Prob.prob) (c : F),
-          List.In (trans, prob)
-            (Bind l
-              (λ u : F, Ret (schnorr_simulator g h u c))) ->
+          List.In (trans, prob) (Bind l (λ u : F, Ret (schnorr_simulator g h u c))) ->
           accepting_conversation g h trans = true.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -583,7 +571,9 @@ Module Zkp.
         Qed.
        
       
-        (* Do I still need this? *)
+        (* Do I still need this? Keep it because it shows how 
+        two distributions are identical modulo accepting_conversation
+        function *)
         Lemma generic_distribution : 
           forall (l : dist F) (c : F),
           List.map (λ '(a, p), (accepting_conversation g h a, p))
@@ -1779,7 +1769,7 @@ Module Zkp.
           generalised_and_accepting_conversations gs hs (a; c₁; r₁) = true ->
           generalised_and_accepting_conversations gs hs (a; c₂; r₂) = true ->
           c₁ <> c₂ ->
-          (* we can extract a vector of wintess such that 
+          (* we can extract a vector of witnesses such that 
             all the individual relations hold gi^xi = hi *)
           (∃ ys : Vector.t F n, ∀ (f : Fin.t n), 
             (nth gs f)^(nth ys f) = (nth hs f)).
@@ -1885,9 +1875,7 @@ Module Zkp.
         Lemma generalised_and_schnorr_distribution_transcript_generic : 
           forall (l : dist (Vector.t F n)) 
           (trans : sigma_proto) (pr : prob) (c : F ),
-          List.In (trans, pr)
-            (Bind l (λ us : t F n,
-              Ret (construct_and_conversations_schnorr xs gs us c))) → 
+          List.In (trans, pr) (Bind l (λ us : t F n, Ret (construct_and_conversations_schnorr xs gs us c))) → 
           generalised_and_accepting_conversations gs hs trans = true.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -1924,9 +1912,7 @@ Module Zkp.
           (pr : prob) (c : F) (m : nat),
           (∀ (trx : Vector.t F n) (prx : prob), 
             List.In (trx, prx) l → prx = 1 / m) -> 
-          List.In (trans, pr)
-            (Bind l (λ us : t F n,
-              Ret (construct_and_conversations_schnorr xs gs us c))) → 
+          List.In (trans, pr) (Bind l (λ us : t F n, Ret (construct_and_conversations_schnorr xs gs us c))) → 
           pr = 1 / m.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -1955,11 +1941,9 @@ Module Zkp.
           Maybe probabilistic notations but this one is more intuitive.
         *)
         Lemma generalised_and_special_honest_verifier_schnorr_dist : 
-          forall (lf : list F) (Hlfn : lf <> List.nil) 
-          (c : F) a b, 
-          List.In (a, b) 
-            (generalised_and_schnorr_distribution lf Hlfn xs gs c) ->
-            (* it's an accepting conversation and probability is *)
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F) (a : sigma_proto) (b : prob), 
+          List.In (a, b)  (generalised_and_schnorr_distribution lf Hlfn xs gs c) ->
+          (* it's an accepting conversation and probability is *)
           generalised_and_accepting_conversations gs hs a = true ∧ 
           b = 1 / (Nat.pow (List.length lf) n).
         Proof.
@@ -1978,11 +1962,8 @@ Module Zkp.
 
         (* fact about simultor *)
         Lemma generalised_and_simulator_distribution_transcript_generic : 
-          forall (l : dist (Vector.t F n)) 
-          (trans : sigma_proto) (pr : prob) (c : F),
-          List.In (trans, pr)
-            (Bind l (λ us : t F n,
-              Ret (construct_and_conversations_simulator gs hs us c))) → 
+          forall (l : dist (Vector.t F n)) (trans : sigma_proto) (pr : prob) (c : F),
+          List.In (trans, pr) (Bind l (λ us : t F n, Ret (construct_and_conversations_simulator gs hs us c))) → 
           generalised_and_accepting_conversations gs hs trans = true.
         Proof.
           induction l as [|(a, p) l IHl].
@@ -2055,7 +2036,7 @@ Module Zkp.
           (c : F)  (a : sigma_proto) (b : prob),
           List.In (a, b) 
             (generalised_and_simulator_distribution lf Hlfn gs hs c) ->
-            (* first component is true and probability is *)
+            (* first component is true and probability is 1 / |lf|^n *)
           generalised_and_accepting_conversations gs hs a = true ∧ 
           b = mk_prob 1 (Pos.of_nat (Nat.pow (List.length lf) n)).
         Proof.
@@ -2869,7 +2850,7 @@ Module Zkp.
       *)
       (* Generalised Or composition? 
       
-        ∃ x : g₁^x = h₁ ∨ g₂^x = h₂ ∨ g₃^wx= h₃ ... 
+        ∃ x : g₁^x = h₁ ∨ g₂^x = h₂ ∨ g₃^x= h₃ ... 
 
         One witness out of n statements
       
