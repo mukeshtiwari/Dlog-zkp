@@ -1,1 +1,0 @@
-(* Wikstrom shuffle proof *)
