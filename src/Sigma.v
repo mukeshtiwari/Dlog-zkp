@@ -1992,7 +1992,33 @@ Module Zkp.
             exact Ha].
         Qed.
         
-        
+
+        (* Two distributions are identical (information theoretic security)*)
+        Lemma generalised_and_special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.map (fun '(a, p) => 
+            (generalised_and_accepting_conversations gs hs a, p))
+            (@generalised_and_schnorr_distribution n lf Hlfn xs gs c) = 
+          List.map (fun '(a, p) => 
+            (generalised_and_accepting_conversations gs hs a, p))
+            (@generalised_and_simulator_distribution n lf Hlfn gs hs c).
+        Proof.
+          intros ? ? ?.
+          eapply map_ext_eq.
+          + 
+            unfold generalised_and_schnorr_distribution,
+            generalised_and_simulator_distribution; cbn.
+            repeat rewrite distribution_length.
+            reflexivity.
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_and_special_honest_verifier_schnorr_dist.
+            exact Ha. 
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_and_special_honest_verifier_simulator_dist.
+            exact Ha.
+        Qed.        
 
       End Proofs.
           
@@ -2430,7 +2456,7 @@ Module Zkp.
               
 
         (* special soundness (proof of knowledge) *)
-        (* This is bit challenging *)
+        (* This is a bit challenging *)
         Lemma generalise_eq_sigma_soundness :
          forall (a : Vector.t G (1 + n)) 
          (c₁ c₂ : F) (r₁ r₂ : F),
@@ -2775,6 +2801,34 @@ Module Zkp.
             eapply uniform_probability; exact Hc|
             exact Ha].
         Qed.
+
+        Lemma generalised_eq_special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.map (fun '(a, p) => 
+            (generalised_eq_accepting_conversations gs hs a, p))
+            (@generalised_eq_schnorr_distribution n lf Hlfn x gs c) = 
+          List.map (fun '(a, p) => 
+            (generalised_eq_accepting_conversations gs hs a, p))
+            (@generalised_eq_simulator_distribution n lf Hlfn gs hs c).
+        Proof.
+          intros ? ? ?.
+          eapply map_ext_eq.
+          +
+            unfold generalised_eq_schnorr_distribution, 
+            generalised_eq_simulator_distribution;
+            cbn. repeat rewrite distribution_length. 
+            reflexivity. 
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_eq_special_honest_verifier_schnorr_dist.
+            exact Ha. 
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_eq_special_honest_verifier_simulator_dist.
+            exact Ha.
+        Qed. 
+            
+
         
 
       End Proofs.
@@ -2784,15 +2838,13 @@ Module Zkp.
 
     Section Or.
 
-      (* 
-          What if I want to prove k-out-n Or proof? 
-          https://www.win.tue.nl/~berry/papers/crypto94.pdf
-      *)
-      (* Generalised Or composition? 
+      (* Generalised Or composition where you know 1 out of n statements 
       
         ∃ x : g₁^x = h₁ ∨ g₂^x = h₂ ∨ g₃^x= h₃ ... 
-
-        One witness out of n statements
+             
+        One witness out of n statements but if you want to prove 
+        that you know k out of n statements then 
+        use the following paper https://www.win.tue.nl/~berry/papers/crypto94.pdf
       
       *)
       Section Def.
