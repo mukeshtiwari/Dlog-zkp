@@ -4155,6 +4155,32 @@ Module Zkp.
             exact Ha.
         Qed.
 
+        (* Information theoretic proofs *)
+        Lemma generalised_or_special_honest_verifier_zkp : 
+          forall (lf : list F) (Hlfn : lf <> List.nil) (c : F),
+          List.map (fun '(a, p) => 
+            (generalised_or_accepting_conversations (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a, p))
+            (generalised_or_schnorr_distribution lf Hlfn x (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c) = 
+          List.map (fun '(a, p) => 
+            (generalised_or_accepting_conversations (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) a, p))
+            (generalised_or_simulator_distribution lf Hlfn (gsl ++ [g] ++ gsr) (hsl ++ [h] ++ hsr) c).
+        Proof.
+          intros ? ? ?.
+          eapply map_ext_eq.
+          +
+            unfold generalised_or_schnorr_distribution,
+            generalised_or_simulator_distribution; cbn.
+            repeat rewrite distribution_length.
+            reflexivity.
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_or_special_honest_verifier_schnorr_dist.
+            exact Ha. 
+          +
+            intros (aa, cc, rr) y Ha.
+            eapply generalised_or_special_honest_verifier_simulator_dist.
+            exact Ha.
+        Qed.
 
       End Proofs.
 
