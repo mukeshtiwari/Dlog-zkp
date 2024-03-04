@@ -568,7 +568,7 @@ Module Zkp.
             exact Hl.
         Qed.
           
-
+           
 
         (* it's identical (information theoretic zero-knowledge proof) *)
         (* Under the hood, it is modelled as a list and looks like:
@@ -589,8 +589,9 @@ Module Zkp.
         Proof.
           intros ? ? ?.
           eapply map_ext_eq.
-          + unfold schnorr_distribution, simulator_distribution;
-            cbn. admit. 
+          + unfold schnorr_distribution, simulator_distribution.
+            cbn. repeat rewrite distribution_length. 
+            reflexivity. 
           +
             intros (aa, cc, rr) y Ha. 
             eapply and_comm.
@@ -602,7 +603,7 @@ Module Zkp.
             eapply probability_simulator_distribution.
             reflexivity. 
             exact Ha. 
-        Admitted.
+        Qed.
         
       
 
@@ -1288,7 +1289,9 @@ Module Zkp.
           intros ? ? ? ?.
           eapply map_ext_eq.
           + unfold generalised_parallel_schnorr_distribution, 
-            generalised_parallel_simulator_distribution; cbn. admit.
+            generalised_parallel_simulator_distribution;
+            cbn. repeat rewrite distribution_length. 
+            reflexivity. 
           +
             intros (aa, cc, rr) y Ha.
             eapply generalised_parallel_special_honest_verifier_schnorr_dist.
@@ -1297,7 +1300,7 @@ Module Zkp.
             intros (aa, cc, rr) y Ha. 
             eapply generalised_parallel_special_honest_verifier_simulator_dist.
             exact Ha.
-        Admitted.
+        Qed.
 
         
         

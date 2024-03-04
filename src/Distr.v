@@ -903,8 +903,16 @@ Section Distr.
     exact Ha.
   Qed.
 
+  Theorem distribution_length : 
+    forall (A B : Type) (f : A -> B) (d : dist A) , 
+    List.length (Bind d (fun u => Ret (f u))) = List.length d.
+  Proof.
+    intros ? ?. 
+    induction d as [|(u, v) d IHd].
+    + simpl; reflexivity.
+    + simpl; rewrite IHd; reflexivity.
+  Qed.  
 
-  
 
 End Distr.
 
