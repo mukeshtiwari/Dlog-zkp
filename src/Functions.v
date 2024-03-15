@@ -1,6 +1,9 @@
 Require Import Coq.NArith.NArith
   Znumtheory Lia
-  Zdiv Zpow_facts.
+  Zdiv Zpow_facts
+  Coq.NArith.BinNat 
+  Coq.Arith.PeanoNat.
+
 From Coq Require Import Even.
 
 Section Fn.
@@ -106,6 +109,7 @@ Section Fn.
               repeat_op_ntimes_acc ee p w ea  
     end.
 
+  Locate Div0.mul_mod_idemp_r. 
   Lemma op_pushes_out : 
     forall n e w, prime (Z.of_N w) -> 
     repeat_op_ntimes_rec ((e * e) mod w) n w = 
@@ -117,14 +121,14 @@ Section Fn.
       rewrite IHn.
       pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
       remember (repeat_op_ntimes_rec e n w * repeat_op_ntimes_rec e n w)%N as enw.
-      rewrite <- N.mul_mod_idemp_r.
-      repeat rewrite N.mul_mod_idemp_l.
-      repeat rewrite N.mul_mod_idemp_r.
+      rewrite <- N.Div0.mul_mod_idemp_r.
+      repeat rewrite N.Div0.mul_mod_idemp_l.
+      repeat rewrite N.Div0.mul_mod_idemp_r.
       assert (Ht : (e * enw * (e * enw) = 
         e * e * (enw * enw))%N). lia.
       rewrite Ht; clear Ht.
       repeat rewrite N.mul_assoc.
-      rewrite N.mul_mod_idemp_r.
+      rewrite N.Div0.mul_mod_idemp_r.
       reflexivity.
       all:(try lia; try assumption).
     - simpl; intros ? ? Hw.
@@ -133,11 +137,10 @@ Section Fn.
       reflexivity. exact Hw.
     - simpl; intros ? ? Hw.
       pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
-      rewrite N.mod_mod.
-      rewrite N.mul_mod_idemp_l.
-      rewrite N.mul_mod_idemp_r.
+      rewrite N.Div0.mod_mod.
+      rewrite N.Div0.mul_mod_idemp_l.
+      rewrite N.Div0.mul_mod_idemp_r.
       reflexivity.
-      all:lia.
   Qed.
 
 
@@ -153,8 +156,8 @@ Section Fn.
       rewrite IHn.
       rewrite op_pushes_out.
       remember (repeat_op_ntimes_rec e n w * repeat_op_ntimes_rec e n w)%N as enw.
-      rewrite N.mul_mod_idemp_l.
-      repeat rewrite N.mul_mod_idemp_r.
+      rewrite N.Div0.mul_mod_idemp_l.
+      repeat rewrite N.Div0.mul_mod_idemp_r.
       assert (Ht : ((acc * (e * enw) = e * acc * enw)%N)).
       lia.
       rewrite Ht; clear Ht.
@@ -167,11 +170,10 @@ Section Fn.
       all:assumption.
     - simpl; intros ? ? ? Hw.
       pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
-      rewrite N.mul_mod_idemp_r.
+      rewrite N.Div0.mul_mod_idemp_r.
       assert (Ht : (acc * e = e * acc)%N). lia.
       rewrite Ht; clear Ht.
       reflexivity.
-      lia.
   Qed.
 
       
@@ -193,7 +195,7 @@ Section Fn.
       pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
       rewrite H. rewrite N.mul_1_l.
       destruct p.
-      all:simpl; rewrite N.mod_mod; lia.
+      all:simpl; rewrite N.Div0.mod_mod; lia.
   Qed.
 
 
@@ -236,17 +238,15 @@ Section Fn.
         reflexivity.
         pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
         lia.
-      + simpl. rewrite N.mod_mod.
+      + simpl. rewrite N.Div0.mod_mod.
         reflexivity. 
-        pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
-        lia.
     - simpl; intros ? ? ? Hw.
       pose proof (prime_ge_2 (Z.of_N w) Hw) as Htt.
       rewrite IHn. 
-      rewrite N.mul_mod_idemp_r.
-      rewrite N.mul_mod_idemp_l.
+      rewrite N.Div0.mul_mod_idemp_r.
+      rewrite N.Div0.mul_mod_idemp_l.
       rewrite N.mul_assoc. reflexivity.
-      lia. lia. assumption.
+      assumption.
   Qed.
 
 
@@ -257,12 +257,12 @@ Section Fn.
     exists k,  n = (2 * k + 1)%nat /\  (N.pos p) = (N.of_nat k).
   Proof.
     intros p n Hp.
-    destruct (Even.even_or_odd n) as [H | H].
-    apply Even.even_equiv in H. destruct H as [k Hk].
+    destruct (Nat.Even_or_Odd  n) as [H | H].
+    destruct H as [k Hk]. 
     (* Even (impossible) Case *)
     rewrite Hk in Hp; lia.
     (* Odd (possible) case *)
-    apply Even.odd_equiv in H. destruct H as [k Hk].
+    destruct H as [k Hk].
     rewrite Hk in Hp. exists k.
     split. exact Hk. lia.
   Qed.
@@ -273,13 +273,12 @@ Section Fn.
     exists k, n = (Nat.mul 2 k) /\  (N.pos p) = (N.of_nat k).
   Proof.
     intros p n Hp.
-    destruct (Even.even_or_odd n) as [H | H].
-    apply Even.even_equiv in H. destruct H as [k Hk].
+    destruct (Nat.Even_or_Odd n) as [H | H].
+    destruct H as [k Hk].
     (* Even (possible) case*)
     rewrite Hk in Hp. exists k.
     split. exact Hk. lia.
     (* Odd (impossible) case *)
-    apply Even.odd_equiv in H. 
     destruct H as [k Hk].
     rewrite Hk in Hp. lia.
   Qed.
@@ -299,9 +298,9 @@ Section Fn.
         rewrite <-IHp.
         rewrite ZL6.
         rewrite Npow_mod_add_mul.
-        rewrite N.mul_mod_idemp_r.
+        rewrite N.Div0.mul_mod_idemp_r.
         reflexivity.
-        lia. exact Hw.
+        exact Hw.
         exact Hw.
       + simpl; intros ? ? Hw.
         rewrite <-IHp.
@@ -331,19 +330,15 @@ Section Fn.
       rewrite IHn.
       remember (repeat_op_ntimes_rec (e mod w) n w *
       repeat_op_ntimes_rec (e mod w) n w)%N as t.
-      rewrite N.mul_mod_idemp_l.
-      reflexivity.
-      pose proof (prime_ge_2 (Z.of_N w) Hp) as Ht.
-      lia. exact Hp.
+      rewrite N.Div0.mul_mod_idemp_l.
+      reflexivity. exact Hp.
     - simpl; intros ? ? Hp.
       rewrite IHn.
       reflexivity.
       exact Hp.
     - simpl; intros ? ? Hp.
-      rewrite N.mod_mod.
+      rewrite N.Div0.mod_mod.
       reflexivity.
-      pose proof (prime_ge_2 (Z.of_N w) Hp) as Ht.
-      lia.
   Qed.
 
 
@@ -370,13 +365,13 @@ Section Fn.
     destruct k. lia.
     clear Hk.
     induction p0.
-    simpl. rewrite N.mod_0_l.
-    reflexivity. lia.
+    simpl. rewrite N.Div0.mod_0_l.
+    reflexivity.
     simpl. rewrite IHp0.
-    rewrite N.mod_0_l. 
-    reflexivity. lia.
-    simpl. rewrite N.mod_0_l.
-    reflexivity. lia.
+    rewrite N.Div0.mod_0_l. 
+    reflexivity. 
+    simpl. rewrite N.Div0.mod_0_l.
+    reflexivity. 
   Qed.
     
   Lemma wp_mod_one : 
@@ -487,10 +482,8 @@ Section Fn.
       rewrite <-Nat2N.inj_mul,
       <-Nat2N.inj_mod.
       f_equal.
-      rewrite Nat.mul_mod_idemp_r.
+      rewrite Nat.Div0.mul_mod_idemp_r.
       reflexivity.
-      pose proof prime_ge_2 (Z.of_nat p) Hp as Hf.
-      lia.
   Qed. 
       
   Lemma N_to_nat_exp : forall (n a p : N), 

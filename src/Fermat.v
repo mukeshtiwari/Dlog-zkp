@@ -93,15 +93,15 @@ Section Fermat_Little_Theorem.
       + simpl. lia.
       + assert (Ht : (S n + S k = S (S n +  k))%nat).
         nia. rewrite Ht; clear Ht.
-        rewrite snCsk, mult_plus_distr_l.
+        rewrite snCsk, Nat.mul_add_distr_l.
         eapply eq_trans with 
           (y := (fact (S n + k) * S k + fact (n + S k) * S n)%nat).
         assert (Ht : (fact (S (S n + k)) = (S (S n + k)) * fact (S n + k))%nat).
         simpl. lia. rewrite Ht; clear Ht.
         assert (Ht : (S (S n + k) = S n + S k)%nat) by lia.
         rewrite Ht; clear Ht.
-        rewrite mult_plus_distr_r.
-        rewrite <-plus_comm. apply f_equal2.
+        rewrite Nat.mul_add_distr_r.
+        rewrite <-Nat.add_comm. apply f_equal2.
         lia. assert (Ht : (n + S k = S n + k)%nat) by lia.
         rewrite Ht; clear Ht. lia.
         apply f_equal2.
@@ -130,7 +130,7 @@ Section Fermat_Little_Theorem.
     pose proof (fact_neq_0 n) as Hn.
     pose proof (fact_neq_0 k) as Hk.
     lia. rewrite <-H₂.
-    rewrite plus_comm.
+    rewrite Nat.add_comm.
     assert (Ht : (fact k * fact n * binomial_exp (k + n) k = 
       fact n * fact k * binomial_exp (k + n) k)%nat) by lia.
     rewrite Ht; clear Ht.
@@ -187,9 +187,8 @@ Section Fermat_Little_Theorem.
   Lemma zip_length : forall {X Y Z : Type} (f : X -> Y -> Z) 
     l l', length l = length l' -> length (zip_with f l l') = length l.
   Proof.
-    intros * H. rewrite zip_length_min.
-    rewrite H. rewrite Min.min_idempotent.
-    eauto.
+    intros * H. now rewrite zip_length_min,
+    H, Nat.min_id.
   Qed.
 
   Lemma zip_list_index {A B C : Type} (f : A -> B -> C) : forall 
@@ -1138,17 +1137,14 @@ Section Fermat_Little_Theorem.
     unfold Nat.divide in H.
     destruct H as [z Hz].
     rewrite Hz.
-    rewrite Nat.mod_mul.
+    rewrite Nat.Div0.mod_mul.
     reflexivity. 
     apply prime_ge_2 in Hp.
-    lia.
-    apply Nat.mod_divides in H.
+    apply Nat.Div0.mod_divides in H.
     destruct H as [c Hn].
     econstructor.
     instantiate (1 := c).
     lia. 
-    apply prime_ge_2 in Hp.
-    lia.
   Qed.
 
   Lemma connection_between_not_divide_and_mod : forall n p : nat,
@@ -1279,9 +1275,8 @@ Section Fermat_Little_Theorem.
     simpl. reflexivity.
     rewrite Hf; clear Hf.
     rewrite Nat.mul_comm,
-    Nat.mod_mul.
+    Nat.Div0.mod_mul.
     reflexivity.
-    lia.
   Qed.
 
 
@@ -1327,8 +1322,8 @@ Section Fermat_Little_Theorem.
     destruct Hk as [Hk | Hk].
     pose proof k_gt_n p k Hk as Hppp.
     rewrite Hppp.
-    rewrite Nat.mod_0_l.
-    reflexivity. lia.
+    rewrite Nat.Div0.mod_0_l.
+    reflexivity. 
     assert (Hkp: 1 <= k < p). 
     lia. 
     pose proof connect_fact_with_binomial_exp_def k (p - k) as Hvt.
@@ -1456,22 +1451,20 @@ Section Fermat_Little_Theorem.
       remember
       ((fold_right (fun x0 acc : nat => acc + x0) 1
       (map (fun x0 : nat => binomial_exp p x0 * x ^ x0 * 1 ^ (p - x0)) l))) as t.
-      rewrite <-Nat.add_mod_idemp_l.
+      rewrite <-Nat.Div0.add_mod_idemp_l.
       assert (Hv : (t + binomial_exp p a * x ^ a) mod p = 
         t mod p).
-      rewrite <-Nat.add_mod_idemp_r,
-      Nat.mul_mod, Hw.
+      rewrite <-Nat.Div0.add_mod_idemp_r,
+      Nat.Div0.mul_mod, Hw.
       simpl.
-      rewrite Nat.mod_0_l,
+      rewrite Nat.Div0.mod_0_l,
       Nat.add_0_r. reflexivity.
-      lia. lia. lia.
       rewrite Hv. 
-      rewrite Nat.add_mod_idemp_l.
+      rewrite Nat.Div0.add_mod_idemp_l.
       apply IHl.
       intros y Hy. 
       apply Hr. right.
       exact Hy.
-      lia. lia.
       exact Hp. 
       lia.
   Qed.
@@ -1495,11 +1488,10 @@ Section Fermat_Little_Theorem.
       rewrite Hs; clear Hs.
       rewrite prime_pow_exp.
       specialize (IHn p Hp).
-      rewrite <-Nat.add_mod_idemp_l.
+      rewrite <-Nat.Div0.add_mod_idemp_l.
       rewrite IHn.
-      rewrite Nat.add_mod_idemp_l.
+      rewrite Nat.Div0.add_mod_idemp_l.
       reflexivity.
-      lia. lia.
       exact Hp.
   Qed.
       
@@ -1523,10 +1515,8 @@ Section Fermat_Little_Theorem.
       assert (Hbb: b mod p = (a + z * p) mod p).
       congruence.
       rewrite Hbb.
-      rewrite Nat.mod_add.
+      rewrite Nat.Div0.mod_add.
       reflexivity. 
-      pose proof prime_ge_2 (Z.of_nat p) Hp as Hf.
-      lia.
   Qed.
 
   
@@ -1540,17 +1530,13 @@ Section Fermat_Little_Theorem.
     intros * Hp Ha Hab.
     assert (Hn : a <> 0).
     intros H. rewrite H in Ha.
-    rewrite Nat.mod_0_l in Ha.
-    lia. 
-    pose proof prime_ge_2 (Z.of_nat p) Hp as Hf.
+    rewrite Nat.Div0.mod_0_l in Ha.
     lia.
     assert (Ht : b <> 0).
     intro H. rewrite H in Hab.
     rewrite Nat.mul_comm in Hab.
-    rewrite Nat.mod_0_l in Hab.
+    rewrite Nat.Div0.mod_0_l in Hab.
     lia. 
-    pose proof prime_ge_2 (Z.of_nat p) Hp as Hf.
-    lia.
     assert (Hu : a <= a * b). 
     destruct a. lia.
     destruct b. lia.
@@ -1567,9 +1553,9 @@ Section Fermat_Little_Theorem.
     apply connection_between_divide_and_mod in Hab.
     pose proof prime_ge_2 (Z.of_nat p) Hp as Hf.
     assert (Hadd :  (1 + (b - 1)) mod p = 1 mod p).
-    rewrite <-Nat.add_mod_idemp_r.
+    rewrite <-Nat.Div0.add_mod_idemp_r.
     rewrite Hab, Nat.add_0_r.
-    reflexivity. lia.
+    reflexivity.
     assert (Hbt : 1 + (b - 1) = b).
     lia. rewrite Hbt in Hadd.
     rewrite Nat.mod_1_l in Hadd.

@@ -1,6 +1,7 @@
 Require Import Vector 
   Fin Coq.Bool.Bool Coq.Unicode.Utf8
-  Psatz.
+  Psatz
+  Coq.ZArith.BinIntDef.
 
 Import VectorNotations.
 
@@ -472,7 +473,7 @@ Section Modutil.
     exists k w, m = k * p + w /\ 1 <= w < p.
   Proof.
     intros ?; split; intros Hm.
-    exists (Z.div m p), (Zmod m p). 
+    exists (Z.div m p), (Z.modulo m p). 
     split.
     rewrite mod_eq_custom. nia.
     apply H_0_p. 
@@ -496,7 +497,7 @@ Section Modutil.
     exists k w, m = k * p + w /\ 0 <= w < p.
   Proof.
     intros ?.
-    exists (Z.div m p), (Zmod m p). 
+    exists (Z.div m p), (Z.modulo m p). 
     split.
     rewrite mod_eq_custom. nia.
     apply H_0_p.
@@ -512,7 +513,7 @@ Section Modutil.
     /\ 0 <= k.
   Proof.
     intros ? Hm.
-    exists (Z.div m p), (Zmod m p). 
+    exists (Z.div m p), (Z.modulo m p). 
     split.
     rewrite mod_eq_custom. nia.
     apply H_0_p.

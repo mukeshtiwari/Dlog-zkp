@@ -4,7 +4,8 @@ Require Import
   ExtLib.Structures.Applicative
   ExtLib.Structures.MonadLaws
   ExtLib.Structures.FunctorLaws
-  Coq.Unicode.Utf8 
+  Coq.Unicode.Utf8
+  Coq.Arith.PeanoNat
   Coq.Logic.FunctionalExtensionality
   Coq.PArith.Pnat Coq.NArith.BinNatDef
   Coq.PArith.BinPos Lia Coq.Lists.List
@@ -18,7 +19,7 @@ Require Import
 Import ListNotations.
 Section Distr.
 
-
+ 
 
   (* Probability Distribution on a type A *)
   Definition dist (A : Type) : Type := list (A * prob).
@@ -1204,6 +1205,7 @@ Section Event.
   Definition choice (p : prob) (a b : A) : dist A :=
     [(a, p); (b, mk_prob (Pos.to_nat (denum p) - num p) (denum p))].
 
+  
 
   Lemma choice_correct : ∀ (p : prob) (a b : A), 
     zero <p= p = true -> 
@@ -1225,11 +1227,12 @@ Section Event.
     assert (Ht : Pos.to_nat (bp * (bp * 1)) = Pos.to_nat (bp * bp)).
     nia. 
     rewrite Ht; clear Ht.
-    rewrite Minus.le_plus_minus_r. 
+    rewrite Nat.add_comm, Nat.sub_add.
     nia.
     apply leq_prob in Hone.
     simpl in Hone. nia.
   Qed.
+
 
   
   
