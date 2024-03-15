@@ -4,7 +4,6 @@ Require Import Coq.NArith.NArith
   Coq.NArith.BinNat 
   Coq.Arith.PeanoNat.
 
-From Coq Require Import Even.
 
 Section Fn.
   
