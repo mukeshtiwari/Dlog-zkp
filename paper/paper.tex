@@ -127,28 +127,22 @@
 
 \author{Mukesh Tiwari}
 \affiliation{%
- \institution{Rajiv Gandhi University}
- \streetaddress{Rono-Hills}
- \city{Doimukh}
- \state{Arunachal Pradesh}
- \country{India}}
+ \institution{Swansea University}
+ \country{United Kingdom}}
+ \email{mukesh.tiwari@swansea.ac.uk}
 
-\author{Berry Schonemark}
+\author{Berry Schoenmakers}
 \affiliation{%
-  \institution{Tsinghua University}
-  \streetaddress{30 Shuangqing Rd}
-  \city{Haidian Qu}
-  \state{Beijing Shi}
-  \country{China}}
-
+  \institution{TU Eindhoven, Eindhoven}
+  \country{The Netherlands}}
+  \email{l.a.m.schoenmakers@tue.nl}
 
 
 \author{Bas Spitters}
 \affiliation{%
-  \institution{The Kumquat Consortium}
-  \city{New York}
-  \country{USA}}
-\email{jpkumquat@consortium.net}
+  \institution{Aarhus University}
+  \country{Denmark}}
+\email{spitters@cs.au.dk}
 
 %%
 %% By default, the full list of authors will be used in the page
@@ -190,7 +184,77 @@
 %% information and builds the first part of the formatted document.
 \maketitle
 
+\section{How to pitch this paper and What is the unique selling point of our work?}
+Our Coq formalisation can be used at front-end to generate Web Assembly code and 
+Rust code at the back-end. Contrary to the existing work, our formalisation
+does not write the same code twice. But sigma protocols are arcane and has 
+been formalised couple of times before so why another formalisation?
+None of the formalisation has been able to extract the code to executable code 
+and one that was able to do so did not reason about probabilities in an intuitive way.
+Moreover, that work was just geared towards verifying a transcript rather than
+constructing it. Also, recently ZKP community started a movement to 
+formalise the Sigma protocols. We also demonstrates the 
+applicability of our formalisation by encoding Helios cryptographic protocols
+in our formalisation. 
+
+
+
+
 \section{Introduction}
+Despite the recent growth and popularity of zero-knowledge succinct 
+argument of knowledge (ZKSNARK), Sigma protocols remain a
+leading cryptographic proof system in privacy-preserving voting systems. 
+Sigma protocols are used in Helios, Belenois, and SwissPost voting systems (\textbf{Look for more examples}). 
+Moreover, recently ZKP community started a movement to standardise
+the Sigma protocols. \textbf{Introduce here that sigma protocols are efficient and simple and all 
+other details about sigma protocols.} Sigma protocols allow a prover to convince a verifier that 
+they possess some knowledge without revealing anything else about the knowledge itself.  
+More formally, for a given relation $R$ and a statement $x$, the prover convinces the verifier
+that they posses a witness $w$ such that ($x$, $w$) $\in$ $R$. We would like to stress that
+Sigma protocols are a special case of zero-knowledge proofs where the verifier is 
+assumed to be honest. Sigma protocols were first defined by Ronald Cramer \cite{cramer1996modular} and the 
+first efficient sigma protocol was introduced by Schnorr in \cite{schnorr1991efficient}. 
+Eventhough there exists many sigma protocols, the Schnorr protocol is one of the most well-known
+sigma protocol and is used extensively in privacy-preserving voting systems, e.g, Helios, SwissPost, etc. 
+Therefore, our formalisation is geared towards the Schnorr protocol; moreover, we 
+also formalise $n$ PARALLEL composition, $n$ AND composition, $n$ OR composition, 
+and $n$ EQ composition of Schnorr protocol. We also formalise Okamoto protocol and 
+its $n$ NEQ composition (\textbf{Berry: does it sound okay?}). However, we have not seen 
+much use of Okamoto protocol in the privacy-preserving voting systems  (\textbf{Berry: does it sound okay?}), 
+at least in the existing voting systems. Ideally, we could have abstracted the sigma protocols and their composition in a generic way,
+but we decided to focus on the Schnorr protocol and its composition to ensure a nice APIs in 
+Web Assembly and Rust.
+
+
+
+
+There are numerous implementations of Sigma protocols in various languages, 
+e.g., Helios is written in Python, Belenois is written in OCaml, and SwissPost is written in Java.
+However, there are two main issues with these implementations: (i)  
+the same code is written twice 
+once for the front-end (JavaScript, TypeScript) and once for the back-end (Python, OCaml, or Java),
+especially in privacy-preserving voting systems such as Helios, SwissPost, and 
+(ii) none of these implementations offer any formal guarantees about the correctness of the code.
+Given the importance of Sigma protocols in privacy-preserving voting systems,
+it has been formalised couple of times before  \cite{5552642,butler2019formalisation,10.1145/3319535.3354247}. 
+\cite{5552642,butler2019formalisation} are mainly focused on establishing the 
+pen-and-paper proofs of Sigma protocols into theorem provers, and not extracting an executable code.
+On the other hand, \cite{10.1145/3319535.3354247} exatract an OCaml code from Coq 
+formalisation but it is mostly geared towards verifying an Helios election transcript, 
+rather than constructing the primitives to conduct an election. Moreover, 
+it lacks many primitives and does not reason about probabilities in an intuitive way.
+
+
+In this paper, we present a formal verification of Sigma protocols in the Coq proof assistant that 
+can be used to generate Web Assembly code at the front-end and Rust code at the back-end. 
+We use our formalisation to model the cryptographic protocols implemented in Helios voting systems. 
+
+
+
+
+
+\textbf{We need to explain why formal verification is important in the context of voting systems.}
+
 \begin{itemize}
   \item Explain zero-knowledge proofs (completeness, soundness, zero-knowledge)
   \item Explain sigma protocols (completeness, special-soundness, honest-verifier zero-knowledg) 
@@ -200,6 +264,7 @@
   \item Explain Parallel, And, Eq, Or, and NEQ relations (also explain that 
   most of the formalisation has worked on And and Or relations)
 \end{itemize}
+
 Zero-knowledge proofs are a class of cryptographic protocols that allow a
 prover to convince a verifier that a statement is true without revealing 
 any information about the statement itself. 
@@ -213,14 +278,7 @@ using a binary relation $R$ between the set of statements (S) and the
 set of witnesses ($W$), where $(s, w) \in R$ if the witness $w$ 
 demonstrates that the statement $s$ is in the language. 
 
-Sigma protocols were first defined by Ronald Cramer [18],
-they are a particularly simple and efficient kind of zero-
-knowledge proof and have seen wide deployment; they re-
-main a leading kind of proof both in terms of simplicity and
-deployment but recent advances in succinct zero-knowledge
-proofs [26] offer greater efficiency. The first efficient sigma
-protocol was introduced by Schnorr in [38], several years
-before the class was defined.
+
 
 Sigma protocols are a class of cryptographic protocols that are used to prove the 
 knowledge of a witness for a given statement. 
@@ -233,10 +291,6 @@ one of the most well-known protocols is the Schnorr protocol. In this
 paper, we present a formal verification of the Schnorr protocol in the
 Coq proof assistant. 
 
-In this paper, we present a 
-formal verification of a sigma protocol in the Coq proof assistant. We use 
-the Fiat-Crypto library to implement the protocol and prove its security 
-properties. Our work is based on the work of \cite{fiat-crypto} and \cite{pok}.
 
 \section{Sigma Protocols}
 
@@ -266,7 +320,7 @@ properties. Our work is based on the work of \cite{fiat-crypto} and \cite{pok}.
 
 \section{Case Studies}
   We use our formalisation to model the Cryptographic protocols implemented in 
-  Helios and Belenois voting systems. 
+  Helios voting systems. 
 
 
 \section{Related Work}
