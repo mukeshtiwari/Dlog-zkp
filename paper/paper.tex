@@ -218,9 +218,9 @@ Eventhough there exists many sigma protocols, the Schnorr protocol is one of the
 sigma protocol and is used extensively in privacy-preserving voting systems, e.g, Helios, SwissPost, etc. 
 Therefore, our formalisation is geared towards the Schnorr protocol; moreover, we 
 also formalise $n$ PARALLEL composition, $n$ AND composition, $n$ OR composition, 
-and $n$ EQ composition of Schnorr protocol. We also formalise Okamoto protocol and 
-its $n$ NEQ composition (\textbf{Berry: does it sound okay?}). However, we have not seen 
-much use of Okamoto protocol in the privacy-preserving voting systems  (\textbf{Berry: does it sound okay?}), 
+and $n$ EQ composition of Schnorr protocol. We also formalise Okamoto protocol as a subprotocol 
+for NEQ composition (\textbf{Berry: does it sound okay?}). However, we have not seen 
+much use of Okamoto protocol in the privacy-preserving voting systems, 
 at least in the existing voting systems. Ideally, we could have abstracted the sigma protocols and their composition in a generic way,
 but we decided to focus on the Schnorr protocol and its composition to ensure a nice APIs in 
 Web Assembly and Rust.

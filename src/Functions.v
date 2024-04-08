@@ -108,7 +108,6 @@ Section Fn.
               repeat_op_ntimes_acc ee p w ea  
     end.
 
-  Locate Div0.mul_mod_idemp_r. 
   Lemma op_pushes_out : 
     forall n e w, prime (Z.of_N w) -> 
     repeat_op_ntimes_rec ((e * e) mod w) n w = 
