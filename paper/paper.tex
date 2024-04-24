@@ -156,7 +156,25 @@
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-  Abstract goes here
+  Despite the recent growth of zero-knowledge succinct argument 
+  of knowledge (ZKSNARK) in cryptocurrencies, 
+  sigma protocol remains a popular choice in electronic voting to maintain privacy 
+  and verifiability of elections and still used in Helios, Belenois, and SwissPost voting systems. 
+  However, the existing implementations of sigma protocol are not formally verified and 
+  therefore offer no security guarantees. \textbf{Double check this and its purpose: Moreover, 
+  the same code is written twice, once for the front-end and once for the back-end}.
+  In this paper, we present a formal verification of sigma protocol in the Coq proof assistant. 
+  We prove that our formalisation is (special) sound, complete, and (honest verifier) 
+  zero-knowledge. Moreover, 
+  we compile our Coq formalisation to WebAssembly code and Rust code, and 
+  thereby solve the problem of writing the same code twice, once for the 
+  front-end and once for the back-end. We demonstrate the applicability of our
+  formalisation by encoding the cryptographic protocols implemented in 
+  Helios voting systems. Our long terms goal is to provide a verified
+  cryptographic library that can be readily used in 
+  privacy-preserving voting systems.
+
+
 \end{abstract}
 
 
@@ -202,11 +220,23 @@ in our formalisation.
 
 \section{Introduction}
 Despite the recent growth and popularity of zero-knowledge succinct 
-argument of knowledge (ZKSNARK), Sigma protocols remain a
+argument of knowledge (ZKSNARK), sigma protocol remains a
 leading cryptographic proof system in privacy-preserving voting systems. 
-Sigma protocols are used in Helios, Belenois, and SwissPost voting systems (\textbf{Look for more examples}). 
+Sigma protocols are used in Helios, Belenois, and SwissPost voting 
+systems (\textbf{Look for more examples}). 
 Moreover, recently ZKP community started a movement to standardise
-the Sigma protocols. \textbf{Introduce here that sigma protocols are efficient and simple and all 
+the Sigma protocols. 
+
+One of the main reasons for the popularity of sigma protocols in 
+privacy-preserving voting systems is their simplicity and well-understood
+security. 
+ 
+Sigma protocols are a special case of
+zero-knowledge proofs where the verifier is assumed to be honest. Sigma protocols
+allow a prover to convince a verifier that they possess some knowledge without
+revealing anything else about the knowledge itself. Sigma protocols are used in
+
+\textbf{Introduce here that sigma protocols are efficient and simple and all 
 other details about sigma protocols.} Sigma protocols allow a prover to convince a verifier that 
 they possess some knowledge without revealing anything else about the knowledge itself.  
 More formally, for a given relation $R$ and a statement $x$, the prover convinces the verifier
