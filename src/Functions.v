@@ -102,10 +102,13 @@ Section Fn.
     (e : N) (n : positive) (w acc : N) : N :=
     match n with
     | xH => N.modulo (e * acc) w
-    | xO p => let ee := (N.modulo (e * e) w) in repeat_op_ntimes_acc ee p w acc 
-    | xI p => let ee := (N.modulo (e * e) w) in 
-              let ea := (N.modulo (e * acc) w) in 
-              repeat_op_ntimes_acc ee p w ea  
+    | xO p => 
+      let ee := (N.modulo (e * e) w) in 
+      repeat_op_ntimes_acc ee p w acc 
+    | xI p => 
+      let ee := (N.modulo (e * e) w) in 
+      let ea := (N.modulo (e * acc) w) in 
+      repeat_op_ntimes_acc ee p w ea  
     end.
 
   Lemma op_pushes_out : 

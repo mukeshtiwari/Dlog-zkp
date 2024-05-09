@@ -4490,7 +4490,7 @@ Module Zkp.
           ∀ {n : nat}, 
           Vector.t G (2 + n) -> 
           Vector.t G (2 + n) -> 
-          Vector.t F ((2 + n) * (1 + n))-> F -> 
+          Vector.t F ((2 + n) * (1 + n)) -> F -> 
           @sigma_proto (Nat.div ((2 + n) * (1 + n)) 2) 1 ((2 + n) * (1 + n)).
         Proof.
           refine(fix Fn n {struct n} := 

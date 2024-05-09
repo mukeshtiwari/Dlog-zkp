@@ -47,6 +47,7 @@
 %%
 \documentclass[sigconf]{acmart}
 
+
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
 \AtBeginDocument{%
@@ -74,6 +75,17 @@
 %%\acmBooktitle{Woodstock '18: ACM Symposium on Neural Gaze Detection,
 %%  June 03--05, 2018, Woodstock, NY}
 \acmISBN{978-1-4503-XXXX-X/18/06}
+
+%% get rid of this for the final version
+\usepackage{todonotes}
+\usepackage{listingsutf8}
+\setlength {\marginparwidth }{2cm} %This is for todod
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{cryptocode}
+\usepackage{lstcoq}
+\usepackage[utf8]{inputenc}
+%% End of get rid of this for the final version
 
 
 %%
@@ -159,20 +171,22 @@
   Despite the recent growth of zero-knowledge succinct argument 
   of knowledge (ZKSNARK) in cryptocurrencies, 
   sigma protocol remains a popular choice in electronic voting to maintain privacy 
-  and verifiability of elections and still used in Helios, Belenois, and SwissPost voting systems. 
-  However, the existing implementations of sigma protocol are not formally verified and 
-  therefore offer no security guarantees. \textbf{Double check this and its purpose: Moreover, 
-  the same code is written twice, once for the front-end and once for the back-end}.
-  In this paper, we present a formal verification of sigma protocol in the Coq proof assistant. 
-  We prove that our formalisation is (special) sound, complete, and (honest verifier) 
-  zero-knowledge. Moreover, 
-  we compile our Coq formalisation to WebAssembly code and Rust code, and 
-  thereby solve the problem of writing the same code twice, once for the 
-  front-end and once for the back-end. We demonstrate the applicability of our
+  and verifiability of elections and still used in prominent e-voting systems such as 
+  Helios, Belenois, and SwissPost \textbf{More examples}. However, 
+  the existing implementations of sigma protocol have two 
+  shortcomings: (i) the same code is written twice, once for the front-end (JavaScript)
+  and once for the back-end (Python/OCaml/Java), which is time-consuming but more importantly error-prone, 
+  and (ii) none of these implementations offer any security guarantees. 
+  In this paper, we present a certified implementation of sigma protocol in the Coq proof assistant. 
+  We prove that our implementation is (special) sound, complete, and 
+  (honest verifier) zero-knowledge. Moreover, 
+  we compile our Coq formalisation to WebAssembly and Rust, and 
+  thereby solve the problem of writing the same code twice. 
+  We demonstrate the applicability of our
   formalisation by encoding the cryptographic protocols implemented in 
-  Helios voting systems. Our long terms goal is to provide a verified
-  cryptographic library that can be readily used in 
-  privacy-preserving voting systems.
+  Helios, Belenois, and SwissPost voting systems. 
+  Our long terms goal is to provide a verified cryptographic library that can be 
+  readily used in privacy-preserving voting systems.
 
 
 \end{abstract}
@@ -203,83 +217,17 @@
 \maketitle
 
 \section{How to pitch this paper and What is the unique selling point of our work?}
-Our Coq formalisation can be used at front-end to generate Web Assembly code and 
-Rust code at the back-end. Contrary to the existing work, our formalisation
-does not write the same code twice. But sigma protocols are arcane and has 
+Our Coq formalisation can be used at front-end (WebAssembly code) and 
+back-end (Rust). Contrary to the existing work, our formalisation
+does not write the same code twice. But sigma protocol is arcane and has 
 been formalised couple of times before so why another formalisation?
 None of the formalisation has been able to extract the code to executable code 
 and one that was able to do so did not reason about probabilities in an intuitive way.
 Moreover, that work was just geared towards verifying a transcript rather than
 constructing it. Also, recently ZKP community started a movement to 
-formalise the Sigma protocols. We also demonstrates the 
+formalise the sigma protocols. We also demonstrates the 
 applicability of our formalisation by encoding Helios cryptographic protocols
 in our formalisation. 
-
-
-
-
-\section{Introduction}
-Despite the recent growth and popularity of zero-knowledge succinct 
-argument of knowledge (ZKSNARK), sigma protocol remains a
-leading cryptographic proof system in privacy-preserving voting systems. 
-Sigma protocols are used in Helios, Belenois, and SwissPost voting 
-systems (\textbf{Look for more examples}). 
-Moreover, recently ZKP community started a movement to standardise
-the Sigma protocols. 
-
-One of the main reasons for the popularity of sigma protocols in 
-privacy-preserving voting systems is their simplicity and well-understood
-security. 
- 
-Sigma protocols are a special case of
-zero-knowledge proofs where the verifier is assumed to be honest. Sigma protocols
-allow a prover to convince a verifier that they possess some knowledge without
-revealing anything else about the knowledge itself. Sigma protocols are used in
-
-\textbf{Introduce here that sigma protocols are efficient and simple and all 
-other details about sigma protocols.} Sigma protocols allow a prover to convince a verifier that 
-they possess some knowledge without revealing anything else about the knowledge itself.  
-More formally, for a given relation $R$ and a statement $x$, the prover convinces the verifier
-that they posses a witness $w$ such that ($x$, $w$) $\in$ $R$. We would like to stress that
-Sigma protocols are a special case of zero-knowledge proofs where the verifier is 
-assumed to be honest. Sigma protocols were first defined by Ronald Cramer \cite{cramer1996modular} and the 
-first efficient sigma protocol was introduced by Schnorr in \cite{schnorr1991efficient}. 
-Eventhough there exists many sigma protocols, the Schnorr protocol is one of the most well-known
-sigma protocol and is used extensively in privacy-preserving voting systems, e.g, Helios, SwissPost, etc. 
-Therefore, our formalisation is geared towards the Schnorr protocol; moreover, we 
-also formalise $n$ PARALLEL composition, $n$ AND composition, $n$ OR composition, 
-and $n$ EQ composition of Schnorr protocol. We also formalise Okamoto protocol as a subprotocol 
-for NEQ composition (\textbf{Berry: does it sound okay?}). However, we have not seen 
-much use of Okamoto protocol in the privacy-preserving voting systems, 
-at least in the existing voting systems. Ideally, we could have abstracted the sigma protocols and their composition in a generic way,
-but we decided to focus on the Schnorr protocol and its composition to ensure a nice APIs in 
-Web Assembly and Rust.
-
-
-
-
-There are numerous implementations of Sigma protocols in various languages, 
-e.g., Helios is written in Python, Belenois is written in OCaml, and SwissPost is written in Java.
-However, there are two main issues with these implementations: (i)  
-the same code is written twice 
-once for the front-end (JavaScript, TypeScript) and once for the back-end (Python, OCaml, or Java),
-especially in privacy-preserving voting systems such as Helios, SwissPost, and 
-(ii) none of these implementations offer any formal guarantees about the correctness of the code.
-Given the importance of Sigma protocols in privacy-preserving voting systems,
-it has been formalised couple of times before  \cite{5552642,butler2019formalisation,10.1145/3319535.3354247}. 
-\cite{5552642,butler2019formalisation} are mainly focused on establishing the 
-pen-and-paper proofs of Sigma protocols into theorem provers, and not extracting an executable code.
-On the other hand, \cite{10.1145/3319535.3354247} exatract an OCaml code from Coq 
-formalisation but it is mostly geared towards verifying an Helios election transcript, 
-rather than constructing the primitives to conduct an election. Moreover, 
-it lacks many primitives and does not reason about probabilities in an intuitive way.
-
-
-In this paper, we present a formal verification of Sigma protocols in the Coq proof assistant that 
-can be used to generate Web Assembly code at the front-end and Rust code at the back-end. 
-We use our formalisation to model the cryptographic protocols implemented in Helios voting systems. 
-
-
 
 
 
@@ -295,36 +243,294 @@ We use our formalisation to model the cryptographic protocols implemented in Hel
   most of the formalisation has worked on And and Or relations)
 \end{itemize}
 
-Zero-knowledge proofs are a class of cryptographic protocols that allow a
-prover to convince a verifier that a statement is true without revealing 
-any information about the statement itself. 
-Zero-knowledge proofs are possible for all problems in the $NP$ complexity class. 
-$NP$ includes problems where a proof of membership can be efficiently 
-verified in polynomial time. In NP, a witness (denoted as $w$) is a 
-polynomial-length piece of evidence that allows quick
-verification (in polynomial time) that a given statement $s$ 
-belongs to the language. This verification process can be represented 
-using a binary relation $R$ between the set of statements (S) and the 
-set of witnesses ($W$), where $(s, w) \in R$ if the witness $w$ 
-demonstrates that the statement $s$ is in the language. 
 
 
 
-Sigma protocols are a class of cryptographic protocols that are used to prove the 
-knowledge of a witness for a given statement. 
-
-They are used in various cryptographic 
-applications such as identification, authentication, and zero-knowledge proofs. 
-The security of these protocols is based on the hardness of certain mathematical 
-problems such as the discrete logarithm problem. Amongst sigma protocols, 
-one of the most well-known protocols is the Schnorr protocol. In this 
-paper, we present a formal verification of the Schnorr protocol in the
-Coq proof assistant. 
 
 
-\section{Sigma Protocols}
+\section{Introduction}
 
-  Explain here the definition of Sigma Protocols and the Schnorr protocol. 
+\textbf{Emphasise how Sigma protocol is still used in elections to a public office}
+Despite the recent growth and popularity of zero-knowledge succinct 
+argument of knowledge (ZKSNARK), sigma protocol remains a
+leading cryptographic proof system in privacy-preserving voting systems. 
+Sigma protocol is used in Helios --a widely popular voting system-- \cite{adida2008helios}, 
+Belenois --used in French elections for overseas 
+voters\footnote{VVFE, used in French elections, is a derivative of (part of) Belenios and 
+inherited all the zero-knowledge proofs from Belenois.}-- \cite{cortier2023french}, and 
+SwissPost --used in Swiss elections for overseas voters-- voting 
+systems \cite{10.1007/978-3-031-15911-4_4} (\textbf{Look for more examples}). 
+Moreover, recently zero-knowledge proof community started a movement to standardise
+the sigma protocol \cite{ZKProof}.
+One of the main reasons for its popularity in privacy-preserving voting systems is its simplicity and 
+well-understood security.  
+
+%\textbf{Introduce here that sigma protocol is efficient and simple and all other details about sigma protocol.} 
+Zero-knowledge proofs are possible for all problems in the $NP$ complexity class, which 
+includes problems where a proof of membership can be efficiently verified in polynomial time.
+Sigma protocol is a simple and efficient zero-knowledge proof where the verifier  is assumed to be honest. 
+More formally, for a given $NP$-relation $R$ and a statement $x$, a sigma protocol allows a prover 
+$P$ to convince a verifier $V$ that they posses a witness $w$ --polynomial in length of $x$-- such 
+that ($x$, $w$) $\in$ $R$. To accomplish this, $P$ and $V$ engage in a three move 
+interactive protocol (shown below). At the end of the protocol $V$ either accepts or rejects the proofs.
+Like any other proof system, sigma protocols also has completness and (special) soundness; moreover,  
+it also has an additional property (special honest-verifier) zero-knowledgeness. 
+
+\textbf{Draw a move }
+
+
+\definition{Completeness}
+when $P$ and $V$ follow the protocol, then $V$ always accepts. In other words, 
+if $P$ knows $w$ for $x$ then it would successfully construct a triple 
+(a; c; r) that always passes the verification equation, i.e., $V$ accepts.   
+
+\definition{Special soundness}
+there exists a probabilistic polynomial time extractor $E$ which given 
+two accepting transcripts (a; c; r) and (a; c', r') for $x$, then 
+it can extract a witness $w$ such that $(x, w) \in R$. In other words, 
+if $P$ does not know $w$ for $x$ then it cannot create a proof 
+(a; c; r) that will passes the verification check. 
+
+\definition{Special honest-verifier zero-knowledge proof}
+there exists a probabilistic polynomial-time simulator S that for  
+any $v$ in $L_R$ and $c \in C$, $S$ generates conversations 
+(a,c,r) with the same probability as honest conversations between 
+$P$ and $V$ using $w$ satisfying $(v,w) \in R$.
+
+
+
+
+
+
+Sigma protocol was first defined by Ronald Cramer \cite{cramer1996modular} 
+and the first efficient sigma protocol was introduced by Schnorr in \cite{schnorr1991efficient}. 
+Eventhough there exists many sigma protocols, the Schnorr protocol is one of the most well-known
+sigma protocol and is used extensively in privacy-preserving voting systems, e.g, Helios, 
+Belenois, SwissPost, etc. Therefore, our formalisation is geared towards the Schnorr protocol; moreover, we 
+also formalise $n$ PARALLEL composition, $n$ AND composition, $n$ OR composition, 
+and $n$ EQ composition of Schnorr protocol. We also formalise Okamoto protocol as a subprotocol 
+for NEQ composition (\textbf{Berry: does it sound okay?}). However, we have not seen 
+much use of Okamoto protocol in the privacy-preserving voting systems, 
+at least in the existing voting systems. Ideally, given the abstraction of 
+our formlisation (vector space) we could have abstracted the 
+sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
+but we decided to focus on the Schnorr protocol and its composition to ensure nice and familiar APIs 
+for e-voting in Web Assembly and Rust.
+
+
+
+
+There are numerous implementations of sigma protocol in various languages, 
+e.g., Helios is written in Python, Belenois is written in OCaml, and SwissPost is written in Java.
+However, there are two main issues with these implementations: (i)  
+the same code is written twice 
+once for the front-end (JavaScript, TypeScript) and once for the back-end (Python, OCaml, or Java),
+especially in privacy-preserving voting systems such as Helios, SwissPost, and 
+(ii) none of these implementations offer any formal guarantees about the correctness of the code.
+Given the importance of sigma protocols in privacy-preserving voting systems,
+it has been formalised before  \cite{5552642,butler2019formalisation,10.1145/3319535.3354247}. 
+\cite{5552642,butler2019formalisation} are mainly focused on establishing the 
+pen-and-paper proofs of sigma protocol into theorem provers and not extracting an executable code.
+On the other hand, \cite{10.1145/3319535.3354247} exatract an OCaml code from Coq 
+formalisation but it is mostly geared towards verifying an Helios election transcript, 
+rather than constructing the primitives to conduct an election. Moreover, 
+it lacks many primitives and does not reason about probabilities in an intuitive way.
+
+
+\subsection{Contribution}
+In this paper, we present a certified implementation sigma protocol and its composition 
+in the Coq proof assistant.
+
+
+Moreover, we extract WebAssembly and Rust code from our 
+certified implementation. 
+We use our formalisation to model the cryptographic protocols implemented in Helios, 
+Belenois, and SwissPost voting systems. To the best of our knowledge, this is the first
+formal verification of Sigma protocol that can be used at the front-end (WebAssembly code) and
+back-end (Rust code). 
+
+
+
+
+
+\section{Coq formalisation}
+
+  We briefly explain the Schnorr protocol, which is very similar to 
+  the one we explained in the introduction section.
+  Given some public input $(G, g, q, h)$ where $G$
+  is a cyclic group of prime order $q$, and $g$ and $h$ are two 
+  generators of the group $G$, the prover claims that they know a
+  witness $w$ for the statement $h = g^w$; the existence of such
+  a $w$ is immediate because $g$ generates the group. However,
+  does the prover know the witness $w$? In order to convince the
+  verifier, the prover and the verifier do the following:
+  \begin{itemize}
+    \item the prover picks a random number $u$, computes $c = g^u$,
+    and sends $c$ to the verifier.
+    \item the verifier picks a random challenge $e$ and sends it to
+    the prover
+    \item the prover computes $t = u + e * w$ and sends $t$ to the
+    verifier
+  \end{itemize}
+
+The verifier accepts if $g^t = c * h^e$, otherwise rejects. 
+We model the Schnorr protocol in Coq as follows: 
+ 
+\begin{lstlisting}[language=Coq]
+  Definition schnorr_protocol (x : F) (g : G) (u c : F) : 
+    @sigma_proto 1 1 1 :=  ([g^u]; [c]; [u + c * x]).
+\end{lstlisting}
+  
+ where $F$ is the underlying field, $G$ is the underlying group,
+ $+ : F \rightarrow F \rightarrow F$ is field addition,
+ $* : F \rightarrow F \rightarrow F$ is field multiplication, and
+ $\textasciicircum : G \rightarrow F \rightarrow G$ scalor multiplication. 
+ We emphasise that we work in abstract setting of \textbf{vector space} to 
+ make the implementation as general as possible. Recall that a vector space consists of a set of 
+ vectors, denoted by \(V\), a field \(F\) (elements of F are called scalars), and 
+ two operations: vector addition and scalar multiplication.
+
+\begin{itemize}
+    \item \textit{Vector addition}: for any vectors \(\mathbf{v}, \mathbf{w} \in V\), their sum, denoted by \(\mathbf{v} + \mathbf{w}\), is also in \(V\).
+    \item \textit{Scalar multiplication}: for any vector \(\mathbf{v} \in V\) and any scalar \(c \in F\), their product, denoted by \(c\mathbf{v}\), is also in \(V\).
+\end{itemize}
+
+These operations must satisfy the following properties for all vectors \(\mathbf{u}, \mathbf{v}, \mathbf{w} \in V\) and all scalars \(c, d \in F\):
+(i) \textbf{Closure under addition:} \(\mathbf{u} + \mathbf{v} \in V\), (ii) \textbf{Commutativity of addition:} \(\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}\), 
+(iii)  \textbf{Associativity of addition:} \((\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})\), 
+(iv) \textbf{Existence of zero vector:} There exists a vector \(\mathbf{0} \in V\) such that \(\mathbf{v} + \mathbf{0} = \mathbf{v}\) for all \(\mathbf{v} \in V\), 
+(v) \textbf{Existence of additive inverse:} For each vector \(\mathbf{v} \in V\), there exists a vector \(-\mathbf{v} \in V\) such that \(\mathbf{v} + (-\mathbf{v}) = \mathbf{0}\),
+(vi) \textbf{Closure under scalar multiplication:} \(c\mathbf{v} \in V\), 
+(vii) \textbf{Distributive properties:} \(c(\mathbf{u} + \mathbf{v}) = c\mathbf{u} + c\mathbf{v}\) and \((c + d)\mathbf{v} = c\mathbf{v} + d\mathbf{v}\), 
+and (viii) \textbf{Compatibility with field multiplication:} \(c(d\mathbf{v}) = (cd)\mathbf{v}\) and \(1\mathbf{v} = \mathbf{v}\), where \(1\) denotes the multiplicative identity in \(F\).
+In our setting we instantiate the set of vectors with group $G$ and field with $F$. Moreover, our notation for scalar multiplication 
+is $\textasciicircum$ because it represents, when instantiated concretely, exponentiation function. Finally, 
+we define two more functions 
+
+\begin{lstlisting}[language=Coq]
+(* Fake transcript (without the witness x) *)
+Definition schnorr_simulator (g h : G) (u c : F) : 
+@sigma_proto 1 1 1 := ([gop (g^u) (h^(opp c))]; [c]; [u]).
+
+(* 
+  This function checks if a conversation (a; c; r) 
+  is accepting or not. It checks if g^r = a * h^c
+*)
+Definition accepting_conversation 
+  (g h : G) (v : @sigma_proto 1 1 1) : bool :=
+  match v with
+  | (a; c; r) =>  
+    match Gdec (g^(hd r)) (gop (hd a) (h^(hd c))) with 
+    | left _ => true
+    | right _ => false 
+    end
+  end.
+
+
+(* Distribution that involves the secret x *)
+Definition schnorr_distribution  (lf : list F) 
+  (Hlfn : lf <> List.nil) (x : F) (g : G) (c : F) : 
+  dist sigma_proto :=
+  (* draw u from a random distribution *)
+  u <- (uniform_with_replacement lf Hlfn) ;;
+  Ret (schnorr_protocol x g u c).
+
+
+(* without secret x *)
+Definition simulator_distribution (lf : list F) 
+  (Hlfn : lf <> List.nil) (g h : G) (c : F) : 
+  dist sigma_proto :=
+  (* draw u from a random distribution *)
+  u <- (uniform_with_replacement lf Hlfn) ;;
+  Ret (schnorr_simulator g h u c).
+\end{lstlisting}
+
+Finally we establish the completeness, special soundness, 
+and special honest-verifier zero-knowledge proof. 
+\begin{lstlisting}[language=Coq]
+Lemma schnorr_completeness : 
+  forall (r c : F) (a : t G 1) (c r : t F 1),
+  (a; c; r) = (schnorr_protocol x g r c) ->
+  accepting_conversation g h (a; c; r) = true.
+Proof. (* proof terms omitted *) Qed.
+
+Lemma simulator_completeness : 
+    forall (r c : F) (a : t G 1) (c r : t F 1),
+    (a; c; r) = (schnorr_simulator g h r c) ->
+    accepting_conversation g h (a; c; r) = true.
+  Proof using -(x R). (* proof terms omitted *) Qed. 
+
+Lemma special_soundness: 
+  forall (a : G) (ca ra cb rb : F), ca <> cb ->
+  accepting_conversation g h ([a]; [ca]; [ra]) = true ->  
+  accepting_conversation g h ([a]; [cb]; [rb]) = true ->
+  (* then we can find a witness y such that g^y = h *)
+  exists y : F, g^y = h /\ y = ((ra - rb) * inv (ca - cb)).
+Proof using -(x R). (* proof terms omitted *) Qed.
+
+
+(* it's identical, i.e., information theoretic zero-knowledge proof *)
+(* Under the hood, it is modelled as a list and looks like:
+    [((a; c; r), prob); ((a; c; r), prob) ......].
+  We map accepting_conversation to crunch the first pair, 
+  (a, c, r), and produce boolean a value (true), 
+  and then we show that these two distribution are 
+  identical 
+*)
+Lemma special_honest_verifier_zkp : 
+  forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
+  List.map (fun '(a, p) => (accepting_conversation g h a, p))
+    (@schnorr_distribution lf Hlfn x g c) = 
+  List.map (fun '(a, p) => (accepting_conversation g h a, p))
+    (@simulator_distribution lf Hlfn g h c).
+Proof. (* proof terms omitted *) Qed. 
+
+
+\end{lstlisting}
+
+
+In our library, we have encoded Parallel composition, 
+AND composition, OR composition, EQ composition, and 
+NEQ composition. Below we explain the OR composition
+beause it is more involved than the rest. 
+
+
+
+
+ 
+ 
+  However, we would like 
+  to emphasise that we worked in a vector-space, rather 
+  than concrete numbers. Working in (abstract) vector-space makes our system 
+  amenable to be instantiated by any group and field 
+  (Elliptic curve vs Concrete Nubmers). \textbf{Currently, 
+  our library comes with concrete nubmers but it can easily be 
+  instantiated with Elliptic curve cryptography}
+
+  \textbf{Coq code of Schnorr goes here}
+  
+
+  The reader can see that we have used vector space. Now 
+  we establish completeness, (special) soundness, and zero-knowledge 
+  proof of knowledge (ZkPOK). 
+
+
+  \textbf{Coq code soundness, completeness, zkp goes here}
+
+  The proof of completeness and soundness are fairly straightforward but 
+  zero-knowledge proof of knowledge requires probabilistic reasoning. 
+  
+
+  \textbf{Coq code goes here}
+  
+
+  In our library, we have encoded Parallel composition, 
+  And composition, Or composition, EQ composition, and 
+  NEQ composition. Below we explain the OR composition
+  beause it is more involved than the rest. 
+  
+  \textbf{OR composition and Coq code}
+
 
   \subsection{Parallel Composition}
   Explain the parallel composition of sigma protocols.
@@ -341,16 +547,33 @@ Coq proof assistant.
   \subsection{Inequality Composition}
   Explain the inequality composition of sigma protocols.
 
-\section{Formal Verification of Sigma Protocols}
+  
+  \subsection{Uniform Distribution}
+  To reason about probabilistic distribution, 
+  we have encoded probability as list. 
 
+  \subsection{Fiat-Shamir Transform}
+ We have formalised the interactive version of sigma protocol. However,
+ interaction is not convenient and therefore
+ we use Fiat-Shamir transform to make it non-interactive. We use SHA256 
+ to turn the interaction to non-interaction but in order to 
+ make it a self-contained library and 
+ avoid relying on any external library at the front-end (WebAssembly)
+ we have encoded the SHA256 in the Coq theorem prover, with usual correctness 
+ properties. 
+
+ \subsection{Efficient Modular Arithmetic}
+  In order to call the functions from our formalisation, 
+  a user need to instantiate 
 
 \section{Web Assembly and Rust from the Coq Formalisation}
   Bas Spitter
 
 
-\section{Case Studies}
+\section{Case Studies/Experiment}
   We use our formalisation to model the Cryptographic protocols implemented in 
-  Helios voting systems. 
+  Helios voting systems. Compare it with state-of-the-art 
+  crypto library. 
 
 
 \section{Related Work}
@@ -360,7 +583,18 @@ Coq proof assistant.
   it does not reason about probabilities in intuitive way. 
 
 \section{Conclusion, Future Work, and Limitations}
+  In this paper, we present a certified implementation 
+  that can be readily used by voting community and 
+  we demonstrated the usefulness by encoding Helios, 
+  Belenois, and SwissPost using our primitives. 
+  Moreover, our formalisation extracts to WebAssembly and 
+  Rust without duplicate efforts. 
 
+
+\section{DECRA}
+The aim of this project is to investigate the applicability of 
+zero-knowledge succinct argument of knowledge (ZKSNARK) 
+to reduce the data breaches. 
 
 
 
