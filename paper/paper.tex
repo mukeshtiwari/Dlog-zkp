@@ -172,7 +172,7 @@
   of knowledge (ZKSNARK) in cryptocurrencies, 
   sigma protocol remains a popular choice in electronic voting to maintain privacy 
   and verifiability of elections and still used in prominent e-voting systems such as 
-  Helios, Belenois, and SwissPost \textbf{More examples}. However, 
+  Helios, Belenois, and SwissPost. However, 
   the existing implementations of sigma protocol have two 
   shortcomings: (i) the same code is written twice, once for the front-end (JavaScript)
   and once for the back-end (Python/OCaml/Java), which is time-consuming but more importantly error-prone, 
@@ -249,6 +249,64 @@ in our formalisation.
 
 
 \section{Introduction}
+
+
+Electronic voting offers convenience and efficiency in an electoral process, 
+potentially improving accessibility for disabled voters, increasing participation 
+among overseas voters, and lowering the costs associated with conducting elections.
+To ensure that electronic voting adheres to the principles of a (free and fair) 
+paper-ballot election, we need two important ingredients: privacy and 
+verifiability. We achieve privacy in a paper-ballot election by ensuring 
+that no identifying present on a ballot to the voter, and verifiability 
+is ensured by means of scrutineers. To have a similar effect in electronic 
+voting, robust encryption techniques is employed to safeguard the privacy 
+of voter choices, while audit trails (zero-knowledge proof)
+allow voters and independent observers to verify the integrity 
+of the voting process. But even the most 
+sophisticated cryptographic techniques are useless if their software
+implementation contains bugs. In fact, 
+there is a history of bugs, varying from trivial to critical, 
+in electronic voting software programs employed for democratic 
+elections, e.g., Scytl/SwissPost \cite{9152765} (used in Swiss election), 
+Voatz \cite{255334} (used in West Virginia, USA election),
+Democracy Live Online Voting System \cite{263858} 
+(used in Delaware, West Virginia, and New Jersey, USA election), 
+Moscow Internet Voting System \cite{10.1007/978-3-030-51280-4_3}
+(used in Russia election), iVote System \cite{10.1007/978-3-319-22270-7_3, 10.1145/3014812.3014837} 
+(used in New South Wales, Australia election). 
+Most of these software programs 
+establish their correctness by means of testing, which 
+does not capture all the possible scenarios. 
+Interestingly, most of these bugs were found by researchers
+who inspected the code after the source code was made public, 
+even though the companies developing these proprietary software programs had 
+claimed that they were bug free.
+
+
+Two imporant ingredients for 
+electronic voting are privacy and verifiability. While privacy 
+ensures that no ... while verifiability ensures .... 
+
+Cryptographic techniques are used to achive privacy 
+but even the most 
+sophisticated cryptographic techniques are useless if their software
+implementation contains bugs.
+
+
+However, security 
+experts often find the vulnerabilities in the deployed software that 
+could undermine the integrity of an election (\textbf{cite all the work of 
+software bug}). 
+
+Despite the concerns, many jurisdictions are already using 
+electronic voting as a means to modernising their electoral process. 
+
+But even the most 
+sophisticated cryptographic techniques are useless if their software
+implementation contains bugs, and so evoting also requires
+“software independence”
+
+
 
 \textbf{Emphasise how Sigma protocol is still used in elections to a public office}
 Despite the recent growth and popularity of zero-knowledge succinct 
@@ -447,6 +505,8 @@ Definition simulator_distribution (lf : list F)
 
 Finally we establish the completeness, special soundness, 
 and special honest-verifier zero-knowledge proof. 
+
+
 \begin{lstlisting}[language=Coq]
 Lemma schnorr_completeness : 
   forall (r c : F) (a : t G 1) (c r : t F 1),
@@ -494,10 +554,13 @@ AND composition, OR composition, EQ composition, and
 NEQ composition. Below we explain the OR composition
 beause it is more involved than the rest. 
 
+\begin{lstlisting}[language=Coq]
+
+\end{lstlisting}
 
 
 
- 
+
  
   However, we would like 
   to emphasise that we worked in a vector-space, rather 
@@ -532,25 +595,15 @@ beause it is more involved than the rest.
   \textbf{OR composition and Coq code}
 
 
-  \subsection{Parallel Composition}
-  Explain the parallel composition of sigma protocols.
-
-  \subsection{And Composition}
-  Explain the and composition of sigma protocols.
-
-  \subsection{Or Composition}
-  Explain the or composition of sigma protocols.
-
-  \subsection{Equality Composition}
-  Explain the equality composition of sigma protocols.
-
-  \subsection{Inequality Composition}
-  Explain the inequality composition of sigma protocols.
 
   
   \subsection{Uniform Distribution}
   To reason about probabilistic distribution, 
   we have encoded probability as list. 
+
+  \subsection{Efficient Modular Arithmetic}
+  In order to call the functions from our formalisation, 
+  a user need to instantiate 
 
   \subsection{Fiat-Shamir Transform}
  We have formalised the interactive version of sigma protocol. However,
@@ -562,9 +615,7 @@ beause it is more involved than the rest.
  we have encoded the SHA256 in the Coq theorem prover, with usual correctness 
  properties. 
 
- \subsection{Efficient Modular Arithmetic}
-  In order to call the functions from our formalisation, 
-  a user need to instantiate 
+ 
 
 \section{Web Assembly and Rust from the Coq Formalisation}
   Bas Spitter
@@ -589,12 +640,6 @@ beause it is more involved than the rest.
   Belenois, and SwissPost using our primitives. 
   Moreover, our formalisation extracts to WebAssembly and 
   Rust without duplicate efforts. 
-
-
-\section{DECRA}
-The aim of this project is to investigate the applicability of 
-zero-knowledge succinct argument of knowledge (ZKSNARK) 
-to reduce the data breaches. 
 
 
 

@@ -1681,7 +1681,7 @@ url = {https://doi.org/10.1145/3319535.3354247},
 doi = {10.1145/3319535.3354247},
 abstract = {The security and trustworthiness of elections is critical to democracy; alas, securing elections is notoriously hard. Powerful cryptographic techniques for verifying the integrity of electronic voting have been developed and are in increasingly common use. The claimed security guarantees of most of these techniques have been formally proved. However, implementing the cryptographic verifiers which utilize these techniques is a technical and error prone process, and often leads to critical errors appearing in the gap between the implementation and the formally verified design. We significantly reduce the gap between theory and practice by using machine checked proofs coupled with code extraction to produce cryptographic verifiers that are themselves formally verified. We demonstrate the feasibility of our technique by producing a formally verified verifier which we use to check the 2018 International Association for Cryptologic Research (IACR) directors election.},
 booktitle = {Proceedings of the 2019 ACM SIGSAC Conference on Computer and Communications Security},
-pages = {685–702},
+pages = {685--702},
 numpages = {18},
 keywords = {code extraction, interactive theorem provers, verifiable e-voting},
 location = {London, United Kingdom},
@@ -1768,4 +1768,95 @@ isbn="978-3-031-15911-4"
   address={Luxembourg City, Luxembourg},
   url={https://hal.archives-ouvertes.fr/hal-04205615}
 }
+
+
+@INPROCEEDINGS{9152765,
+  author={Haines, Thomas and Lewis, Sarah Jamie and Pereira, Olivier and Teague, Vanessa},
+  booktitle={2020 IEEE Symposium on Security and Privacy (SP)}, 
+  title={How not to prove your election outcome}, 
+  year={2020},
+  volume={},
+  number={},
+  pages={644-660},
+  keywords={Cryptography;Protocols;Privacy;Servers;Electronic voting},
+  doi={10.1109/SP40000.2020.00048}}
+
+
+@inproceedings {255334,
+author = {Michael A. Specter and James Koppel and Daniel Weitzner},
+title = {The Ballot is Busted Before the Blockchain: A Security Analysis of Voatz, the First Internet Voting Application Used in {U.S}. Federal Elections},
+booktitle = {29th USENIX Security Symposium (USENIX Security 20)},
+year = {2020},
+isbn = {978-1-939133-17-5},
+pages = {1535--1553},
+url = {https://www.usenix.org/conference/usenixsecurity20/presentation/specter},
+publisher = {USENIX Association},
+month = aug
+}
+
+@inproceedings {263858,
+author = {Michael Specter and J. Alex Halderman},
+title = {Security Analysis of the Democracy Live Online Voting System},
+booktitle = {30th USENIX Security Symposium (USENIX Security 21)},
+year = {2021},
+isbn = {978-1-939133-24-3},
+pages = {3077--3092},
+url = {https://www.usenix.org/conference/usenixsecurity21/presentation/specter-security},
+publisher = {USENIX Association},
+month = aug
+}
+
+@inproceedings{10.1007/978-3-030-51280-4_3,
+author = {Gaudry, Pierrick and Golovnev, Alexander},
+title = {Breaking the Encryption Scheme of the Moscow Internet Voting System},
+year = {2020},
+isbn = {978-3-030-51279-8},
+publisher = {Springer-Verlag},
+address = {Berlin, Heidelberg},
+url = {https://doi.org/10.1007/978-3-030-51280-4_3},
+doi = {10.1007/978-3-030-51280-4_3},
+abstract = {In September 2019, voters for the election at the Parliament of the city of Moscow were allowed to use an Internet voting system. The source code of it had been made available for public testing. In this paper we show two successful attacks on the encryption scheme implemented in the voting system. Both attacks were sent to the developers of the system, and both issues had been fixed after that.The encryption used in this system is a variant of ElGamal over finite fields. In the first attack we show that the used key sizes are too small. We explain how to retrieve the private keys from the public keys in a matter of minutes with easily available resources.When this issue had been fixed and the new system had become available for testing, we discovered that the new implementation was not semantically secure. We demonstrate how this newly found security vulnerability can be used for counting the number of votes cast for a candidate.},
+booktitle = {Financial Cryptography and Data Security: 24th International Conference, FC 2020 , Kota Kinabalu, Malaysia, February 10--14, 2020 Revised Selected Papers},
+pages = {32--49},
+numpages = {18},
+location = {Kota Kinabalu, Malaysia}
+}
+
+@InProceedings{10.1007/978-3-319-22270-7_3,
+author="Halderman, J. Alex
+and Teague, Vanessa",
+editor="Haenni, Rolf
+and Koenig, Reto E.
+and Wikstr{\"o}m, Douglas",
+title="The New South Wales iVote System: Security Failures and Verification Flaws in a Live Online Election",
+booktitle="E-Voting and Identity",
+year="2015",
+publisher="Springer International Publishing",
+address="Cham",
+pages="35--53",
+abstract="In the world's largest-ever deployment of online voting, the iVote Internet voting system was trusted for the return of 280,000 ballots in the 2015 state election in New South Wales, Australia. During the election, we performed an independent security analysis of parts of the live iVote system and uncovered severe vulnerabilities that could be leveraged to manipulate votes, violate ballot privacy, and subvert the verification mechanism. These vulnerabilities do not seem to have been detected by the election authorities before we disclosed them, despite a pre-election security review and despite the system having run in a live state election for five days. One vulnerability, the result of including analytics software from an insecure external server, exposed some votes to complete compromise of privacy and integrity. At least one parliamentary seat was decided by a margin much smaller than the number of votes taken while the system was vulnerable. We also found protocol flaws, including vote verification that was itself susceptible to manipulation. This incident underscores the difficulty of conducting secure elections online and carries lessons for voters, election officials, and the e-voting research community.",
+isbn="978-3-319-22270-7"
+}
+
+
+
+@inproceedings{10.1145/3014812.3014837,
+author = "Conway, Andrew and Blom, Michelle and Naish, Lee and Teague, Vanessa",
+title = "{An Analysis of New South Wales Electronic Vote Counting}",
+year = "2017",
+isbn = "9781450347686",
+publisher = "Association for Computing Machinery",
+address = "New York, NY, USA",
+url = "https://doi.org/10.1145/3014812.3014837",
+doi = "10.1145/3014812.3014837",
+abstract = "We re-examine the 2012 local government elections in New South Wales, Australia. The count was conducted electronically using a randomised form of the Single Transferable Vote (STV). It was already well known that randomness does make a difference to outcomes in some seats. We describe how the process could be amended to include a demonstration that the randomness was chosen fairly.Second, and more significantly, we found an error in the official counting software, which caused a mistake in the count in the council of Griffith, where candidate Rina Mercuri narrowly missed out on a seat. We believe the software error incorrectly decreased Mercuri's winning probability to about 10\%---according to our count she should have won with 91\% probability.The NSW Electoral Commission (NSWEC) corrected their code when we pointed out the error, and made their own announcement.We have since investigated the 2016 local government election (held after correcting the error above) and found two new errors. We notified the NSWEC about these errors a few days after they posted the results.",
+booktitle = "Proceedings of the Australasian Computer Science Week Multiconference",
+articleno = "24",
+numpages = "5",
+location = "Geelong, Australia",
+series = "ACSW '17"
+}
+
+  
+
 
