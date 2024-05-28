@@ -56,10 +56,11 @@
   shortcomings: (i) the same code is written twice, once for the front-end (JavaScript)
   and once for the back-end (Python/OCaml/Java), which is time-consuming but more importantly error-prone, 
   and (ii) none of these implementations offer any security guarantees. 
+  
   In this paper, we present a certified implementation of sigma protocol in the Coq proof assistant and
   prove our implementation is (special) sound, complete, and 
-  (honest verifier) zero-knowledge. Finally, 
-  we compile our Coq formalisation to WebAssembly and Rust, and 
+  (honest verifier) zero-knowledge. Moreover, 
+  we compile our Coq formalisation to WebAssembly and Rust; 
   thereby solve the problem of writing the same code twice. 
   We demonstrate the applicability of our
   formalisation by encoding the sigma protcol implemented in 
@@ -119,20 +120,21 @@ in our formalisation.
 
 
 \section{Introduction}
-Electronic voting offers convenience and efficiency in electoral processes, 
-potentially improving accessibility for disabled voters, increasing participation 
-among overseas voters, and lowering the costs associated with conducting elections.
-Privacy and verifiability are two crucial elements that a voting system 
-must ensure to adhere with the principles of a free-and-fair election.  
-In a paper-ballot election, we achieve privacy by ensuring that 
-no identifying information is present on a ballot that links the ballot to a particular voter
-and verifiability by means of scrutineers closely observing various electoral 
-processes, including counting of ballots. In order to have a similar effect in electronic 
-voting, encryption is employed to safeguard the privacy 
-of voter choices, while public verifiable evidences (zero-knowledge proof)
-allow voters and independent observers to verify the integrity 
-of the voting process. However, a cryptographic techniques, no matter how 
-advance,  are useless if their software implementation contains bugs. 
+Electronic voting offers convenience and efficiency in electoral processes, potentially improving 
+accessibility for disabled voters, increasing participation among overseas voters, and lowering 
+the costs associated with conducting elections. Moreover,
+they can streamline the voting process, reduce administrative burdens, and enable 
+faster tallying of results. However, the transition to electronic voting also brings significant 
+challenges, particularly in ensuring the privacy and verifiability of the voting process. Therefore, 
+privacy and verifiability are two crucial elements that a voting system must ensure to adhere with 
+the principles of a free-and-fair election. In a paper-ballot election, privacy is maintained by 
+ensuring that no identifying information is present on a ballot that links it to a particular voter, 
+and verifiability is achieved through scrutineers closely observing various electoral processes, 
+including the counting of ballots. In order to have a similar effect in electronic voting, encryption 
+is employed to safeguard the privacy of voter choices, while publicly verifiable evidence 
+(such as zero-knowledge proofs) allows voters and independent observers to verify the integrity of 
+the voting process. However, no matter how advanced the cryptographic techniques, they are useless 
+if their software implementation contains bugs.
 In fact, due to a major cryptographic flaw that
 could let someone change votes cast using Switzerland's online 
 voting software without being detected  \cite{9152765}, the Swiss Federal Chancellery suspended electronic voting in 
@@ -150,22 +152,54 @@ These unfortunate situations can largely be attributed to two factors:
 (i) closed source code (proprietary artifacts) because most of these bugs were 
 discovered by researchers who inspected the code after they were made public, and 
 (ii) software testing which is inadequate to rule out all the bugs 
-from a software. To eliminate potential bugs from software, formal verification has 
-emerged as a promising solution. In recent years, it has been increasingly 
+from a software. Therefore, to avoid the situations like this, 
+an electronic voting system must adhere to \textit{software independence}\cite{rivest2008notion}:
+\begin{quote}
+  A voting system is software-independent if an
+  (undetected) change or error in its software cannot
+  cause an undetectable change or error in an
+  election outcome. 
+\end{quote}
+\noindent
+Therefore, many electronic voting systems follow the principals 
+of \textit{end-to-end verifiability}. End-to-end verifiability is 
+defined as: 
+\begin{itemize}
+  \item Cast-as-intended: voters get proof that the electronic ballot accurately reflects their choices.
+  \item Collected-as-cast: the election authority provides proof that the electronic ballots are received without tampering.
+  \item Counted-as-collected: the election authority provides proof that the results are based on correctly counting all received ballots.
+\end{itemize} 
+
+
+\noindent 
+Finally, voters or scrutineers inspect these proofs and accept or reject the election results based on 
+the verification of these proofs. In practice, this means that during the execution of an election, 
+electronic voting software generates data, and voters and scrutineers verify the conformity of 
+this data using independently written computer programs. The rationale is that if there is 
+any discrepancy in the electronic voting system, at least one scrutineer or voter would detect it.
+It is important to note that end-to-end verifiability is a valuable feature because it 
+allows for the verification of the election results by checking the proofs of correctness 
+only after the election has concluded. This ensures that the election process was conducted 
+properly and that the results are accurate, but it is applied after the voting has taken place.
+The question arises: can we use it before an election?
+The answer is yes; we use a formal language to express end-to-end verifiability, or parts of 
+it and develop various components of electronic voting 
+software in this formal language. This process is called as formal verification and it ensures 
+that the software always produces valid proofs, 
+which are consistently accepted by voters and scrutineers. In other words, formal verification
+can be employed to develop reliable electronic voting software.
+In fact, formal verification has emerged as a promising solution 
+to eliminate potential bugs from software, and in recent years it has been increasingly 
 adopted in real-world software applications \cite{10.1145/1111037.1111042}, 
 including cryptography \cite{8835346,10.1145/3133956.3134043,190894,10.1145/2701415,
 10.1145/2660267.2660370,10.1145/3319535.3363211}.
 
-
-
-
-
-
-
-\textbf{Our contributions:}
 In this paper, we present a certified implementation of the Sigma protocol --an efficient 
 type of zero-knowledge proof-- and its Parallel, And, Eq, Or, and Neq compositions in 
-the Coq proof assistant. We have formalised and analysed the interactive version of 
+the formal language of Coq proof assistant. Given that the formal language of Coq 
+is constructive, we get an implementation that can be executed on a computer. 
+
+We have formalised and analysed the interactive version of 
 the Sigma protocol, but in practice it is not convenient due to the required interaction. 
 Therefore, all Sigma protocol implementations use the Fiat-Shamir 
 transformation \cite{10.5555/36664.36676} to make them non-interactive. This involves 
@@ -331,167 +365,87 @@ vector space. For example, in our formalisation we have developed
 efficient algorithm for Schnorr group but our formalisation can 
 later be also instantiated with elliptic curve group. However, 
 one of the major benefit of this abstraction is easiness of proofs 
-which can be easily automated. 
-
-
-We model the Schnorr protocol in Coq as follows: 
+which can be easily automated. Therefore, we model the Schnorr 
+protoco, the simulator, and the verification equation in Coq as follows: 
  
 \begin{lstlisting}[language=Coq]
-  Definition schnorr_protocol (x : F) (g : G) (u c : F) : 
-    @sigma_proto 1 1 1 :=  ([g^u]; [c]; [u + c * x]).
+(*Real transcript (involves secret x)*)
+Definition schnorr_protocol (x : F) (g : G) (u c : F) : 
+ sigma_proto :=  ([g^u]; [c]; [u + c * x]).
+
+(*Fake transcript (without the witness x)*)
+Definition schnorr_simulator (g h : G) (u c : F) :
+  sigma_proto := ([gop (g^u) (h^(opp c))]; [c]; [u]).
+
+(*This function checks if a transcript 
+(a; c; r) is accepting or not. It checks
+if g^r = a * h^c*)
+Definition accepting_conversation 
+  (g h : G) (v : sigma_proto) : bool :=
+  match v with
+  | (a; c; r) =>  
+    match Gdec (g^r) (gop a (h^c)) with 
+    | left _ => true
+    | right _ => false 
+    end
+  end.
 \end{lstlisting}
   
+\noindent
  where $F$ is the underlying field, $G$ is the underlying group,
  $+ : F \rightarrow F \rightarrow F$ is field addition,
  $* : F \rightarrow F \rightarrow F$ is field multiplication, and
- $: G \rightarrow F \rightarrow G$ scalor multiplication. 
- We emphasise that we work in abstract setting of \textbf{vector space} to 
- make the implementation as general as possible. Recall that a vector space consists of a set of 
+ $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ scalar multiplication of vector space.  
+ Recall that a vector space consists of a set of 
  vectors, denoted by \(V\), a field \(F\) (elements of F are called scalars), and 
  two operations: vector addition and scalar multiplication.
-
 \begin{itemize}
     \item \textit{Vector addition}: for any vectors \(\mathbf{v}, \mathbf{w} \in V\), their sum, denoted by \(\mathbf{v} + \mathbf{w}\), is also in \(V\).
     \item \textit{Scalar multiplication}: for any vector \(\mathbf{v} \in V\) and any scalar \(c \in F\), their product, denoted by \(c\mathbf{v}\), is also in \(V\).
 \end{itemize}
 
 These operations must satisfy the following properties for all vectors \(\mathbf{u}, \mathbf{v}, \mathbf{w} \in V\) and all scalars \(c, d \in F\):
-(i) \textbf{Closure under addition:} \(\mathbf{u} + \mathbf{v} \in V\), (ii) \textbf{Commutativity of addition:} \(\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}\), 
-(iii)  \textbf{Associativity of addition:} \((\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})\), 
-(iv) \textbf{Existence of zero vector:} There exists a vector \(\mathbf{0} \in V\) such that \(\mathbf{v} + \mathbf{0} = \mathbf{v}\) for all \(\mathbf{v} \in V\), 
-(v) \textbf{Existence of additive inverse:} For each vector \(\mathbf{v} \in V\), there exists a vector \(-\mathbf{v} \in V\) such that \(\mathbf{v} + (-\mathbf{v}) = \mathbf{0}\),
-(vi) \textbf{Closure under scalar multiplication:} \(c\mathbf{v} \in V\), 
-(vii) \textbf{Distributive properties:} \(c(\mathbf{u} + \mathbf{v}) = c\mathbf{u} + c\mathbf{v}\) and \((c + d)\mathbf{v} = c\mathbf{v} + d\mathbf{v}\), 
-and (viii) \textbf{Compatibility with field multiplication:} \(c(d\mathbf{v}) = (cd)\mathbf{v}\) and \(1\mathbf{v} = \mathbf{v}\), where \(1\) denotes the multiplicative identity in \(F\).
-In our setting we instantiate the set of vectors with group $G$ and field with $F$. Moreover, our notation for scalar multiplication 
-is because it represents, when instantiated concretely, exponentiation function. Finally, 
-we define two more functions 
+(i) \textbf{closure under addition:} \(\mathbf{u} + \mathbf{v} \in V\), (ii) \textbf{commutativity of addition:} \(\mathbf{u} + \mathbf{v} = \mathbf{v} + \mathbf{u}\), 
+(iii)  \textbf{associativity of addition:} \((\mathbf{u} + \mathbf{v}) + \mathbf{w} = \mathbf{u} + (\mathbf{v} + \mathbf{w})\), 
+(iv) \textbf{existence of zero vector:} there exists a vector \(\mathbf{0} \in V\) such that \(\mathbf{v} + \mathbf{0} = \mathbf{v}\) for all \(\mathbf{v} \in V\), 
+(v) \textbf{existence of additive inverse:} for each vector \(\mathbf{v} \in V\), there exists a vector \(-\mathbf{v} \in V\) such that \(\mathbf{v} + (-\mathbf{v}) = \mathbf{0}\),
+(vi) \textbf{closure under scalar multiplication:} \(c\mathbf{v} \in V\), 
+(vii) \textbf{cistributive properties:} \(c(\mathbf{u} + \mathbf{v}) = c\mathbf{u} + c\mathbf{v}\) and \((c + d)\mathbf{v} = c\mathbf{v} + d\mathbf{v}\), 
+and (viii) \textbf{compatibility with field multiplication:} \(c(d\mathbf{v}) = (cd)\mathbf{v}\) and \(1\mathbf{v} = \mathbf{v}\), where \(1\) denotes the multiplicative identity in \(F\).
+In our setting we instantiate the set of vectors with $G$ and field with $F$. 
+Moreover, our notation for scalar multiplication is $\mbox{\textasciicircum}$ because it represents, 
+when instantiated concretely, exponentiation function but it is purely for notational convenience. 
 
 
-
+We prove the completeness and special soundness property of the Schnorr protocol, 
+as shown in the figure .... We however cannot prove the special honest-verifier 
+zero-knowledge property yet because it requires reasoning about probability that 
+we discuss in the next section. 
+  
 \begin{lstlisting}[language=Coq]
-  (* Fake transcript (without the witness x) *)
-  Definition schnorr_simulator (g h : G) (u c : F) : 
-  @sigma_proto 1 1 1 := ([gop (g^u) (h^(opp c))]; [c]; [u]).
+Lemma schnorr_completeness : 
+forall (r c : F) (a : t G 1) (c r : t F 1),
+(a; c; r) = (schnorr_protocol x g r c) ->
+accepting_conversation g h (a; c; r) = true.
+Proof. (* proof terms omitted *) Qed.
   
-  (* 
-    This function checks if a conversation (a; c; r) 
-    is accepting or not. It checks if g^r = a * h^c
-  *)
-  Definition accepting_conversation 
-    (g h : G) (v : @sigma_proto 1 1 1) : bool :=
-    match v with
-    | (a; c; r) =>  
-      match Gdec (g^(hd r)) (gop (hd a) (h^(hd c))) with 
-      | left _ => true
-      | right _ => false 
-      end
-    end.
+Lemma simulator_completeness : 
+forall (r c : F) (a : t G 1) (c r : t F 1),
+(a; c; r) = (schnorr_simulator g h r c) ->
+accepting_conversation g h (a; c; r) = true.
+Proof using -(x R). (* terms omitted *) Qed. 
   
+Lemma special_soundness: 
+forall (a : G) (ca ra cb rb : F), ca <> cb ->
+accepting_conversation g h ([a]; [ca]; [ra]) = true ->  
+accepting_conversation g h ([a]; [cb]; [rb]) = true ->
+exists y : F, g^y = h /\ y = ((ra - rb) * inv (ca - cb)).
+Proof using -(x R). (* proof terms omitted *) Qed.
   
-  (* Distribution that involves the secret x *)
-  Definition schnorr_distribution  (lf : list F) 
-    (Hlfn : lf <> List.nil) (x : F) (g : G) (c : F) : 
-    dist sigma_proto :=
-    (* draw u from a random distribution *)
-    u <- (uniform_with_replacement lf Hlfn) ;;
-    Ret (schnorr_protocol x g u c).
-  
-  
-  (* without secret x *)
-  Definition simulator_distribution (lf : list F) 
-    (Hlfn : lf <> List.nil) (g h : G) (c : F) : 
-    dist sigma_proto :=
-    (* draw u from a random distribution *)
-    u <- (uniform_with_replacement lf Hlfn) ;;
-    Ret (schnorr_simulator g h u c).
-  \end{lstlisting}
-  
-  Finally we establish the completeness, special soundness, 
-  and special honest-verifier zero-knowledge proof. 
-  
-  
-  \begin{lstlisting}[language=Coq]
-  Lemma schnorr_completeness : 
-    forall (r c : F) (a : t G 1) (c r : t F 1),
-    (a; c; r) = (schnorr_protocol x g r c) ->
-    accepting_conversation g h (a; c; r) = true.
-  Proof. (* proof terms omitted *) Qed.
-  
-  Lemma simulator_completeness : 
-      forall (r c : F) (a : t G 1) (c r : t F 1),
-      (a; c; r) = (schnorr_simulator g h r c) ->
-      accepting_conversation g h (a; c; r) = true.
-    Proof using -(x R). (* proof terms omitted *) Qed. 
-  
-  Lemma special_soundness: 
-    forall (a : G) (ca ra cb rb : F), ca <> cb ->
-    accepting_conversation g h ([a]; [ca]; [ra]) = true ->  
-    accepting_conversation g h ([a]; [cb]; [rb]) = true ->
-    (* then we can find a witness y such that g^y = h *)
-    exists y : F, g^y = h /\ y = ((ra - rb) * inv (ca - cb)).
-  Proof using -(x R). (* proof terms omitted *) Qed.
-  
-  
-  (* it's identical, i.e., information theoretic zero-knowledge proof *)
-  (* Under the hood, it is modelled as a list and looks like:
-      [((a; c; r), prob); ((a; c; r), prob) ......].
-    We map accepting_conversation to crunch the first pair, 
-    (a, c, r), and produce boolean a value (true), 
-    and then we show that these two distribution are 
-    identical 
-  *)
-  Lemma special_honest_verifier_zkp : 
-    forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
-    List.map (fun '(a, p) => (accepting_conversation g h a, p))
-      (@schnorr_distribution lf Hlfn x g c) = 
-    List.map (fun '(a, p) => (accepting_conversation g h a, p))
-      (@simulator_distribution lf Hlfn g h c).
-  Proof. (* proof terms omitted *) Qed. 
-  
-  
-  \end{lstlisting}
-  
-In our library, we have encoded Parallel composition, 
-AND composition, OR composition, EQ composition, and 
-NEQ composition. Below we explain the OR composition
-beause it is more involved than the rest. 
-
-
-
-
+\end{lstlisting}
  
-  However, we would like 
-  to emphasise that we worked in a vector-space, rather 
-  than concrete numbers. Working in (abstract) vector-space makes our system 
-  amenable to be instantiated by any group and field 
-  (Elliptic curve vs Concrete Nubmers). \textbf{Currently, 
-  our library comes with concrete nubmers but it can easily be 
-  instantiated with Elliptic curve cryptography}
-
-  \textbf{Coq code of Schnorr goes here}
-  
-
-  The reader can see that we have used vector space. Now 
-  we establish completeness, (special) soundness, and zero-knowledge 
-  proof of knowledge (ZkPOK). 
 
 
-  \textbf{Coq code soundness, completeness, zkp goes here}
-
-  The proof of completeness and soundness are fairly straightforward but 
-  zero-knowledge proof of knowledge requires probabilistic reasoning. 
-  
-
-  \textbf{Coq code goes here}
-  
-
-  In our library, we have encoded Parallel composition, 
-  And composition, Or composition, EQ composition, and 
-  NEQ composition. Below we explain the OR composition
-  beause it is more involved than the rest. 
-  
-  \textbf{OR composition and Coq code}
 
 
 
@@ -503,92 +457,303 @@ beause it is more involved than the rest.
   second element of tuple basically is probability of first element 
   in the tuple. Moreover, we define equality on distribution by 
   stating that two distributions are equal if they are permutation 
-  of each other. 
+  of each other. Finally, we define a function , $uniform\_with\_replacement$, 
+  to generate uniform distributions. 
 
   \begin{lstlisting}[language=Coq]
     
-  (* Probability Distribution on a type A *)
-  Definition dist (A : Type) : Type := list (A * prob).
+(* Probability Distribution on a type A *)
+Definition dist (A : Type) : Type := list (A * prob).
+  
+(* Uniform distribution u*)
+Definition uniform_with_replacement {A : Type} : 
+  forall (l : list A), l <> [] -> dist A.
+Proof.
+  intros ? H.
+  remember (Pos.of_nat (List.length l)) as len.
+  exact (List.map 
+    (fun x => (x, mk_prob 1 len)) l).
+Defined.
+\end{lstlisting}
 
-  Definition dist_equiv {A : Type} : relation (dist A) := 
-  fun xs ys => Permutation xs ys.
+We prove that the dist is a monad (\textbf{Cite some work}) by 
+giving it a suitable definitions of ret and bind. Making 
+it an instance of monad makes our life easier because 
+we can compose a distribution $d$ $n$ times to 
+returns a distribution on a vector of $n$ elements. 
 
-  (* Probability Monad *)
-  Definition Ret {A : Type} (x : A) : dist A := [(x, one)].
-
-  Fixpoint Bind {A B : Type} (xs : dist A)  
-    (f : A -> dist B) : dist B := 
-    match xs with 
-    | [] => [] 
-    | (ax, px) :: tx => 
-      List.append (List.map (fun '(ut, pt) => 
-      (ut, mul_prob px pt)) (f ax)) (Bind tx f)
-    end.
-    
-    (* Uniform distribution u*)
-    Definition uniform_with_replacement {A : Type} : 
-      forall (l : list A), l <> [] -> dist A.
-    Proof.
-      intros ? H.
-      remember (Pos.of_nat (List.length l)) as len.
-      exact (List.map 
-        (fun x => (x, mk_prob 1 len)) l).
-    Defined.
 
     
-    Fixpoint repeat_dist_ntimes_vector {A : Type} 
-      (d : dist A) 
-      (n : nat) : dist (Vector.t A n) := 
-    match n with 
-    | 0 => Ret (@Vector.nil A)
-    | S n' => 
-      Bind d (fun u => 
-        Bind (repeat_dist_ntimes_vector d n')
-        (fun v => Ret (Vector.cons _ u _ v)))
-    end.
+\begin{lstlisting}[language=Coq]
+(* Probability Monad *)
+Definition Ret {A : Type} (x : A) : 
+  dist A := [(x, one)].
 
-    Lemma uniform_probability_multidraw_prob {A : Type} :
-      forall n lf (a : Vector.t A n) b (Hlf : lf <> []), 
-      In (a, b) (repeat_dist_ntimes_vector 
-        (uniform_with_replacement lf Hlf) n) ->
-      b = mk_prob 1 (Pos.of_nat 
-      (Nat.pow (List.length lf) n)).
-  \end{lstlisting}
+Fixpoint Bind {A B : Type} (xs : dist A)  
+  (f : A -> dist B) : dist B := 
+  match xs with 
+  | [] => [] 
+  | (ax, px) :: tx => 
+    List.append (List.map (fun '(ut, pt) => 
+    (ut, mul_prob px pt)) (f ax)) (Bind tx f)
+  end.
+
+
+\end{lstlisting}
 
   
-  We use the $uniform\_probability\_multidraw\_prop$ theorem 
-  for special honest-verifier zero-knowledge proof. 
+Now we have all the ingredients to prove the zero-knowledge 
+proof of the Schnorr protocol. We define the 
+Schnorr distribution $schnorr\_distribution$
+that involves the secret $x$ and 
+the simulator distribution $simulator\_distribution$
+that does not involve the secret $x$. 
+In the Schnorr distibution we draw 
+a random field element $u$ from a uniform 
+distribution $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$
+and use this $u$ to construct a distribution; 
+similarly in the simulator distribution 
+we draw a random field element $u$ from 
+$uniform\_with\_replacement \text{ }lf \text{ } Hlfn$
+and use it construct a distribution. Using these 
+two definitions, we prove that these two 
+distributions are identical 
+$special\_honest\_verifier\_zkp$. However, 
+contrary to informal reasoning, these two 
+distributions are not syntactically equal but 
+semantically equal. For both distributions, 
+the first component is a transcript $(a, c, r)$ and 
+the second component is a rational number that represents 
+its probability. The triples in both distrubtions 
+are an accepting transcript (semantic) but they 
+are not identical and differ syntactically; 
+therefore we first apply the 
+$accepting\_conversation$ to the first pair of 
+both distributions which turn them into 
+a boolean value (true). After this  
+application both distributions are identical 
+that we prove. 
 
-  \begin{lstlisting}[language=Coq]
 
-(* schnorr distribution *)
-    Definition generalised_or_schnorr_distribution  
-      {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-      (x : F) (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
-      dist (@sigma_proto (m + (1 + n)) 
-        (1 + (m + (1 + n))) (m + (1 + n))) :=
-      (* draw ((m + (1 + n)) + (m + n)) random elements *)
-      usrs <- repeat_dist_ntimes_vector 
-        (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
-      Ret (construct_or_conversations_schnorr x gs hs usrs c).
 
-    (* simulator distribution *)
-    Definition generalised_or_simulator_distribution  
-      {n m : nat} (lf : list F) (Hlfn : lf <> List.nil) 
-      (gs hs : Vector.t G (m + (1 + n))) (c : F) : 
-      dist (@sigma_proto (m + (1 + n)) 
-        (1 + (m + (1 + n))) (m + (1 + n))) :=
-      (* draw ((m + (1 + n)) + (m + n)) random elements *)
-      usrs <- repeat_dist_ntimes_vector 
-        (uniform_with_replacement lf Hlfn) ((m + (1 + n)) + (m + n)) ;;
-      Ret (construct_or_conversations_simulator gs hs usrs c).
-    
+
+\begin{lstlisting}[language=Coq]
+(* Distribution that involves the secret x *)
+Definition schnorr_distribution  (lf : list F) 
+  (Hlfn : lf <> List.nil) (x : F) (g : G) (c : F) : 
+  dist sigma_proto :=
+  (* draw u from a random distribution *)
+  u <- (uniform_with_replacement lf Hlfn) ;;
+  Ret (schnorr_protocol x g u c).
+
+  
+(* without secret x *)
+Definition simulator_distribution (lf : list F) 
+  (Hlfn : lf <> List.nil) (g h : G) (c : F) : 
+  dist sigma_proto :=
+  (* draw u from a random distribution *)
+  u <- (uniform_with_replacement lf Hlfn) ;;
+  Ret (schnorr_simulator g h u c).
+  
+Lemma special_honest_verifier_zkp : 
+  forall (lf : list F) (Hlfn : lf <> List.nil) (c : F), 
+  List.map (fun '(a, p) => 
+    (accepting_conversation g h a, p))
+    (@schnorr_distribution lf Hlfn x g c) = 
+  List.map (fun '(a, p) => 
+    (accepting_conversation g h a, p))
+    (@simulator_distribution lf Hlfn g h c).
+Proof. (* proof terms omitted *) Qed. 
   \end{lstlisting}
 
 
-  \subsection{Efficient Modular Arithmetic}
-  In order to call the functions from our formalisation, 
-  a user need to instantiate 
+We shown in the function $repeat\_dist\_ntimes\_vector$.
+  The reader can see from the proof 
+  $uniform\_probability\_multidraw\_prob$
+  that if a distribution $lf$ is repeated 
+  $n$ times then the probability of this distribution 
+  is $1/|lf|^n$. We use $repeat\_dist\_ntimes\_vector$ 
+  when we combine multiple sigma protocols and 
+  want to to prove zero-knowledge property. For example, 
+  in Parallel composition when we combine $n$ sigma protocol 
+  we need to need to draw a vector $n$ random numbers to 
+  prove the zero-knowledge property. 
+  
+\begin{lstlisting}[language=Coq]
+Fixpoint repeat_dist_ntimes_vector {A : Type} 
+(d : dist A) (n : nat) : dist (Vector.t A n) := 
+match n with 
+| 0 => Ret (@Vector.nil A)
+| S n' => 
+  Bind d (fun u => 
+    Bind (repeat_dist_ntimes_vector d n')
+    (fun v => Ret (Vector.cons _ u _ v)))
+end.
+
+Lemma uniform_probability_multidraw_prob 
+{A : Type} : forall n (lf : dist A) 
+(a : Vector.t A n) b (Hlf : lf <> []), 
+In (a, b) (repeat_dist_ntimes_vector 
+  (uniform_with_replacement lf Hlf) n) ->
+b = mk_prob 1 (Pos.of_nat 
+(Nat.pow (List.length lf) n)).
+
+
+Definition parallel_schnorr_distribution  
+  {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
+  (x : F) (g : G) (cs : Vector.t F n) : 
+  dist (@sigma_proto n n n) :=
+  (* draw n random elements *)
+  us <- repeat_dist_ntimes_vector 
+    (uniform_with_replacement lf Hlfn) n ;;
+  Ret (construct_parallel_schnorr x g us cs).
+\end{lstlisting}
+
+
+\subsection{Efficient Modular Arithmetic}
+ As we stated that our formalisation is  
+ abstract and can be instantiated with 
+ a suitable group and field. In order 
+ to run our code, we have developed 
+ a formally verified Schnorr group (\textbf{cite here}). 
+\begin{lstlisting}[language=Coq]
+Section SchnorrGroup. 
+  Context 
+    {k p q : Z}
+    {Hk : p = k * q + 1}
+    {Hp : prime p}
+    {Hq : prime q}.
+
+  Record Schnorr_group := 
+    mk_schnorr 
+    {v : Z; Ha : 0 < v < p; 
+    Hb : (v ^ q mod p = 1)}.
+
+  (* Neutral Element *)
+  Definition one : Schnorr_group.
+    refine 
+      (mk_schnorr 1 one_mod_p 
+      one_pow_mod_q).
+  Defined. 
+
+  Definition mul_schnorr_group 
+      (u v : Schnorr_group) : Schnorr_group.
+  refine(
+    match u, v with 
+    | mk_schnorr au Hua Hub, 
+      mk_schnorr av Hva Hvb => 
+      mk_schnorr (Z.modulo (au * av) p) 
+      (@multiplication_bound p Hp au 
+      av Hua Hva)  _
+    end).
+  Defined. 
+
+  (* u ^ (p - 2) is inverse of u *)
+  Definition inv_schnorr_group 
+  (u : Schnorr_group) : Schnorr_group.
+  refine(
+    match u with 
+    | mk_schnorr au Hu Hv => mk_schnorr
+        (Z.of_N (Npow_mod (Z.to_N au) 
+        (Z.to_N (p - 2)) (Z.to_N p)))
+        (@inv_schnorr_group_first au Hu)
+        (inv_schnorr_group_second au Hu Hv)
+    end).
+  Defined.
+
+
+  (* Schnorr is a commutative Group *)
+  Global Instance schnorr_comm : 
+    @commutative_group 
+    Schnorr_group (@eq Schnorr_group) 
+    mul_schnorr_group one inv_schnorr_group.
+  Proof. ... Qed. 
+  
+
+
+
+\end{lstlisting}
+
+Similarly, we have encoded a prime field. 
+
+\begin{lstlisting}[language=Coq]
+
+(* Prime Field *)
+Section ZpField.
+
+  Context 
+    {p : Z}
+    {Hp : prime p}.
+
+    
+  Record Zp := 
+    mk_zp {v : Z; Hv : Z.modulo v p = v}.
+
+
+  Definition zp_inv (x : Zp) : Zp.
+    refine (match x with
+      | mk_zp ax Hu => mk_zp 
+        (Z.modulo 
+          (Z.of_N (Npow_mod (Z.to_N ax) 
+          (Z.to_N (p - 2)) (Z.to_N p)))
+          p) _ 
+    end).
+    rewrite Zmod_mod.
+    exact eq_refl.
+  Defined.
+
+
+  Definition zp_div (x y : Zp) : Zp :=
+    zp_mul x (zp_inv y).
+
+  
+\end{lstlisting}
+
+Finally, we prove that they form a vector space. 
+We have encoded the scalar mulitplication of 
+vector space as a pow function that takes an element from 
+a Schnorr group and an element from 
+a given field and returns an element in the 
+Schnorr group.  The reader can see that our encoding eliminates all 
+possibilities of mixing group and field, both represented 
+as an integer modulo some large 
+prime \cite{10.1007/978-3-662-63958-0_24}.
+
+\begin{lstlisting}[language=Coq]
+
+  Definition pow (g : @Schnorr.Schnorr_group p q) 
+  (y : @Zpfield.Zp q) : @Schnorr.Schnorr_group p q.
+  refine 
+    match g, y with 
+    | mk_schnorr gt Hgta Hgtb, Zpfield.mk_zp yt Hyt => 
+      mk_schnorr  
+      (Z.of_N (Npow_mod (Z.to_N gt) (Z.to_N yt) (Z.to_N p))) 
+      (pow_subproof_first gt yt Hgta Hyt)
+      (pow_subproof_second _ _  Hyt Hgta Hgtb)
+    end.
+  Defined.
+
+  Global Instance pow_vspace : 
+  @vector_space 
+    (* Field *)
+    (@Zpfield.Zp q) (@eq (@Zpfield.Zp q))
+    (@Zpfield.zero q Hq) (@Zpfield.one q Hq)
+    (@Zpfield.zp_add q) (@Zpfield.zp_mul q)
+    (@Zpfield.zp_sub q) (@Zpfield.zp_div q)
+    (@Zpfield.zp_opp q Hq) (@Zpfield.zp_inv q)
+    (* Vector *)
+    (Schnorr_group p q) (@eq (Schnorr_group p q))
+    (@one p q Hp Hq) 
+    (@inv_schnorr_group k p q Hk Hp Hq)
+    (@Schnorr.mul_schnorr_group p q Hp Hq)
+    pow.
+  
+\end{lstlisting}
+  
+  
+ 
+
+
 
   \subsection{Fiat-Shamir Transform}
  We have formalised the interactive version of sigma protocol. However,
@@ -600,7 +765,9 @@ beause it is more involved than the rest.
  we have encoded the SHA256 in the Coq theorem prover, with usual correctness 
  properties. 
 
- 
+
+\section{MetaCoq}
+  Bas Spitters 
 
 \section{Web Assembly and Rust from the Coq Formalisation}
   Bas Spitter
