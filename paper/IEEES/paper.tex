@@ -179,13 +179,13 @@ this data using independently written computer programs. The rationale is that i
 any discrepancy in the electronic voting system, at least one scrutineer or voter would detect it.
 It is important to note that end-to-end verifiability is a valuable feature because it 
 allows for the verification of the election results by checking the proofs of correctness 
-only after the election has concluded. This ensures that the election process was conducted 
-properly and that the results are accurate, but it is applied after the voting has taken place.
-The question arises: can we use it before an election?
+once the election has concluded. This ensures that the election process was conducted 
+properly and that the results are accurate, but it is applied during or after the voting has taken place.
+However, can we use it before an election?
 The answer is yes; we use a formal language to express end-to-end verifiability, or parts of 
-it and develop various components of electronic voting 
-software in this formal language. This process is called as formal verification and it ensures 
-that the software always produces valid proofs, 
+it, and develop various components of electronic voting 
+software in this formal language. This process is called as  formal verification, or correct-by-construction,
+and it ensures that the software always produces valid proofs, 
 which are consistently accepted by voters and scrutineers. In other words, formal verification
 can be employed to develop reliable electronic voting software.
 In fact, formal verification has emerged as a promising solution 
@@ -194,11 +194,9 @@ adopted in real-world software applications \cite{10.1145/1111037.1111042},
 including cryptography \cite{8835346,10.1145/3133956.3134043,190894,10.1145/2701415,
 10.1145/2660267.2660370,10.1145/3319535.3363211}.
 
-In this paper, we present a certified implementation of the Sigma protocol --an efficient 
+In this paper, we present a certified implementation of sigma protocol --an efficient 
 type of zero-knowledge proof-- and its Parallel, And, Eq, Or, and Neq compositions in 
-the formal language of Coq proof assistant. Given that the formal language of Coq 
-is constructive, we get an implementation that can be executed on a computer. 
-
+the formal language of Coq proof assistant. 
 We have formalised and analysed the interactive version of 
 the Sigma protocol, but in practice it is not convenient due to the required interaction. 
 Therefore, all Sigma protocol implementations use the Fiat-Shamir 
@@ -222,7 +220,7 @@ once for the front-end (JavaScript, TypeScript) and once for the back-end (Pytho
 Therefore, we use our formalisation to model the sigma protocol implemented in Helios, 
 Belenois, and SwissPost voting systems to demonstrate the usablity of 
 our library. Unlike Helios and SwissPost,
-we write one implementation and extract WebAssembly (front-end) and Rust (back-end). 
+we write one implementation and extract WebAssembly (front-end) and Rust (back-end) (\textbf{using the MetaCoq library}).
 Belenois is slightly different in this respect and uses Js\_of\_ocaml 
 to compile the OCaml code into JavaScript so it has only one 
 implementation written in OCaml; nonetheless it is not verified 
@@ -231,9 +229,11 @@ this is the firstformal verification of sigma protocol that can be used at
 the front-end (WebAssembly code) and back-end (Rust code). 
 
 \subsection{Outline}
+The rest of the paper is organised as follows: in section \ref{sigma_protocol}
+we explain sigma protocol and its security properties. 
 
 
-\section{Sigma Protocol}
+\section{Sigma Protocol}\label{sigma_protocol}
 Despite the recent growth and popularity of zero-knowledge succinct 
 argument of knowledge (ZKSNARK), sigma protocol remains a
 leading cryptographic proof system in privacy-preserving voting systems. 
@@ -309,9 +309,184 @@ much use of Neq in the privacy-preserving voting systems, at least in the existi
 
 
 
+\section{The Coq Theorem Prover}
+\textbf{FIXME:this seems too much of tutorial Coq so let me know your thoughts. We 
+can explain MetaCoq here as well and the extraction to Rust and WebAssembly
+so that it justifies this tutorial}
+The Coq theorem prover \cite{the_coq_development_team} is a computer program that interacts with users, 
+enabling them to encode mathematical definitions, express specifications (true statements) about 
+these definitions, and formally prove that the definitions imply the specifications. 
+A user first defines their mathematical object (definition) and then figure 
+out some  true statements (specifications) about 
+that object. Once the user has definition 
+and specifications, they need to prove 
+that the definition satisfies the specifications 
+(proof writing). In general, amongst these three steps, 
+the proof writing step is the most challenging and important step. 
+During the proof writing, the user interacts with the Coq theorem prover 
+via \emph{tactics}, a domain specific language 
+to ease the proof writing. Even though the Coq theorem 
+provides some amount of automation and proof 
+search, most of the time it requires human assistance to finish the proof. 
+It is one the most popular and robust theorem, and
+one of reasons for its popularity is 
+dependent types, that makes it possible to encode
+any mathematical statement in its logic.
+It has been used to verify many real world software projects and mathematical 
+artefacts. For example, Coq has been used to 
+formally verify CompCert \cite{10.1145/1111037.1111042}, 
+a C compiler used by many companies\footnote{https://www.absint.com/partners.htm}, 
+Fiat-Crypto \cite{8835346} 
+used in BoringSSL --a cryptographic library used in Chrome, Android, 
+and CloudFlare--, ConCert \cite{10.1145/3372885.3373829}, 
+a smart contract certification framework, etc. \textbf{FIXME: More examples}
 
 
-\section{Coq formalisation}
+
+\subsubsection*{Definitions, Specifications, and Proofs}
+In this section, we demonstrate how to encode definitions, write specifications,
+and formally prove that definitions satisfy the specifications 
+in the Coq theorem prover by an example of 
+natural numbers (natural numbers is the set $\{0, 1, 2, 3, \dots \}$). 
+The set of natural numbers $Nat$ is the set of elements defined by the 
+following clauses:
+\begin{itemize}
+  \item \emph{Zero}, represents $0$, is in the set Nat ($Zero \in Nat$)
+  \item if $n$ is in the set Nat, then \emph{Succ n}, represents $n + 1$, 
+    is also in the set Nat (if $n \in Nat$, then $Succ \text{ }n \in Nat$)
+\end{itemize}
+
+\noindent 
+This representation of natural numbers is called 
+inductively defined set where the base case, or starting point,
+is Zero (constant symbol), and if we have a natural number $n$, then we can 
+get the next natural number by prefixing Succ (unary function symbol) to $n$.  
+Using this encoding of natural numbers, we can represent 
+$1$ by \emph{Succ Zero}, and $2$ by \emph{Succ (Succ Zero)}, 
+and so on. We encode the set \emph{Nat} in Coq as inductively defined data type, 
+shown in Listing \ref{ind_nat}, with 
+two constructors: \emph{Zero} and \emph{Succ}. 
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
+Inductive Nat : Type := 
+| Zero : Nat 
+| Succ : Nat -> Nat.
+\end{lstlisting}
+
+
+With the definition of natural numbers at our disposal,
+we can define addition, subtraction, multiplication, division, and 
+many other mathematical functions on natural numbers in the Coq theorem prover. 
+However, we only define the addition function,
+shown in Listing \ref{add_fn}, to demonstrate the concept. 
+In Coq, \emph{Fixpoint} is a keyword 
+for defining function, followed by the name of the function (\emph{plus}), 
+arguments (\emph{m} and \emph{n}), and the body (definition) of the function.
+The body of plus shown in Listing \ref{add_fn} is Coq encoding of the 
+following two clauses:
+\begin{enumerate}
+  \item plus Zero n = n 
+  \item plus (Succ m) n = Succ (plus m n)
+\end{enumerate}  
+
+\noindent 
+The first clause amounts to $0 + n = n$ and the second clause
+amounts to $ (1 + m) + n = 1 + (m + n)$.
+
+
+\begin{lstlisting}[frame=single, language=Coq, caption={Addition of two Natural Numbers},
+  label={add_fn},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
+Fixpoint plus (m n : Nat) :=
+  match m with
+  | Zero => n
+  | Succ m' => Succ (plus m' n)
+  end.
+
+\end{lstlisting}
+
+
+So far we have just definitions of natural numbers and addition on them.
+Now, it is time to define some specification (true statement) about
+the addition operation, on natural numbers. From mathematical 
+literature, we know that the addition operation on natural
+numbers is associative and commutative. For simplicity, we
+prove that our definition of addition on natural numbers is commutative, shown in 
+Listing \ref{plus_comm}, and it is precisely the \emph{specification} for 
+our addition operation. 
+
+\begin{lstlisting}[frame=single, language=Coq, caption={Addition is Commutative},
+  label={plus_comm},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
+Theorem plus_commutative : 
+  forall n m, plus n m = plus m n. 
+Proof.
+  induction n.
+  (* base case *)
+  + intros m.
+  (* proof terms omitted *)
+  (* inductive case *)  
+  + intros m.
+    rewrite IHn.
+    (* proof terms omitted *)
+Qed.
+  
+\end{lstlisting}
+
+In Coq, \emph{Theorem} is the keyword
+to define a specification, followed by the name (\emph{plus\_comm}). 
+It says that for any two arbitrary natural numbers $m$ and $n$, 
+encoded as \texttt{forall n m}, adding $n$ and $m$ is the same
+as adding $m$ and $n$, encoded as \texttt{plus n m = plus m n}.
+To write a formal proof of this statement, we tell the Coq theorem 
+prover that we want to use the tactic language by 
+stating the keyword \emph{Proof}. After finishing the proof, 
+we use the keyword \emph{Qed} to inform Coq that our proof is 
+finished. The moment Coq sees \emph{Qed},
+it ensures that the proof is complete and correct according to its 
+underlying logic. If we try to use Qed without finishing the proof,
+Coq will not let us do so. Therefore, once we have Qed for any 
+specification, by just trusting the Coq theorem prover we can be 
+sure that our proof is correct. However, at this point, 
+the curious reader can argue that why should we trust 
+Coq because it is a computer program, similar any other 
+computer program? Trusting Coq hinges on two things: 
+(i) the meta theory, \emph{Calculus of Inductive Construction},
+of Coq \cite{thierry1988calculus}
+and (ii) its OCaml implementation \cite{the_coq_development_team}.
+The meta theory of Coq has been scrutinised for decades
+by many mathematicians and so far it has withstood all 
+the scrutiny. The OCaml implementation of Coq  has a very 
+small kernel and has been inspected by many computer scientists. 
+In addition, there is a recent effort to develop more 
+rigorous implementation for Coq proof checking \cite{10.1145/3371076} \textbf{FIXME: this is the place 
+to state that we are following this path of MetaCoq}.
+
+
+
+The keywords \emph{induction, intros, rewrite}
+are tactics that are used to prove the statement that addition 
+on natural numbers is commutative. 
+The proof written between 
+the keywords \emph{Proof} and \emph{Qed} amounts to the following: 
+\begin{itemize}
+  \item Base case: when $n$ is Zero, we need to prove that \texttt{plus Zero m = plus m Zero}
+  \item Inductive case: when $n$ is Succ, we assume \texttt{plus m n = plus n m} 
+      and we need to prove \texttt{plus (Succ m) n = plus n (Succ m)}
+\end{itemize}  
+\noindent
+It is called proof by induction, and 
+tactics are used to make the complicated 
+process of proof writing easy.
+
+
+
+
+
+
+
+\subsection{Schnorr Protocol Coq Encoding}
 
   We briefly explain the Schnorr protocol, which is very similar to figure \textbf{refer here to sigma protocol picture}.
   Given some public input $(G, g, q, h)$ where $G$
@@ -322,28 +497,47 @@ much use of Neq in the privacy-preserving voting systems, at least in the existi
   does the prover know the witness $w$? In order to convince the
   verifier, the prover and the verifier do the following:
   \begin{itemize}
-    \item the prover picks a random number $u$, computes $c = g^u$,
-    and sends $c$ to the verifier.
-    \item the verifier picks a random challenge $e$ and sends it to
+    \item the prover picks a random number $u$, computes $a = g^u$,
+    and sends $a$ to the verifier.
+    \item the verifier picks a random challenge $c$ and sends it to
     the prover
-    \item the prover computes $t = u + e * w$ and sends $t$ to the
+    \item the prover computes $r = u + c * w$ and sends $r$ to the
     verifier
   \end{itemize}
 
-The verifier accepts if $g^t = c * h^e$, otherwise rejects. We can prove that 
+The verifier accepts the transcript $(a, c, r)$ if $g^r = a * h^c$, otherwise rejects. We can prove that 
 this protocol has completeness, special soundness, and special honest-verifier 
 zero-knowledge proof. 
 
 
 \begin{itemize}
   \item completeness: when $P$ and $V$ both follows the protocol, $V$ accepts the proof, i.e., 
-  the verification equation checks. We can see by algebraic simplification that is the case.
+  the verification equation checks out. We can see by algebraic simplification that it is the case.
     \begin{align*}
-      g^t = g^{u + e * w} = g^u * (g^w)^e = c * h^e
+      g^r = g^{u + c * w} = g^u * (g^w)^c = a * h^c
     \end{align*}
-  \item special soundness: 
+  \item special soundness: from two accepting 
+  conversations $(a, c, r)$ and $(a, c', r')$ where $c \neq c'$,
+  a polynomial-time extractor can extract a witness $w$, 
+  which is equal to $(r - r') * (c - c')^{-1}$, 
+  such that $g^w = h$. By means of algebraic simplification, 
+  we can see that it is the case.  
+  \begin{align}
+    g^r = a * h^c = g^u * (g^w)^c = g^{u + w * c}  \\
+    g^{r'} = a * h^{c'} = g^u * (g^w)^{c'} = g^{u + w * c'}
+  \end{align}
+  Diving the expression (1) with (2), we get
+  \begin{align*}
+    g^{(r-r')} = g^{w * (c - c')}
+  \end{align*}
+  and multiplying both sides by $(c - c')^{-1}$ we 
+  get 
+  \begin{align*}
+    g^{(r-r') * (c - c')^{-1}} = g^{w}
+  \end{align*}
 
   \item special honest-verifier zero-knowledge proof:
+  
    
 \end{itemize}
 
@@ -368,27 +562,30 @@ one of the major benefit of this abstraction is easiness of proofs
 which can be easily automated. Therefore, we model the Schnorr 
 protoco, the simulator, and the verification equation in Coq as follows: 
  
-\begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 (*Real transcript (involves secret x)*)
-Definition schnorr_protocol (x : F) (g : G) (u c : F) : 
- sigma_proto :=  ([g^u]; [c]; [u + c * x]).
+Definition schnorr_protocol (x : F) (g : G) 
+ (u c : F) : sigma_proto :=  
+ ([g^u]; [c]; [u + c * x]).
 
 (*Fake transcript (without the witness x)*)
-Definition schnorr_simulator (g h : G) (u c : F) :
-  sigma_proto := ([gop (g^u) (h^(opp c))]; [c]; [u]).
+Definition schnorr_simulator (g h : G) 
+ (u c : F) : sigma_proto := 
+ ([gop (g^u) (h^(opp c))]; [c]; [u]).
 
-(*This function checks if a transcript 
-(a; c; r) is accepting or not. It checks
-if g^r = a * h^c*)
-Definition accepting_conversation 
-  (g h : G) (v : sigma_proto) : bool :=
-  match v with
-  | (a; c; r) =>  
+(*This function checks if a transcript (a; c; r) 
+is accepting or not. It checks if g^r = a * h^c*)
+Definition accepting_conversation (g h : G) 
+ (v : sigma_proto) : bool :=
+ match v with
+ | (a; c; r) =>  
     match Gdec (g^r) (gop a (h^c)) with 
     | left _ => true
     | right _ => false 
     end
-  end.
+ end.
 \end{lstlisting}
   
 \noindent
@@ -418,11 +615,13 @@ when instantiated concretely, exponentiation function but it is purely for notat
 
 
 We prove the completeness and special soundness property of the Schnorr protocol, 
-as shown in the figure .... We however cannot prove the special honest-verifier 
+as shown in Lisitng \cite{comp_sound}. We however cannot prove the special honest-verifier 
 zero-knowledge property yet because it requires reasoning about probability that 
 we discuss in the next section. 
   
-\begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Completeness and Soundness},
+  label={comp_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 Lemma schnorr_completeness : 
 forall (r c : F) (a : t G 1) (c r : t F 1),
 (a; c; r) = (schnorr_protocol x g r c) ->
@@ -437,8 +636,8 @@ Proof using -(x R). (* terms omitted *) Qed.
   
 Lemma special_soundness: 
 forall (a : G) (ca ra cb rb : F), ca <> cb ->
-accepting_conversation g h ([a]; [ca]; [ra]) = true ->  
-accepting_conversation g h ([a]; [cb]; [rb]) = true ->
+accepting_conversation g h ([a]; [ca]; [ra]) ->  
+accepting_conversation g h ([a]; [cb]; [rb]) ->
 exists y : F, g^y = h /\ y = ((ra - rb) * inv (ca - cb)).
 Proof using -(x R). (* proof terms omitted *) Qed.
   
@@ -460,7 +659,9 @@ Proof using -(x R). (* proof terms omitted *) Qed.
   of each other. Finally, we define a function , $uniform\_with\_replacement$, 
   to generate uniform distributions. 
 
-  \begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+    label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+    abovecaptionskip=-\medskipamount]
     
 (* Probability Distribution on a type A *)
 Definition dist (A : Type) : Type := list (A * prob).
@@ -484,7 +685,9 @@ returns a distribution on a vector of $n$ elements.
 
 
     
-\begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 (* Probability Monad *)
 Definition Ret {A : Type} (x : A) : 
   dist A := [(x, one)].
@@ -537,7 +740,9 @@ that we prove.
 
 
 
-\begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 (* Distribution that involves the secret x *)
 Definition schnorr_distribution  (lf : list F) 
   (Hlfn : lf <> List.nil) (x : F) (g : G) (c : F) : 
@@ -579,7 +784,9 @@ We shown in the function $repeat\_dist\_ntimes\_vector$.
   we need to need to draw a vector $n$ random numbers to 
   prove the zero-knowledge property. 
   
-\begin{lstlisting}[language=Coq]
+  \begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+    label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+    abovecaptionskip=-\medskipamount]
 Fixpoint repeat_dist_ntimes_vector {A : Type} 
 (d : dist A) (n : nat) : dist (Vector.t A n) := 
 match n with 
@@ -616,7 +823,9 @@ Definition parallel_schnorr_distribution
  a suitable group and field. In order 
  to run our code, we have developed 
  a formally verified Schnorr group (\textbf{cite here}). 
-\begin{lstlisting}[language=Coq]
+ \begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 Section SchnorrGroup. 
   Context 
     {k p q : Z}
@@ -676,7 +885,9 @@ Section SchnorrGroup.
 
 Similarly, we have encoded a prime field. 
 
-\begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 
 (* Prime Field *)
 Section ZpField.
@@ -719,7 +930,9 @@ possibilities of mixing group and field, both represented
 as an integer modulo some large 
 prime \cite{10.1007/978-3-662-63958-0_24}.
 
-\begin{lstlisting}[language=Coq]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
 
   Definition pow (g : @Schnorr.Schnorr_group p q) 
   (y : @Zpfield.Zp q) : @Schnorr.Schnorr_group p q.
@@ -752,10 +965,7 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
   
   
  
-
-
-
-  \subsection{Fiat-Shamir Transform}
+\subsection{Fiat-Shamir Transform}
  We have formalised the interactive version of sigma protocol. However,
  interaction is not convenient and therefore
  we use Fiat-Shamir transform to make it non-interactive. We use SHA256 
@@ -766,10 +976,7 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
  properties. 
 
 
-\section{MetaCoq}
-  Bas Spitters 
-
-\section{Web Assembly and Rust from the Coq Formalisation}
+\section{Web Assembly and Rust from the Coq Formalisation (MetaCoq)}
   Bas Spitter
 
 
@@ -779,7 +986,7 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
   crypto library. 
 
 
-\section{Related Work}
+\section{Related Work, Future Work, and Limitations}
   There are three work. Giles Barthe does not extract to executable code, 
   CryptoHol uses law of excluded middle, and thomas haines work is more about 
   verifying a transcript rather than constructing it. Moreover, 
@@ -796,7 +1003,6 @@ rather than constructing the primitives to conduct an election. Moreover,
 it does not reason about probabilities in an intuitive way.
 
 
-\section{Conclusion, Future Work, and Limitations}
   In this paper, we present a certified implementation 
   that can be readily used by voting community and 
   we demonstrated the usefulness by encoding Helios, 
