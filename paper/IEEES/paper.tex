@@ -32,6 +32,8 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
 \usepackage{url}
 \usepackage{lstcoq}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -258,7 +260,7 @@ More formally, for a given $NP$-relation $R$ and a statement $x$, zero-knowledge
 $P$ to convince a verifier $V$ that they posses a witness $w$ --polynomial in length of $x$-- such 
 that ($x$, $w$) $\in$ $R$. To accomplish this, $P$ and $V$ engage in a 
 interactive protocol and  at the end of the protocol $V$ either accepts or rejects the proofs.
-\textit{Sigma protocol}, \textbf{shown in the figure }, is an efficient three move zero-knowledge proof where the 
+\textit{Sigma protocol}, shown in the figure \ref{fig:sig_picture}, is an efficient three move zero-knowledge proof where the 
 verifier is assumed to be honest and characterised by completeness, (special) soundness, and 
 (special honest-verifier) zero-knowledge. More formally: 
 \begin{itemize}
@@ -285,7 +287,24 @@ satisfying $(v,w) \in R$.
 
 \end{itemize}
 
-\textbf{Draw a picture here of sigma protocol}
+
+\begin{figure}[ht]
+  \centering
+\begin{tikzpicture}
+  \node (Prover)  {\textit{P (x, w)}} (0,0);
+  \node (Verifier) [right=of Prover] at (4, 0) {\textit{V(x)}};
+  % First arrow (left to right)
+  \draw[->] (0,-0.5) -- (5,-0.5) node[midway, above] {\textit{commitment}};
+  
+  % Second arrow (right to left)
+  \draw[->] (5,-1) -- (0,-1) node[midway, above] {\textit{challenge}};
+  
+  % Third arrow (left to right)
+  \draw[->] (0,-1.5) -- (5,-1.5) node[midway, above] {\textit{response}};
+\end{tikzpicture}
+\caption{Sigma Protocol}
+\label{fig:sig_picture}
+\end{figure}
 
 
 
@@ -315,7 +334,7 @@ can explain MetaCoq here as well and the extraction to Rust and WebAssembly
 so that it justifies this tutorial}
 The Coq theorem prover \cite{the_coq_development_team} is a computer program that interacts with users, 
 enabling them to encode mathematical definitions, express specifications (true statements) about 
-these definitions, and formally prove that the definitions imply the specifications. 
+their definitions, and formally prove that the definitions imply the specifications. 
 A user first defines their mathematical object (definition) and then figure 
 out some  true statements (specifications) about 
 that object. Once the user has definition 
@@ -323,7 +342,7 @@ and specifications, they need to prove
 that the definition satisfies the specifications 
 (proof writing). In general, amongst these three steps, 
 the proof writing step is the most challenging and important step. 
-During the proof writing, the user interacts with the Coq theorem prover 
+During the proof writing, an user interacts with the Coq theorem prover 
 via \emph{tactics}, a domain specific language 
 to ease the proof writing. Even though the Coq theorem 
 provides some amount of automation and proof 
@@ -384,7 +403,7 @@ In Coq, \emph{Fixpoint} is a keyword
 for defining function, followed by the name of the function (\emph{plus}), 
 arguments (\emph{m} and \emph{n}), and the body (definition) of the function.
 The body of plus shown in Listing \ref{add_fn} is Coq encoding of the 
-following two clauses:
+following two clauses: 
 \begin{enumerate}
   \item plus Zero n = n 
   \item plus (Succ m) n = Succ (plus m n)
@@ -406,15 +425,12 @@ Fixpoint plus (m n : Nat) :=
 
 \end{lstlisting}
 
-
-So far we have just definitions of natural numbers and addition on them.
-Now, it is time to define some specification (true statement) about
-the addition operation, on natural numbers. From mathematical 
-literature, we know that the addition operation on natural
-numbers is associative and commutative. For simplicity, we
-prove that our definition of addition on natural numbers is commutative, shown in 
-Listing \ref{plus_comm}, and it is precisely the \emph{specification} for 
-our addition operation. 
+So far, we have defined natural numbers and addition. Now, we will specify 
+some properties of addition on natural numbers. Mathematically, addition 
+is known to be associative and commutative. For simplicity, we will 
+prove that our addition definition is commutative, as shown in 
+Listing \ref{plus_comm}, which serves as the specification for our 
+addition operation.
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Addition is Commutative},
   label={plus_comm},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -434,52 +450,33 @@ Qed.
   
 \end{lstlisting}
 
-In Coq, \emph{Theorem} is the keyword
-to define a specification, followed by the name (\emph{plus\_comm}). 
-It says that for any two arbitrary natural numbers $m$ and $n$, 
-encoded as \texttt{forall n m}, adding $n$ and $m$ is the same
-as adding $m$ and $n$, encoded as \texttt{plus n m = plus m n}.
-To write a formal proof of this statement, we tell the Coq theorem 
-prover that we want to use the tactic language by 
-stating the keyword \emph{Proof}. After finishing the proof, 
-we use the keyword \emph{Qed} to inform Coq that our proof is 
-finished. The moment Coq sees \emph{Qed},
-it ensures that the proof is complete and correct according to its 
-underlying logic. If we try to use Qed without finishing the proof,
-Coq will not let us do so. Therefore, once we have Qed for any 
-specification, by just trusting the Coq theorem prover we can be 
-sure that our proof is correct. However, at this point, 
-the curious reader can argue that why should we trust 
-Coq because it is a computer program, similar any other 
-computer program? Trusting Coq hinges on two things: 
-(i) the meta theory, \emph{Calculus of Inductive Construction},
-of Coq \cite{thierry1988calculus}
-and (ii) its OCaml implementation \cite{the_coq_development_team}.
+In Coq, \emph{Theorem} is the keyword used to define a specification, 
+followed by the name (\emph{plus\_comm}). This specifies that for any 
+two natural numbers $m$ and $n$ (encoded as \texttt{forall n m}), 
+adding $n$ to $m$ is the same as adding $m$ to $n$ 
+(encoded as \texttt{plus n m = plus m n}).
+To write a formal proof of this statement, we start by indicating that 
+we will use the tactic language with the keyword \emph{Proof}. Once the 
+proof is complete, we use the keyword \emph{Qed} to signal to Coq that 
+our proof is finished. At this point, Coq verifies that the proof is complete 
+and correct according to its logic. If the proof is not finished, Coq will 
+not accept \emph{Qed}. Therefore, having a \emph{Qed} for any specification 
+ensures that our proof is correct, provided we trust the Coq theorem prover.
+However, at this point, the curious reader can argue that why should we trust 
+Coq because it is a computer program, similar any other computer program? 
+Trust in Coq relies on two factors: (i) its meta-theory, the 
+\emph{Calculus of Inductive Constructions} \cite{thierry1988calculus}, and 
+(ii) its implementation in OCaml \cite{the_coq_development_team}.
 The meta theory of Coq has been scrutinised for decades
 by many mathematicians and so far it has withstood all 
-the scrutiny. The OCaml implementation of Coq  has a very 
-small kernel and has been inspected by many computer scientists. 
-In addition, there is a recent effort to develop more 
+the scrutiny, but not so much for its OCaml implementation \cite{coq_critical_bugs}. 
+Therefore, there is a recent effort to develop more 
 rigorous implementation for Coq proof checking \cite{10.1145/3371076} \textbf{FIXME: this is the place 
-to state that we are following this path of MetaCoq}.
+to state that we are following this path of MetaCoq and extraction}.
 
 
-
-The keywords \emph{induction, intros, rewrite}
-are tactics that are used to prove the statement that addition 
-on natural numbers is commutative. 
-The proof written between 
-the keywords \emph{Proof} and \emph{Qed} amounts to the following: 
-\begin{itemize}
-  \item Base case: when $n$ is Zero, we need to prove that \texttt{plus Zero m = plus m Zero}
-  \item Inductive case: when $n$ is Succ, we assume \texttt{plus m n = plus n m} 
-      and we need to prove \texttt{plus (Succ m) n = plus n (Succ m)}
-\end{itemize}  
-\noindent
-It is called proof by induction, and 
-tactics are used to make the complicated 
-process of proof writing easy.
-
+\subsection{Web Assembly and Rust from the Coq Formalisation (MetaCoq)}
+  Bas
 
 
 
@@ -487,9 +484,10 @@ process of proof writing easy.
 
 
 \subsection{Schnorr Protocol Coq Encoding}
-
-  We briefly explain the Schnorr protocol, which is very similar to figure \textbf{refer here to sigma protocol picture}.
-  Given some public input $(G, g, q, h)$ where $G$
+  We briefly explain the Schnorr protocol, an interactive protocol 
+  between a prover and a verifier, which follows the same structure as 
+  depicted in Figure \ref{fig:sig_picture}. 
+  Given some public input $G = (g, q, h)$ where $G$
   is a cyclic group of prime order $q$, $g$ and $h$ are two 
   generators of the group $G$, the prover claims that they know a
   witness $w$ for the statement $h = g^w$; the existence of such
@@ -537,30 +535,43 @@ zero-knowledge proof.
   \end{align*}
 
   \item special honest-verifier zero-knowledge proof:
-  
+   the distribution for the conversations with an honest verifier --involving witness $w$--
+   and the conversation with a simulator --without witness $w$-- are the same, given a 
+   challenge $c$. We can 
+   see this algebraically that both distributions \ref{f} and \ref{snd} have the identical 
+   distribution, i.e., $1/q$. 
+   \begin{align}\label{f}
+    \{(a, c, r) \mid u \in_{R} Z_q ; a := g^u; r := u + c * w \}
+   \end{align}
+   \begin{align}\label{snd}
+    \{(a, c, r) \mid u \in_{R} Z_q ; a := g^r * h^{-c}\}
+   \end{align}
    
 \end{itemize}
 
 
-In the Schnorr protocol, $g, h, c$ are group elements from underlying group, while 
-$u, e, t$ are scalar values from underlying prime field. In practice, 
-both the group elements and the fields elements are some large prime numbers,
-albeit the operations differ. For most of the languages it does not matter, 
-but also a potential source of bugs (cite thomas work here). However, 
-we need to flesh down all the details while encoding it Coq. One possibility is 
-to encode the Coq functions to work with concrete numbers but this leads to 
-cumbersome proofs because of dealing with concrete numbers. In our formalisation, 
+In the Schnorr protocol, the elements $g$, $h$, and $a$ are group elements from the underlying group, while $u$, $c$, and $r$
+are scalar values from the underlying prime field. In practice, both the group elements and the field elements are large 
+numbers modulo some prime numbers, although the operations on them differ. 
+One possibility is to encode the Coq functions to work with concrete numbers from the underlying group and field, 
+but this leads to cumbersome proofs because of dealing with concrete numbers, but the bigger problem 
+is that it is not modular. For most programming languages, this distinction 
+may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24}. 
+However, when encoding it in Coq, we need to thoroughly detail these distinctions because 
+the same large number can belong to a group or field and that dictates what operations are available for them. 
+Therefore, to avoid this unpleasant situation,  
 we decided to abstract the underlying group as an abstract type $G$, endowed with 
 usual group operation, and the underlying field as an abstract type $F$, endowed with 
-filed operation. Finally, we abstract these two types in an vector space. This 
+filed operation in our formalisation. Moreover, we abstract these two types into a vector space for smooth interaction between 
+group element and field element (exponential needs this). This 
 makes our formalisation generic that can be instantiated with 
 any kind of group and field as long as it follows the axioms of 
 vector space. For example, in our formalisation we have developed 
-efficient algorithm for Schnorr group but our formalisation can 
+efficient algorithm for the Schnorr group but our formalisation can 
 later be also instantiated with elliptic curve group. However, 
 one of the major benefit of this abstraction is easiness of proofs 
 which can be easily automated. Therefore, we model the Schnorr 
-protoco, the simulator, and the verification equation in Coq as follows: 
+protocol, the simulator, and the verification equation in Coq as follows: 
  
 \begin{lstlisting}[frame=single, language=Coq, caption={Schnorr protocol},
   label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -590,9 +601,10 @@ Definition accepting_conversation (g h : G)
   
 \noindent
  where $F$ is the underlying field, $G$ is the underlying group,
- $+ : F \rightarrow F \rightarrow F$ is field addition,
- $* : F \rightarrow F \rightarrow F$ is field multiplication, and
- $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ scalar multiplication of vector space.  
+ $+ : F \rightarrow F \rightarrow F$ is the field addition,
+ $* : F \rightarrow F \rightarrow F$ is the field multiplication, 
+ $gop : G \rightarrow G \rightarrow G$ is the group operation, and
+ $\mbox{\textasciicircum}: G \rightarrow F \rightarrow G$ is the scalar multiplication of vector space.  
  Recall that a vector space consists of a set of 
  vectors, denoted by \(V\), a field \(F\) (elements of F are called scalars), and 
  two operations: vector addition and scalar multiplication.
@@ -615,10 +627,12 @@ when instantiated concretely, exponentiation function but it is purely for notat
 
 
 We prove the completeness and special soundness property of the Schnorr protocol, 
-as shown in Lisitng \cite{comp_sound}. We however cannot prove the special honest-verifier 
-zero-knowledge property yet because it requires reasoning about probability that 
-we discuss in the next section. 
-  
+as shown in Listing \cite{comp_sound}. However, to prove the special honest-verifier 
+zero-knowledge property we need a model to reason about uniform probability 
+distribution in Coq. We discuss the encoding of uniform probability distribution 
+in the next section and subsequently explain the special honest-verifier zero-knowledge
+proof. 
+
 \begin{lstlisting}[frame=single, language=Coq, caption={Completeness and Soundness},
   label={comp_sound},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
@@ -645,49 +659,34 @@ Proof using -(x R). (* proof terms omitted *) Qed.
  
 
 
-
-
-
-  
-  \subsection{Uniform Distribution}
-  To reason about special honest-verifier zero-knowledge proof 
-  intuitively, we need a model of uniform distribution. 
-  we encode distribution a list of tuples where the 
-  second element of tuple basically is probability of first element 
-  in the tuple. Moreover, we define equality on distribution by 
-  stating that two distributions are equal if they are permutation 
-  of each other. Finally, we define a function , $uniform\_with\_replacement$, 
-  to generate uniform distributions. 
-
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
-    label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
-    abovecaptionskip=-\medskipamount]
-    
-(* Probability Distribution on a type A *)
-Definition dist (A : Type) : Type := list (A * prob).
-  
-(* Uniform distribution u*)
-Definition uniform_with_replacement {A : Type} : 
-  forall (l : list A), l <> [] -> dist A.
-Proof.
-  intros ? H.
-  remember (Pos.of_nat (List.length l)) as len.
-  exact (List.map 
-    (fun x => (x, mk_prob 1 len)) l).
-Defined.
-\end{lstlisting}
-
-We prove that the dist is a monad (\textbf{Cite some work}) by 
+ 
+\subsection{Uniform Distribution}
+To reason about special honest-verifier zero-knowledge proof 
+intuitively, we need a model of uniform distribution. 
+We follow the \cite{erwig2006functional}  and 
+encode the distribution a list of tuples where the 
+second element of tuple basically is probability of first element 
+in the tuple. Moreover, we define equality on distribution by 
+stating that two distributions are equal if they are permutation 
+of each other. This encoding is flexible and allows us 
+to encode any kind of distribution. We prove that the dist is a 
+monad \cite{erwig2006functional} by 
 giving it a suitable definitions of ret and bind. Making 
 it an instance of monad makes our life easier because 
 we can compose a distribution $d$ $n$ times to 
 returns a distribution on a vector of $n$ elements. 
+However, to reason about cryptographic primitives, we need uniform 
+distribution and therefore we define a function, $uniform\_with\_replacement$, 
+to generate uniform distributions, shown in Listing \ref{prob_def}.
+We prove various prop
 
-
-    
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
-  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
-  abovecaptionskip=-\medskipamount]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Uniform Probability Distribution},
+    label={prob_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
+    abovecaptionskip=-\medskipamount]
+(* Probability Distribution on a type A *)
+Definition dist (A : Type) : Type := 
+ list (A * prob).
+  
 (* Probability Monad *)
 Definition Ret {A : Type} (x : A) : 
   dist A := [(x, one)].
@@ -701,29 +700,40 @@ Fixpoint Bind {A B : Type} (xs : dist A)
     (ut, mul_prob px pt)) (f ax)) (Bind tx f)
   end.
 
-
+(* Uniform distribution *)
+Definition uniform_with_replacement {A : Type} : 
+  forall (l : list A), l <> [] -> dist A.
+Proof.
+  intros ? H.
+  remember (Pos.of_nat (List.length l)) as len.
+  exact (List.map 
+    (fun x => (x, mk_prob 1 len)) l).
+Defined.
 \end{lstlisting}
 
   
-Now we have all the ingredients to prove the zero-knowledge 
-proof of the Schnorr protocol. We define the 
+Now we have all the ingredients to prove special honest-verifier 
+zero-knowledge proof of the Schnorr protocol. We define the 
 Schnorr distribution $schnorr\_distribution$
 that involves the secret $x$ and 
 the simulator distribution $simulator\_distribution$
 that does not involve the secret $x$. 
 In the Schnorr distibution we draw 
-a random field element $u$ from a uniform 
-distribution $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$
-and use this $u$ to construct a distribution; 
-similarly in the simulator distribution 
+a random field element $u$ from the uniform 
+distribution $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$,
+where $lf$ is list of elements from which $u$
+is drawn and $Hlf$ is a proposition that 
+$lf$ is non-empty, and use it to construct 
+a distribution on sigma protocol. Similarly, 
+for the simulator distribution 
 we draw a random field element $u$ from 
 $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$
-and use it construct a distribution. Using these 
-two definitions, we prove that these two 
+and use it construct a distribution on sigma protocol. 
+Using these two definitions, we prove that these two 
 distributions are identical 
 $special\_honest\_verifier\_zkp$. However, 
-contrary to informal reasoning, these two 
-distributions are not syntactically equal but 
+contrary to the reasoning in cryptographic papers, 
+these two distributions are not syntactically equal but 
 semantically equal. For both distributions, 
 the first component is a transcript $(a, c, r)$ and 
 the second component is a rational number that represents 
@@ -769,24 +779,35 @@ Lemma special_honest_verifier_zkp :
     (accepting_conversation g h a, p))
     (@simulator_distribution lf Hlfn g h c).
 Proof. (* proof terms omitted *) Qed. 
-  \end{lstlisting}
+\end{lstlisting}
 
-
-We shown in the function $repeat\_dist\_ntimes\_vector$.
-  The reader can see from the proof 
-  $uniform\_probability\_multidraw\_prob$
-  that if a distribution $lf$ is repeated 
-  $n$ times then the probability of this distribution 
-  is $1/|lf|^n$. We use $repeat\_dist\_ntimes\_vector$ 
-  when we combine multiple sigma protocols and 
-  want to to prove zero-knowledge property. For example, 
-  in Parallel composition when we combine $n$ sigma protocol 
-  we need to need to draw a vector $n$ random numbers to 
-  prove the zero-knowledge property. 
+In the previous section, we explained the Schnorr proof, 
+but we have also formalised a way to combine $n$ And, Or, Eq, 
+and Parallel Schnorr statements. Proving special 
+honest-verifier zero-knowledge proof is more challenging 
+than a single Schnorr statement. One of the major challenge 
+is to draw $n$ random element for an uniform distribution 
+and therefore we have written the function $repeat\_dist\_ntimes\_vector$
+that takes a distribution $dist\text{ }A$ and a number $n$ and a returns 
+distribution of vectors of length $n$,  encoded as 
+$dist \text{ } (Vector.t \text{ } A \text{ } n)$. The 
+reader may notice that it is a generic function 
+where distribution can be instantiated with 
+any kind of distribution. However, in cryptography 
+we are mostly concerned with uniform distribution and  
+therefore in $uniform\_probability\_multidraw\_prob$ theorem
+we instantiate the distribution with 
+the uniform distribution $(uniform\_with\_replacement\text{ }lf\text{ }Hlf)$ and 
+prove that the probability of this distribution 
+is $1/|lf|^n$. We use it 
+in Parallel composition where we combine $n$ sigma protocol and  
+we need to need to draw a vector $n$ random numbers to 
+prove the zero-knowledge property, as shown 
+in $parallel\_schnorr\_distribution$.
   
-  \begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
-    label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
-    abovecaptionskip=-\medskipamount]
+\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+abovecaptionskip=-\medskipamount]
 Fixpoint repeat_dist_ntimes_vector {A : Type} 
 (d : dist A) (n : nat) : dist (Vector.t A n) := 
 match n with 
@@ -818,25 +839,36 @@ Definition parallel_schnorr_distribution
 
 
 \subsection{Efficient Modular Arithmetic}
- As we stated that our formalisation is  
- abstract and can be instantiated with 
- a suitable group and field. In order 
- to run our code, we have developed 
- a formally verified Schnorr group (\textbf{cite here}). 
- \begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+As stated earlier, to ensure the ease of proving, we worked with 
+an abstract vector space. However, to execute this code, we need to 
+instantiate the vector space with concrete examples. Therefore, we have 
+encoded a prime field and the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
+group of integers modulo a large prime p) in the Coq theorem prover. 
+To encode the Schnorr group, we postulate three integer $k, p, \text{ and } q$. 
+Moreover, we assume $p \text{ and } q$ are primes where $p = k * q + 1$ (when 
+$k = 2$, these primes are called Sophie Germain primes). Finally, 
+we encode the neutral element $one$, the group multiplication $mul\_schnorr\_group$, 
+and the group inverse $inv\_schnorr\_group$. We prove that our encoding 
+of the Schnorr group in Coq is commutative group by making it 
+an instance of the typeclass $schnorr\_comm$, 
+which is an abstract typeclass that bundles the axioms 
+of commutative group. 
+
+
+
+
+
+ \begin{lstlisting}[frame=single, language=Coq, caption={Coq Encoding of the Schnorr Group},
   label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 Section SchnorrGroup. 
   Context 
-    {k p q : Z}
-    {Hk : p = k * q + 1}
-    {Hp : prime p}
-    {Hq : prime q}.
+    {k p q : Z} {Hk : p = k * q + 1}
+    {Hp : prime p} {Hq : prime q}.
 
-  Record Schnorr_group := 
-    mk_schnorr 
+  Record Schnorr_group := mk_schnorr 
     {v : Z; Ha : 0 < v < p; 
-    Hb : (v ^ q mod p = 1)}.
+    Hb : v ^ q mod p = 1}.
 
   (* Neutral Element *)
   Definition one : Schnorr_group.
@@ -847,14 +879,7 @@ Section SchnorrGroup.
 
   Definition mul_schnorr_group 
       (u v : Schnorr_group) : Schnorr_group.
-  refine(
-    match u, v with 
-    | mk_schnorr au Hua Hub, 
-      mk_schnorr av Hva Hvb => 
-      mk_schnorr (Z.modulo (au * av) p) 
-      (@multiplication_bound p Hp au 
-      av Hua Hva)  _
-    end).
+  (* Proof terms omitted *)
   Defined. 
 
   (* u ^ (p - 2) is inverse of u *)
@@ -877,54 +902,44 @@ Section SchnorrGroup.
     Schnorr_group (@eq Schnorr_group) 
     mul_schnorr_group one inv_schnorr_group.
   Proof. ... Qed. 
-  
-
-
-
+End SchnorrGroup.
 \end{lstlisting}
 
-Similarly, we have encoded a prime field. 
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
+In order to encode prime field, we postulate an integer $p$ and 
+axiom that $p$ is prime. We encode the prime field as 
+a record $Zp$ that contains an integer $v$ with an axiom 
+that it is in the range of $[0 \ldots p)$. Moreover, 
+we define all the operation of $Zp$ and prove that 
+it is an instance of the typeclass $zp\_field$, which is 
+a typeclass that encodes the axioms of a field. 
+
+\begin{lstlisting}[frame=single, language=Coq, caption={Coq Encoding of Prime Field},
   label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
-
 (* Prime Field *)
 Section ZpField.
-
   Context 
-    {p : Z}
-    {Hp : prime p}.
+    {p : Z} {Hp : prime p}.
 
-    
-  Record Zp := 
-    mk_zp {v : Z; Hv : Z.modulo v p = v}.
+  Record Zp := mk_zp 
+    {v : Z; Hv : Z.modulo v p = v}.
 
-
-  Definition zp_inv (x : Zp) : Zp.
-    refine (match x with
-      | mk_zp ax Hu => mk_zp 
-        (Z.modulo 
-          (Z.of_N (Npow_mod (Z.to_N ax) 
-          (Z.to_N (p - 2)) (Z.to_N p)))
-          p) _ 
-    end).
-    rewrite Zmod_mod.
-    exact eq_refl.
-  Defined.
-
-
-  Definition zp_div (x y : Zp) : Zp :=
-    zp_mul x (zp_inv y).
-
-  
+  Global Instance zp_field : @field Zp zero 
+    one zp_opp zp_add zp_sub zp_mul zp_inv zp_div.
+End ZpField. 
 \end{lstlisting}
 
-Finally, we prove that they form a vector space. 
-We have encoded the scalar mulitplication of 
-vector space as a pow function that takes an element from 
+Finally, we combine the Schnorr group and the prime field 
+into a vector space instantiating the vector set with 
+the Schnorr group and the scalar set with the prime field. 
+However, in order to establish that it is an 
+instance of vector space we need the definition 
+of scalar mulitiplication. We encode the  
+the scalar mulitplication $pow$ of 
+vector space that takes an element from 
 a Schnorr group and an element from 
-a given field and returns an element in the 
+the prime field and returns an element in the 
 Schnorr group.  The reader can see that our encoding eliminates all 
 possibilities of mixing group and field, both represented 
 as an integer modulo some large 
@@ -938,11 +953,10 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
   (y : @Zpfield.Zp q) : @Schnorr.Schnorr_group p q.
   refine 
     match g, y with 
-    | mk_schnorr gt Hgta Hgtb, Zpfield.mk_zp yt Hyt => 
-      mk_schnorr  
-      (Z.of_N (Npow_mod (Z.to_N gt) (Z.to_N yt) (Z.to_N p))) 
-      (pow_subproof_first gt yt Hgta Hyt)
-      (pow_subproof_second _ _  Hyt Hgta Hgtb)
+    | mk_schnorr gt Hgta Hgtb, mk_zp yt Hyt => 
+      mk_schnorr  (Npow_mod gt yt p) 
+      (pow_subproof_first _ _ Hgta Hyt)
+      (pow_subproof_second _ _ Hyt Hgta Hgtb)
     end.
   Defined.
 
@@ -976,8 +990,6 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
  properties. 
 
 
-\section{Web Assembly and Rust from the Coq Formalisation (MetaCoq)}
-  Bas Spitter
 
 
 \section{Case Studies/Experiment}
@@ -987,6 +999,20 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
 
 
 \section{Related Work, Future Work, and Limitations}
+  Given the popularity of sigma protocol in voting 
+  and other domains, it is not surprising that it has 
+  been formalised in the past \cite{5552642,9519460,
+  butler2021formalising,10.1145/3319535.3354247,287095,almeida2010certifying,10221929,
+  10.1145/3594735}. 
+
+  Given the popularity of zero-knowledge in 
+  privacy presearving computation such as voting, cryptocurrencies, 
+  etc., it is not surprising that that sigma protocol and its other 
+  variant (zk-SNARK) are an active area of research 
+
+  Given its popularity in voting, it is not surprising that 
+  Sigma protocol is an active area of research \cite{5552642}. 
+
   There are three work. Giles Barthe does not extract to executable code, 
   CryptoHol uses law of excluded middle, and thomas haines work is more about 
   verifying a transcript rather than constructing it. Moreover, 

@@ -2134,3 +2134,105 @@ keywords = {Coq, blockchain, certified programming, functional programming langu
 location = {New Orleans, LA, USA},
 series = {CPP 2020}
 }
+
+@misc{coq_critical_bugs,
+  author = {The Coq Development Team},
+  title = {Critical Bugs},
+  year = {2024},
+  url = {https://github.com/coq/coq/blob/master/dev/doc/critical-bugs.md},
+  note = {Accessed: 2024-05-30}
+}
+
+@article{erwig2006functional,
+  title={Functional pearls: Probabilistic functional programming in Haskell},
+  author={Erwig, Martin and Kollmansberger, Steve},
+  journal={Journal of functional programming},
+  volume={16},
+  number={1},
+  pages={21--34},
+  year={2006},
+  publisher={Cambridge University Press}
+}
+
+
+@INPROCEEDINGS{9519460,
+  author={Haines, Thomas and Goré, Rajeev and Sharma, Bhavesh},
+  booktitle={2021 IEEE Symposium on Security and Privacy (SP)}, 
+  title={Did you mix me? Formally Verifying Verifiable Mix Nets in Electronic Voting}, 
+  year={2021},
+  volume={},
+  number={},
+  pages={1748-1765},
+  keywords={Privacy;Electronic voting systems;Tools;Software;Encryption;Electronic voting},
+  doi={10.1109/SP40001.2021.00033}}
+
+@article{butler2021formalising,
+  title={Formalising $\Sigma$-Protocols and commitment schemes using CryptHOL},
+  author={Butler, David and Lochbihler, Andreas and Aspinall, David and Gasc{\'o}n, Adri{\`a}},
+  journal={Journal of Automated Reasoning},
+  volume={65},
+  number={4},
+  pages={521--567},
+  year={2021},
+  publisher={Springer}
+}
+
+@inproceedings {287095,
+author = {Thomas Haines and Rajeev Gore and Mukesh Tiwari},
+title = {{Machine-checking {Multi-Round} Proofs of Shuffle: {Terelius-Wikstrom} and {Bayer-Groth}}},
+booktitle = {32nd USENIX Security Symposium (USENIX Security 23)},
+year = {2023},
+isbn = {978-1-939133-37-3},
+address = {Anaheim, CA},
+pages = {6471--6488},
+url = {https://www.usenix.org/conference/usenixsecurity23/presentation/haines},
+publisher = {USENIX Association},
+month = aug
+}
+
+@inproceedings{almeida2010certifying,
+  title={A certifying compiler for zero-knowledge proofs of knowledge based on $\sigma$-protocols},
+  author={Almeida, Jos{\'e} Bacelar and Bangerter, Endre and Barbosa, Manuel and Krenn, Stephan and Sadeghi, Ahmad-Reza and Schneider, Thomas},
+  booktitle={Computer Security--ESORICS 2010: 15th European Symposium on Research in Computer Security, Athens, Greece, September 20-22, 2010. Proceedings 15},
+  pages={151--167},
+  year={2010},
+  organization={Springer}
+}
+
+@INPROCEEDINGS {10221929,
+author = {D. Firsov and D. Unruh},
+booktitle = {2023 IEEE 36th Computer Security Foundations Symposium (CSF)},
+title = {{Zero-Knowledge in EasyCrypt}},
+year = {2023},
+volume = {},
+issn = {},
+pages = {1-16},
+abstract = {We formalize security properties of zero-knowledge protocols and their proofs in EasyCrypt. Specifically, we focus on sigma protocols (three-round protocols). Most importantly, we also cover properties whose security proofs require the use of rewinding; prior work has focused on properties that do not need this more advanced technique. On our way we give generic definitions of the main properties associated with sigma protocols, both in the computational and information-theoretical setting. We give generic derivations of soundness, (malicious-verifier) zero-knowledge, and proof of knowledge from simpler assumptions with proofs which rely on rewinding. Also, we address sequential composition of sigma protocols. Finally, we illustrate the applicability of our results on three zero-knowledge protocols: Fiat-Shamir (for quadratic residues), Schnorr (for discrete logarithms), and Blum (for Hamiltonian cycles, NP-complete).},
+keywords = {protocols;cryptography;computer security},
+doi = {10.1109/CSF57540.2023.00015},
+url = {https://doi.ieeecomputersociety.org/10.1109/CSF57540.2023.00015},
+publisher = {IEEE Computer Society},
+address = {Los Alamitos, CA, USA},
+month = {jul}
+}
+
+@article{10.1145/3594735,
+author = {Haselwarter, Philipp G. and Rivas, Exequiel and Van Muylder, Antoine and Winterhalter, Th\'{e}o and Abate, Carmine and Sidorenco, Nikolaj and Hri\c{t}cu, C\u{a}t\u{a}lin and Maillard, Kenji and Spitters, Bas},
+title = {{SSProve: A Foundational Framework for Modular Cryptographic Proofs in Coq}},
+year = {2023},
+issue_date = {September 2023},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {45},
+number = {3},
+issn = {0164-0925},
+url = {https://doi.org/10.1145/3594735},
+doi = {10.1145/3594735},
+abstract = {State-separating proofs (SSP) is a recent methodology for structuring game-based cryptographic proofs in a modular way, by using algebraic laws to exploit the modular structure of composed protocols. While promising, this methodology was previously not fully formalized and came with little tool support. We address this by introducing SSProve, the first general verification framework for machine-checked state-separating proofs. SSProve combines high-level modular proofs about composed protocols, as proposed in SSP, with a probabilistic relational program logic for formalizing the lower-level details, which together enable constructing machine-checked cryptographic proofs in the Coq proof assistant. Moreover, SSProve is itself fully formalized in Coq, including the algebraic laws of SSP, the soundness of the program logic, and the connection between these two verification styles.To illustrate SSProve, we use it to mechanize the simple security proofs of ElGamal and pseudo-random-function–based encryption. We also validate the SSProve approach by conducting two more substantial case studies: First, we mechanize an SSP security proof of the key encapsulation mechanism–data encryption mechanism (KEM-DEM) public key encryption scheme, which led to the discovery of an error in the original paper proof that has since been fixed. Second, we use SSProve to formally prove security of the sigma-protocol zero-knowledge construction, and we moreover construct a commitment scheme from a sigma-protocol to compare with a similar development in CryptHOL. We instantiate the security proof for sigma-protocols to give concrete security bounds for Schnorr’s sigma-protocol.},
+journal = {ACM Trans. Program. Lang. Syst.},
+month = {jul},
+articleno = {15},
+numpages = {61},
+keywords = {High-assurance cryptography, game-based proofs, state-separating proofs, modular proofs, machine-checked proofs, probabilistic relational program logic, formal verification}
+}
+
