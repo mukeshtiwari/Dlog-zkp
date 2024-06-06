@@ -35,6 +35,8 @@
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows.meta}
 \usepackage{url}
+\usepackage{xcolor}
+\usepackage{soul}
 \usepackage{lstcoq}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
@@ -49,26 +51,26 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-  Despite the recent growth of zero-knowledge succinct argument 
-  of knowledge (ZkSNARK) in cryptocurrencies, 
-  sigma protocol remains a popular choice in electronic voting to maintain privacy 
+  \st{Despite the recent growth of zero-knowledge succinct argument 
+  of knowledge (ZkSNARK)}, 
+  $\Sigma$-protocol remains a popular choice in electronic voting to maintain privacy 
   and verifiability of elections and still used in prominent e-voting systems such as 
   Helios, Belenois, SwissPost, etc. However, 
   the existing implementations of sigma protocol have two 
-  shortcomings: (i) the same code is written twice, once for the front-end (JavaScript)
+  shortcomings: (i) the same code is written twice, once for the front-end (JavaScript/TypeScript)
   and once for the back-end (Python/OCaml/Java), which is time-consuming but more importantly error-prone, 
   and (ii) none of these implementations offer any security guarantees. 
   
-  In this paper, we present a certified implementation of sigma protocol in the Coq proof assistant and
+  In this paper, we present a certified implementation of sigma protocol in the Coq theorem prover and
   prove our implementation is (special) sound, complete, and 
-  (honest verifier) zero-knowledge. Moreover, 
+  (special honest-verifier) zero-knowledge. Moreover, 
   we compile our Coq formalisation to WebAssembly and Rust; 
   thereby solve the problem of writing the same code twice. 
   We demonstrate the applicability of our
   formalisation by encoding the sigma protcol implemented in 
   Helios, Belenois, and SwissPost voting systems. 
-  Our long terms goal is to provide a verified cryptographic library that can be 
-  readily used in privacy-preserving voting systems.
+  \st{Our long terms goal is to provide a verified cryptographic library that can be 
+  readily used in privacy-preserving voting systems.}
 \end{abstract}
 
 % no keywords
@@ -121,27 +123,29 @@ in our formalisation.
 
 
 
+
+
 \section{Introduction}
 Electronic voting offers convenience and efficiency in electoral processes, potentially improving 
 accessibility for disabled voters, increasing participation among overseas voters, and lowering 
 the costs associated with conducting elections. Moreover,
 they can streamline the voting process, reduce administrative burdens, and enable 
-faster tallying of results. However, the transition to electronic voting also brings significant 
-challenges, particularly in ensuring the privacy and verifiability of the voting process. Therefore, 
-privacy and verifiability are two crucial elements that a voting system must ensure to adhere with 
-the principles of a free-and-fair election. In a paper-ballot election, privacy is maintained by 
+faster tallying of results. However, electronic voting also brings significant 
+challenges in ensuring the privacy and verifiability, a must for free-and-fair elections, of the voting process. Therefore, 
+privacy and verifiability are two crucial elements that a voting system must ensure.
+In a paper-ballot election, privacy is maintained by 
 ensuring that no identifying information is present on a ballot that links it to a particular voter, 
 and verifiability is achieved through scrutineers closely observing various electoral processes, 
 including the counting of ballots. In order to have a similar effect in electronic voting, encryption 
 is employed to safeguard the privacy of voter choices, while publicly verifiable evidence 
 (such as zero-knowledge proofs) allows voters and independent observers to verify the integrity of 
 the voting process. However, no matter how advanced the cryptographic techniques, they are useless 
-if their software implementation contains bugs.
-In fact, due to a major cryptographic flaw that
-could let someone change votes cast using Switzerland's online 
-voting software without being detected  \cite{9152765}, the Swiss Federal Chancellery suspended electronic voting in 
-2019. It only resumed in 2023 after getting feedbacks from academic 
-community \cite{swiss_evoting_chronik} about various component used in 
+if their software implementation contains bugs. In fact, 
+the Swiss Federal Chancellery suspended electronic voting in 2019 because of 
+a fatal software bug in the implementation of a cryptographic primitive 
+that allowed someone to change the cast votes without being detected \cite{9152765}!
+It only resumed in 2023 after getting feedbacks from academic 
+community \cite{swiss_evoting_chronik} about the various components used in 
 the electronic voting software. However, it is not an isolated  
 instance where bugs have been found in a voting software, e.g., 
 Voatz \cite{255334} (used in West Virginia, USA election),
@@ -167,14 +171,13 @@ Therefore, many electronic voting systems follow the principals
 of \textit{end-to-end verifiability}. End-to-end verifiability is 
 defined as: 
 \begin{itemize}
-  \item Cast-as-intended: voters get proof that the electronic ballot accurately reflects their choices.
-  \item Collected-as-cast: the election authority provides proof that the electronic ballots are received without tampering.
-  \item Counted-as-collected: the election authority provides proof that the results are based on correctly counting all received ballots.
+  \item \textit{cast-as-intended}: voters get proof that the electronic ballot accurately reflects their choices.
+  \item \textit{collected-as-cast}: the election authority provides proof that the electronic ballots are received without tampering.
+  \item \textit{counted-as-collected}: the election authority provides proof that the results are based on correctly counting all received ballots.
 \end{itemize} 
 
 
-\noindent 
-Finally, voters or scrutineers inspect these proofs and accept or reject the election results based on 
+Finally, voters and scrutineers inspect these proofs and accept or reject the election results based on 
 the verification of these proofs. In practice, this means that during the execution of an election, 
 electronic voting software generates data, and voters and scrutineers verify the conformity of 
 this data using independently written computer programs. The rationale is that if there is 
@@ -182,13 +185,13 @@ any discrepancy in the electronic voting system, at least one scrutineer or vote
 It is important to note that end-to-end verifiability is a valuable feature because it 
 allows for the verification of the election results by checking the proofs of correctness 
 once the election has concluded. This ensures that the election process was conducted 
-properly and that the results are accurate, but it is applied during or after the voting has taken place.
-However, can we use it before an election?
-The answer is yes; we use a formal language to express end-to-end verifiability, or parts of 
-it, and develop various components of electronic voting 
-software in this formal language. This process is called as  formal verification, or correct-by-construction,
-and it ensures that the software always produces valid proofs, 
-which are consistently accepted by voters and scrutineers. In other words, formal verification
+properly and that the results are accurate, but it is only in action during or after the voting has taken place.
+However, can we use it as a guiding principle to develop an electronic voting software, way before 
+an election? The answer is yes; we can use a formal language to express end-to-end verifiability, or parts of 
+it, and develop various components of an electronic voting 
+software in this formal language. This process is called formal verification, or correct-by-construction,
+and it ensures that the software always produces valid proofs that 
+are accepted by voters and scrutineers every time. In other words, formal verification
 can be employed to develop reliable electronic voting software.
 In fact, formal verification has emerged as a promising solution 
 to eliminate potential bugs from software, and in recent years it has been increasingly 
@@ -196,60 +199,59 @@ adopted in real-world software applications \cite{10.1145/1111037.1111042},
 including cryptography \cite{8835346,10.1145/3133956.3134043,190894,10.1145/2701415,
 10.1145/2660267.2660370,10.1145/3319535.3363211}.
 
-In this paper, we present a certified implementation of sigma protocol --an efficient 
+In this paper, we present a certified implementation of $\Sigma$-protocol --an efficient 
 type of zero-knowledge proof-- and its Parallel, And, Eq, Or, and Neq compositions in 
-the formal language of Coq proof assistant. 
+the formal language of the Coq proof assistant. 
 We have formalised and analysed the interactive version of 
-the Sigma protocol, but in practice it is not convenient due to the required interaction. 
-Therefore, all Sigma protocol implementations use the Fiat-Shamir 
-transformation \cite{10.5555/36664.36676} to make them non-interactive. This involves 
-using a hash function to replace the randomness of the public-coin verifier, though 
+$\Sigma$-protocol, but in practice it is not convenient due to the required interaction. 
+Therefore, all $\Sigma$-protocol implementations use the \textit{Fiat-Shamir} 
+transformation \cite{10.5555/36664.36676} to make them non-interactive. 
+Fiat-Shamir transformation replaces the randomness of the public-coin verifier by 
+a cryptographic hash function, though 
 some care is required \cite{10.1007/978-3-642-34961-4_38}.
-To make our formalisation self-contained and independent of external libraries, we have 
-encoded SHA-256 in Coq and proven its usual correctness properties. Additionally, we 
-have implemented efficient prime field arithmetic procedures and the Schnorr group to 
-ensure our library is concrete and executable. Finally, we extract WebAssembly and 
+Therefore, we have encoded SHA-256 in Coq, with the usual correctness properties \cite{nist_fips_180_4},
+to make our formalisation self-contained and independent of external libraries. Additionally, we 
+have implemented efficient arithmetic procedures for prime field and the Schnorr group to 
+ensure our library is usable. \textcolor{blue}{Finally, we extract WebAssembly and 
 Rust code from our certified implementation, one of the novelties of our 
-formalisation.
+formalisation}.
 
 
-There are numerous implementations of sigma protocol in various languages, 
-e.g., Helios is written in Python, Belenois is written in OCaml, and SwissPost is written in Java.
+There are numerous implementations of  $\Sigma$-protocol in various languages, 
+e.g., Helios is written in Python \cite{helios_crypto}, Belenois is written in OCaml \cite{belenios_core}, 
+and SwissPost is written in Java \cite{swisspost_crypto_primitives}.
 However, there are two main issues with these implementations: 
 (i) the same code is written twice 
 once for the front-end (JavaScript, TypeScript) and once for the back-end (Python, OCaml, or Java) and 
-(ii) none of these implementations offer any formal guarantees about the correctness of the code.
-Therefore, we use our formalisation to model the sigma protocol implemented in Helios, 
-Belenois, and SwissPost voting systems to demonstrate the usablity of 
-our library. Unlike Helios and SwissPost,
-we write one implementation and extract WebAssembly (front-end) and Rust (back-end) (\textbf{using the MetaCoq library}).
-Belenois is slightly different in this respect and uses Js\_of\_ocaml 
+ (ii) more importantly, none of these implementations offer any formal guarantees about the code.
+Unlike Helios and SwissPost,
+we write one implementation and extract WebAssembly (front-end) and Rust (back-end) (\textcolor{red}{Todo: using the MetaCoq library}).
+Belenois is slightly different in this respect and uses $Js\_of\_ocaml$ \cite{js_of_ocaml}
 to compile the OCaml code into JavaScript so it has only one 
 implementation written in OCaml; nonetheless it is not verified 
 and offers no formal guarantees. To the best of our knowledge, 
-this is the firstformal verification of sigma protocol that can be used at 
+this is the first formal verification of sigma protocol that can be used at 
 the front-end (WebAssembly code) and back-end (Rust code). 
 
 \subsection{Outline}
-The rest of the paper is organised as follows: in section \ref{sigma_protocol}
-we explain sigma protocol and its security properties. 
+Outline goes here. 
 
 
 \section{Sigma Protocol}\label{sigma_protocol}
 Despite the recent growth and popularity of zero-knowledge succinct 
-argument of knowledge (ZKSNARK), sigma protocol remains a
+argument of knowledge (ZKSNARK), $\Sigma$-protocol remains a
 leading cryptographic proof system in privacy-preserving voting systems. 
-Sigma protocol is used in Helios --a widely popular voting system-- \cite{adida2008helios}, 
+$\Sigma$-protocol is used in Helios --a widely popular voting system-- \cite{adida2008helios}, 
 Belenois --used in French elections for overseas 
 voters\footnote{VVFE, used in French elections, is a derivative of (part of) Belenios and 
 inherited all the zero-knowledge proofs from Belenois.}-- \cite{cortier2023french}, and 
 SwissPost --used in Swiss elections for overseas voters-- voting 
-systems \cite{10.1007/978-3-031-15911-4_4} (\textbf{Look for more examples}). 
+systems \cite{10.1007/978-3-031-15911-4_4} (\textcolor{red}{Look for more examples}). 
 Moreover, recently zero-knowledge proof community started a movement to standardise
 the sigma protocol \cite{ZKProof}.
 One of the main reasons for its popularity in privacy-preserving voting systems is its
 well-understood security.  Other application of sigma protocol 
-include identification schemes, (cite more work). 
+include identification schemes, (\textcolor{red}{cite more work}). 
 
 %\textbf{Introduce here that sigma protocol is efficient and simple and all other details about sigma protocol.} 
 Zero-knowledge proofs were first studied by Goldwasser, Micali, and Rackoff \cite{10.1145/22145.22178} and 
@@ -258,7 +260,7 @@ problems that have efficient verifiers; that is, for a given problem in the $NP$
 a polynomial-time algorithm that can verify whether a given solution, or witness, to the problem is correct or not.
 More formally, for a given $NP$-relation $R$ and a statement $x$, zero-knowledge proof allows a prover 
 $P$ to convince a verifier $V$ that they posses a witness $w$ --polynomial in length of $x$-- such 
-that ($x$, $w$) $\in$ $R$. To accomplish this, $P$ and $V$ engage in a 
+that ($x$, $w$) $\in$ $R$. To achieve this, $P$ and $V$ engage in a 
 interactive protocol and  at the end of the protocol $V$ either accepts or rejects the proofs.
 \textit{Sigma protocol}, shown in the figure \ref{fig:sig_picture}, is an efficient three move zero-knowledge proof where the 
 verifier is assumed to be honest and characterised by completeness, (special) soundness, and 
@@ -329,7 +331,7 @@ much use of Neq in the privacy-preserving voting systems, at least in the existi
 
 
 \section{The Coq Theorem Prover}
-\textbf{FIXME:this seems too much of tutorial Coq so let me know your thoughts. We 
+\textcolor{red}{FIXME:this seems too much of tutorial Coq so let me know your thoughts. We 
 can explain MetaCoq here as well and the extraction to Rust and WebAssembly
 so that it justifies this tutorial}
 The Coq theorem prover \cite{the_coq_development_team} is a computer program that interacts with users, 
@@ -998,36 +1000,80 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
   crypto library. 
 
 
-\section{Related Work, Future Work, and Limitations}
+\section{Related Work, Limitations, and Future Work}
   Given the popularity of sigma protocol in voting 
   and other domains, it is not surprising that it has 
   been formalised in the past \cite{5552642,9519460,
   butler2021formalising,10.1145/3319535.3354247,287095,almeida2010certifying,10221929,
-  10.1145/3594735}. 
+  10.1145/3594735}. Barthe et al. \cite{5552642}  produced the 
+  first first formalisation of sigma protocol and its composition in 
+  CertiCrypt, a library developed using the Coq theorem prover. 
+  Moreover, their proofs were constructive; however, they 
+  did not extract OCaml code to produce an exectuable. 
+  Butler et al. \cite{ butler2021formalising} has also 
+  formalised sigma protocol in CryptoHOL \cite{10.1007/978-3-662-49498-1_20}, a library 
+  build at the top of Isabelle/HOL. Again, similar to  \cite{5552642}, 
+  their goal is to machine check sigma protcol and commitment schemes 
+  and not extract any executable code. Moreover, Isabellel/HOL admits 
+  law of excluded middle and if it is used in formalisation, 
+  then no executable code can be extractracted. Haines et al. 
+  \cite{287095,10.1145/3319535.3354247} have formalised 
+  sigma protocol in the Coq theorem prover and extracted OCaml code 
+  to verify the 2020 IACR election and SwissPost mix-network. This is 
+  closest to our work; however, their goal is to just verify the 
+  election meanwhile our goal is contruct primitive using 
+  correct-by-construction principal to conduct election. Moreover, 
+  their work lack an intuitive way (probabilistic reasoning) 
+  to reason about zero-knowledge. Firsov et al. \cite{10221929}
+  have formalised sigma protocol in EasyCrypt, successory 
+  of CertiCrypt, but it goal is just machine check 
+  the properties of sigma protocol in EascyCrypt 
+  and not extract an executable code. 
 
-  Given the popularity of zero-knowledge in 
-  privacy presearving computation such as voting, cryptocurrencies, 
-  etc., it is not surprising that that sigma protocol and its other 
-  variant (zk-SNARK) are an active area of research 
+  
+  \subsection{Limitation and Future Work}
+   \textbf{Bas: Some text on extraction to Rust and WebAssembly is not verified?}\\ 
 
-  Given its popularity in voting, it is not surprising that 
-  Sigma protocol is an active area of research \cite{5552642}. 
+   Our formalisation currently lacks mix-network, a crucial cryptographic primitive used 
+   in electronic voting. A mix-network is used to break the link between the order of 
+   voters and the order of ballots appearing on the election bulletin board. 
+   Specifically, a mix-network takes a list of encrypted ballots as input and 
+   outputs another list of encrypted ballots in a random order.
+   However, since the output is also encrypted, a dishonest mix-network could 
+   potentially drop all the original ballots and manifacture artificial ones to favor a 
+   particular candidate. To prevent such tampering, the mix-network must also 
+   produce a zero-knowledge proof to ensure the correctness of the shuffle \cite{10.1007/978-3-642-02620-1_28,10.1007/978-3-030-51280-4_3}.
+   Given our current infrastructure, it would be fairly straightforward to 
+   encode these algorithms and prove their security properties. 
+   
 
-  There are three work. Giles Barthe does not extract to executable code, 
-  CryptoHol uses law of excluded middle, and thomas haines work is more about 
-  verifying a transcript rather than constructing it. Moreover, 
-  it does not reason about probabilities in intuitive way. 
+   Another limitation of our work is 
+   that we have formalised the interactive version 
+   of sigma protocol and proved it correctness. However, 
+   in reality the interaction is removed by 
+   using a hash function. Ideally, one would like 
+   to formalise the security of sigma protocol in random oracle 
+   model, the closest we can get. There is a existing 
+   work about formalising random oracle in the Coq theorem 
+   prover \cite{10.1007/11617990_3}; however, it 
+   will still required some non-trivial work. 
+   
+   
+  In general, voting is a well-defined protocol formalised in terms 
+  message exchanges between a client machine (voter) and a server machine (voting server), 
+  and the cryptographic primitives we developed in this project typically operate on 
+  a client machine (voter) and a server machine (voting server). 
+  However, the correctness of the cryptographic primitives does not imply the 
+  correctness of the whole voting system (protocol). Therefore, we aim to develop 
+  a high-level API for client-server communication, making their interactions explicit 
+  using session types \cite{10.1145/3453483.3454041}. 
+  This approach would provide an end-to-end guarantee for the interaction 
+  between clients and server in the voting system. 
 
-\textbf{find the shortcomings of these works}
-Given the importance of sigma protocols in privacy-preserving voting systems,
-it has been formalised before  \cite{5552642,butler2019formalisation,10.1145/3319535.3354247}. 
-\cite{5552642,butler2019formalisation} are mainly focused on establishing the 
-pen-and-paper proofs of sigma protocol into theorem provers and not extracting an executable code.
-On the other hand, \cite{10.1145/3319535.3354247} extract an OCaml code from the Coq 
-formalisation but it is mostly geared towards verifying an Helios election transcript, 
-rather than constructing the primitives to conduct an election. Moreover, 
-it does not reason about probabilities in an intuitive way.
 
+
+
+ 
 
   In this paper, we present a certified implementation 
   that can be readily used by voting community and 
@@ -1035,6 +1081,8 @@ it does not reason about probabilities in an intuitive way.
   Belenois, and SwissPost using our primitives. 
   Moreover, our formalisation extracts to WebAssembly and 
   Rust without duplicate efforts. 
+
+
 
 
 % references section
