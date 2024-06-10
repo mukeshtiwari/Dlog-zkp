@@ -41,7 +41,7 @@
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
-\title{Hope}
+\title{Bridging Frontend and Backend: Implementing Sigma Protocol in WebAssembly and Rust from a Single Coq Formalisation}
 
 \author{Anonymous}
 
@@ -54,7 +54,7 @@
   \st{Despite the recent growth of zero-knowledge succinct argument 
   of knowledge (ZkSNARK)}, 
   $\Sigma$-protocol remains a popular choice in electronic voting to maintain privacy 
-  and verifiability of elections and still used in prominent e-voting systems such as 
+  and verifiability of elections and still used in prominent electronic voting systems such as 
   Helios, Belenois, SwissPost, etc. However, 
   the existing implementations of sigma protocol have two 
   shortcomings: (i) the same code is written twice, once for the front-end (JavaScript/TypeScript)
@@ -234,12 +234,21 @@ this is the first formal verification of sigma protocol that can be used at
 the front-end (WebAssembly code) and back-end (Rust code). 
 
 \subsection{Outline}
-Outline goes here. 
+The rest of the paper is organised as follows: in section \ref{sigma_protocol}
+we explain the idea of zero-knowledge proof and sigma protocol. 
+Section \ref{coq_theorem} contains a brief introduction to 
+the Coq theorem prover, MetaCoq, Coq encoding of the Schnorr protocol, 
+uniform probability distribution model, modular arithmetic, Fiat-Shamir transform,
+and reasoning about the complexity of extractor and simulator. 
+In section \ref{case_studies} we show how our library can be used 
+for encoding $\Sigma$-protocol used in Helios, Belenois, and SwissPost. 
+Finally, section \ref{rel_work} concludes the related work, limitation of 
+our work, and future direction. 
 
 
 \section{Sigma Protocol}\label{sigma_protocol}
 Despite the recent growth and popularity of zero-knowledge succinct 
-argument of knowledge (ZKSNARK), $\Sigma$-protocol remains a
+argument of knowledge (ZkSNARK), $\Sigma$-protocol remains a
 leading cryptographic proof system in privacy-preserving voting systems. 
 $\Sigma$-protocol is used in Helios --a widely popular voting system-- \cite{adida2008helios}, 
 Belenois --used in French elections for overseas 
@@ -250,19 +259,23 @@ systems \cite{10.1007/978-3-031-15911-4_4} (\textcolor{red}{Look for more exampl
 Moreover, recently zero-knowledge proof community started a movement to standardise
 the sigma protocol \cite{ZKProof}.
 One of the main reasons for its popularity in privacy-preserving voting systems is its
-well-understood security.  Other application of sigma protocol 
-include identification schemes, (\textcolor{red}{cite more work}). 
+efficiency and well-understood security.  Other application of sigma protocol 
+include anonymous credentials \cite{10.1145/2660267.2660328}, 
+password-authenticated key exchange \cite{10.5555/2022815.2022838}, 
+signature \cite{10.1007/0-387-34805-0_22}, threshold signature \cite{10.1007/978-3-030-81652-0_2}, 
+etc. 
+
 
 %\textbf{Introduce here that sigma protocol is efficient and simple and all other details about sigma protocol.} 
 Zero-knowledge proofs were first studied by Goldwasser, Micali, and Rackoff \cite{10.1145/22145.22178} and 
 are possible for all problems in $NP$ \cite{10.1145/116825.116852}. Recall that $NP$ is the class of 
 problems that have efficient verifiers; that is, for a given problem in the $NP$ class, there is 
 a polynomial-time algorithm that can verify whether a given solution, or witness, to the problem is correct or not.
-More formally, for a given $NP$-relation $R$ and a statement $x$, zero-knowledge proof allows a prover 
+More formally, for a given binary $NP$-relation $R$ and a statement $x$, zero-knowledge proof allows a prover 
 $P$ to convince a verifier $V$ that they posses a witness $w$ --polynomial in length of $x$-- such 
 that ($x$, $w$) $\in$ $R$. To achieve this, $P$ and $V$ engage in a 
 interactive protocol and  at the end of the protocol $V$ either accepts or rejects the proofs.
-\textit{Sigma protocol}, shown in the figure \ref{fig:sig_picture}, is an efficient three move zero-knowledge proof where the 
+$\Sigma$-protocol --shown in the Figure \ref{fig:sig_picture}-- is an efficient three move zero-knowledge proof where the 
 verifier is assumed to be honest and characterised by completeness, (special) soundness, and 
 (special honest-verifier) zero-knowledge. More formally: 
 \begin{itemize}
@@ -277,7 +290,7 @@ there exists a polynomial-time extractor $E$ which given
 two accepting transcripts $(a, c, r)$ and $(a, c', r')$ for $x$, 
 it can extract a witness $w$ such that $(x, w) \in R$. In other words, 
 if $P$ does not know $w$ for $x$ then it cannot construct a proof 
-(a; c; r) that will passes the verification check. 
+$(a, c, r)$ that will passes the verification check. 
 \item \textbf{Special honest-verifier zero-knowledge proof:}
 There exists a polynomial-time simulator $S$ that, for any 
 $v \in L_R$ where $L_R = \{x  \mid (x, w) \in R\}$,
@@ -316,31 +329,31 @@ satisfying $(v,w) \in R$.
 
 Sigma protocol was first defined by Ronald Cramer \cite{cramer1996modular} 
 and the first efficient sigma protocol was introduced by Schnorr in \cite{schnorr1991efficient}. 
-Eventhough there exists many sigma protocols, the Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenois, SwissPost, etc. Therefore, 
+Even though there exists many sigma protocols, the Schnorr protocol is used extensively in privacy-preserving voting systems, e.g, Helios, Belenois, SwissPost, etc. Therefore, 
 our formalisation is geared towards the Schnorr protocol. 
-Moreover, we also formalise the composition of (i) $n$ \textit{Parallel} Schnorr, 
-(i) $n$ \textit{And} Schnorr, (iii) $n$ \textit{Or} Schnorr, and (iv) $n$ \textit{Eq} Schnorr protocol. 
+Moreover, we also formalise the composition of (i) $n$ Parallel Schnorr, 
+(i) $n$ And Schnorr, (iii) $n$ Or Schnorr, and (iv) $n$ Eq Schnorr protocol, for an arbitrary natural number $n$. 
 Ideally, given the abstraction of our formlisation (\textit{vector space}), we could have 
 abstracted the sigma protocol and their composition in a generic way \cite{10.1007/978-3-642-02384-2_17},
 but we decided to focus on the Schnorr protocol and its composition to ensure familiar APIs 
-for e-voting in WebAssembly and Rust. We also formalise Okamoto protocol as a subprotocol 
-for Neq composition (\textbf{Berry: does it sound okay?}). However, we have not seen 
-much use of Neq in the privacy-preserving voting systems, at least in the existing voting systems. 
+for electronic voting in WebAssembly and Rust. We also formalise Okamoto protocol as a sub-protocol 
+for Neq composition (\textcolor{red}{Berry: does it sound okay?}). However, we have not seen 
+much use of Neq in the privacy-preserving voting systems, at least in the existing voting systems 
+such as Helios, Belenois, and SwissPost.  
 
 
 
 
-\section{The Coq Theorem Prover}
+\section{The Coq Theorem Prover}\label{coq_theorem}
 \textcolor{red}{FIXME:this seems too much of tutorial Coq so let me know your thoughts. We 
 can explain MetaCoq here as well and the extraction to Rust and WebAssembly
 so that it justifies this tutorial}
 The Coq theorem prover \cite{the_coq_development_team} is a computer program that interacts with users, 
 enabling them to encode mathematical definitions, express specifications (true statements) about 
 their definitions, and formally prove that the definitions imply the specifications. 
-A user first defines their mathematical object (definition) and then figure 
-out some  true statements (specifications) about 
-that object. Once the user has definition 
-and specifications, they need to prove 
+A user first defines their mathematical object (definition) and then figures 
+out some true statements (specifications) about 
+that object. Once the user has definition and specifications, they need to prove 
 that the definition satisfies the specifications 
 (proof writing). In general, amongst these three steps, 
 the proof writing step is the most challenging and important step. 
@@ -360,7 +373,7 @@ a C compiler used by many companies\footnote{https://www.absint.com/partners.htm
 Fiat-Crypto \cite{8835346} 
 used in BoringSSL --a cryptographic library used in Chrome, Android, 
 and CloudFlare--, ConCert \cite{10.1145/3372885.3373829}, 
-a smart contract certification framework, etc. \textbf{FIXME: More examples}
+a smart contract certification framework, etc. \textcolor{red}{FIXME: More examples}
 
 
 
@@ -473,7 +486,7 @@ The meta theory of Coq has been scrutinised for decades
 by many mathematicians and so far it has withstood all 
 the scrutiny, but not so much for its OCaml implementation \cite{coq_critical_bugs}. 
 Therefore, there is a recent effort to develop more 
-rigorous implementation for Coq proof checking \cite{10.1145/3371076} \textbf{FIXME: this is the place 
+rigorous implementation for Coq proof checking \cite{10.1145/3371076} \textcolor{red}{FIXME: this is the place 
 to state that we are following this path of MetaCoq and extraction}.
 
 
@@ -556,20 +569,24 @@ In the Schnorr protocol, the elements $g$, $h$, and $a$ are group elements from 
 are scalar values from the underlying prime field. In practice, both the group elements and the field elements are large 
 numbers modulo some prime numbers, although the operations on them differ. 
 One possibility is to encode the Coq functions to work with concrete numbers from the underlying group and field, 
-but this leads to cumbersome proofs because of dealing with concrete numbers, but the bigger problem 
-is that it is not modular. For most programming languages, this distinction 
-may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24}. 
+but this leads to cumbersome proofs because we need to deal with the details of concrete numbers during the security proofs. 
+More importantly, it is not modular because it binds the formalisation to multiplicative groups; therefore, 
+it can no longer be used over elliptic curve groups. For most programming languages, this distinction 
+may not be significant, but it can be a potential source of bugs \cite{10.1007/978-3-662-63958-0_24} undermining 
+the security of underlying cryptographic primitives. 
 However, when encoding it in Coq, we need to thoroughly detail these distinctions because 
 the same large number can belong to a group or field and that dictates what operations are available for them. 
 Therefore, to avoid this unpleasant situation,  
-we decided to abstract the underlying group as an abstract type $G$, endowed with 
+we abstract the underlying group as an abstract type $G$, endowed with 
 usual group operation, and the underlying field as an abstract type $F$, endowed with 
-filed operation in our formalisation. Moreover, we abstract these two types into a vector space for smooth interaction between 
-group element and field element (exponential needs this). This 
+field operation in our formalisation. 
+Moreover, we abstract these two types into a vector space for smooth interaction between 
+group element and field element (exponentiation in multiplicative group or mulitplication of a field element 
+with a curve point in ellptic curve group is an instance of this interaction). This 
 makes our formalisation generic that can be instantiated with 
 any kind of group and field as long as it follows the axioms of 
 vector space. For example, in our formalisation we have developed 
-efficient algorithm for the Schnorr group but our formalisation can 
+efficient algorithm for the Schnorr (mulitplicative) group but our formalisation can 
 later be also instantiated with elliptic curve group. However, 
 one of the major benefit of this abstraction is easiness of proofs 
 which can be easily automated. Therefore, we model the Schnorr 
@@ -602,7 +619,7 @@ Definition accepting_conversation (g h : G)
 \end{lstlisting}
   
 \noindent
- where $F$ is the underlying field, $G$ is the underlying group,
+ $F$ is the underlying field, $G$ is the underlying group,
  $+ : F \rightarrow F \rightarrow F$ is the field addition,
  $* : F \rightarrow F \rightarrow F$ is the field multiplication, 
  $gop : G \rightarrow G \rightarrow G$ is the group operation, and
@@ -629,7 +646,7 @@ when instantiated concretely, exponentiation function but it is purely for notat
 
 
 We prove the completeness and special soundness property of the Schnorr protocol, 
-as shown in Listing \cite{comp_sound}. However, to prove the special honest-verifier 
+as shown in Listing \ref{comp_sound}. However, to prove the special honest-verifier 
 zero-knowledge property we need a model to reason about uniform probability 
 distribution in Coq. We discuss the encoding of uniform probability distribution 
 in the next section and subsequently explain the special honest-verifier zero-knowledge
@@ -665,22 +682,25 @@ Proof using -(x R). (* proof terms omitted *) Qed.
 \subsection{Uniform Distribution}
 To reason about special honest-verifier zero-knowledge proof 
 intuitively, we need a model of uniform distribution. 
-We follow the \cite{erwig2006functional}  and 
+We follow \cite{erwig2006functional}  and 
 encode the distribution a list of tuples where the 
-second element of tuple basically is probability of first element 
-in the tuple. Moreover, we define equality on distribution by 
+second element of a tuple is probability --represented as 
+a rational number-- of the first element 
+of the tuple. Moreover, we define equality on distribution by 
 stating that two distributions are equal if they are permutation 
 of each other. This encoding is flexible and allows us 
 to encode any kind of distribution. We prove that the dist is a 
 monad \cite{erwig2006functional} by 
-giving it a suitable definitions of ret and bind. Making 
-it an instance of monad makes our life easier because 
+giving it a suitable definitions of \textit{ret} and 
+\textit{bind}. Making it an instance of monad makes our life easier because 
 we can compose a distribution $d$ $n$ times to 
-returns a distribution on a vector of $n$ elements. 
-However, to reason about cryptographic primitives, we need uniform 
-distribution and therefore we define a function, $uniform\_with\_replacement$, 
+returns a distribution on a vector of $n$ elements, 
+which is needed in proving the special honest-verifier 
+zero-knowledge proof of $n$ composed $\Sigma$-protocol.
+However, we need uniform 
+distribution, rather than an arbitrary distribution, to reason about 
+zero-knowledge of $\Sigma$-protocol, and therefore we define a function, $uniform\_with\_replacement$, 
 to generate uniform distributions, shown in Listing \ref{prob_def}.
-We prove various prop
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Definition of Uniform Probability Distribution},
     label={prob_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
@@ -719,7 +739,7 @@ zero-knowledge proof of the Schnorr protocol. We define the
 Schnorr distribution $schnorr\_distribution$
 that involves the secret $x$ and 
 the simulator distribution $simulator\_distribution$
-that does not involve the secret $x$. 
+that does not involve the secret $x$, shown in Listing \ref{def_zero}. 
 In the Schnorr distibution we draw 
 a random field element $u$ from the uniform 
 distribution $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$,
@@ -732,14 +752,13 @@ we draw a random field element $u$ from
 $uniform\_with\_replacement \text{ }lf \text{ } Hlfn$
 and use it construct a distribution on sigma protocol. 
 Using these two definitions, we prove that these two 
-distributions are identical 
-$special\_honest\_verifier\_zkp$. However, 
+distributions are identical $special\_honest\_verifier\_zkp$. However, 
 contrary to the reasoning in cryptographic papers, 
 these two distributions are not syntactically equal but 
 semantically equal. For both distributions, 
 the first component is a transcript $(a, c, r)$ and 
-the second component is a rational number that represents 
-its probability. The triples in both distrubtions 
+the second component is a rational number, which represents probability of 
+the transcript $(a, c, r)$. The triples in both distrubtions 
 are an accepting transcript (semantic) but they 
 are not identical and differ syntactically; 
 therefore we first apply the 
@@ -752,8 +771,8 @@ that we prove.
 
 
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
-  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+\begin{lstlisting}[frame=single, language=Coq, caption={Special Honest-Verifier Zero-Knowledge Proof},
+  label={def_zero},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 (* Distribution that involves the secret x *)
 Definition schnorr_distribution  (lf : list F) 
@@ -763,7 +782,6 @@ Definition schnorr_distribution  (lf : list F)
   u <- (uniform_with_replacement lf Hlfn) ;;
   Ret (schnorr_protocol x g u c).
 
-  
 (* without secret x *)
 Definition simulator_distribution (lf : list F) 
   (Hlfn : lf <> List.nil) (g h : G) (c : F) : 
@@ -785,12 +803,12 @@ Proof. (* proof terms omitted *) Qed.
 
 In the previous section, we explained the Schnorr proof, 
 but we have also formalised a way to combine $n$ And, Or, Eq, 
-and Parallel Schnorr statements. Proving special 
+and Parallel Schnorr statements and proving their special 
 honest-verifier zero-knowledge proof is more challenging 
 than a single Schnorr statement. One of the major challenge 
 is to draw $n$ random element for an uniform distribution 
-and therefore we have written the function $repeat\_dist\_ntimes\_vector$
-that takes a distribution $dist\text{ }A$ and a number $n$ and a returns 
+and therefore we have written the function $repeat\_dist\_ntimes\_vector$ --shown in Listing \ref{dist_comp}--
+that takes a distribution $d$ and a number $n$ and a returns 
 distribution of vectors of length $n$,  encoded as 
 $dist \text{ } (Vector.t \text{ } A \text{ } n)$. The 
 reader may notice that it is a generic function 
@@ -801,14 +819,12 @@ therefore in $uniform\_probability\_multidraw\_prob$ theorem
 we instantiate the distribution with 
 the uniform distribution $(uniform\_with\_replacement\text{ }lf\text{ }Hlf)$ and 
 prove that the probability of this distribution 
-is $1/|lf|^n$. We use it 
-in Parallel composition where we combine $n$ sigma protocol and  
-we need to need to draw a vector $n$ random numbers to 
-prove the zero-knowledge property, as shown 
-in $parallel\_schnorr\_distribution$.
+is $1/|lf|^n$. We use it in Parallel composition where we combine $n$ statments and  
+we need to draw a vector of $n$ random field elements to 
+prove the zero-knowledge property, as shown in $parallel\_schnorr\_distribution$.
   
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
-label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+\begin{lstlisting}[frame=single, language=Coq, caption={Composition of a Distribution},
+label={dist_comp},captionpos=t, basicstyle=\ttfamily\footnotesize,
 abovecaptionskip=-\medskipamount]
 Fixpoint repeat_dist_ntimes_vector {A : Type} 
 (d : dist A) (n : nat) : dist (Vector.t A n) := 
@@ -825,9 +841,7 @@ Lemma uniform_probability_multidraw_prob
 (a : Vector.t A n) b (Hlf : lf <> []), 
 In (a, b) (repeat_dist_ntimes_vector 
   (uniform_with_replacement lf Hlf) n) ->
-b = mk_prob 1 (Pos.of_nat 
-(Nat.pow (List.length lf) n)).
-
+b = mk_prob 1 (Nat.pow (List.length lf) n).
 
 Definition parallel_schnorr_distribution  
   {n : nat} (lf : list F) (Hlfn : lf <> List.nil) 
@@ -841,19 +855,19 @@ Definition parallel_schnorr_distribution
 
 
 \subsection{Efficient Modular Arithmetic}
-As stated earlier, to ensure the ease of proving, we worked with 
-an abstract vector space. However, to execute this code, we need to 
-instantiate the vector space with concrete examples. Therefore, we have 
-encoded a prime field and the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
-group of integers modulo a large prime p) in the Coq theorem prover. 
+As stated earlier, to ensure the ease of proving and modularity, 
+we worked with an (abstract) vector space. However, to execute the code of 
+our formalisation, we need to instantiate the vector space with a concrete entity. 
+Therefore, we have encoded a prime field --shown in Listing \ref{field_def}-- 
+and the Schnorr group \cite{schnorr1991efficient} (mulitplicative 
+group of integers modulo a large prime p) --shown in Listing \ref{group_def}-- in the Coq theorem prover. 
 To encode the Schnorr group, we postulate three integer $k, p, \text{ and } q$. 
 Moreover, we assume $p \text{ and } q$ are primes where $p = k * q + 1$ (when 
 $k = 2$, these primes are called Sophie Germain primes). Finally, 
-we encode the neutral element $one$, the group multiplication $mul\_schnorr\_group$, 
-and the group inverse $inv\_schnorr\_group$. We prove that our encoding 
+we encode the neutral element ($one$), the group multiplication ($mul\_schnorr\_group$), 
+and the group inverse $inv\_schnorr\_group$ and we prove that our encoding 
 of the Schnorr group in Coq is commutative group by making it 
-an instance of the typeclass $schnorr\_comm$, 
-which is an abstract typeclass that bundles the axioms 
+an instance of the typeclass $schnorr\_comm$, which is an abstract typeclass that bundles the axioms 
 of commutative group. 
 
 
@@ -861,7 +875,7 @@ of commutative group.
 
 
  \begin{lstlisting}[frame=single, language=Coq, caption={Coq Encoding of the Schnorr Group},
-  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  label={group_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 Section SchnorrGroup. 
   Context 
@@ -872,31 +886,15 @@ Section SchnorrGroup.
     {v : Z; Ha : 0 < v < p; 
     Hb : v ^ q mod p = 1}.
 
-  (* Neutral Element *)
-  Definition one : Schnorr_group.
-    refine 
-      (mk_schnorr 1 one_mod_p 
-      one_pow_mod_q).
-  Defined. 
-
-  Definition mul_schnorr_group 
-      (u v : Schnorr_group) : Schnorr_group.
-  (* Proof terms omitted *)
-  Defined. 
-
   (* u ^ (p - 2) is inverse of u *)
   Definition inv_schnorr_group 
   (u : Schnorr_group) : Schnorr_group.
   refine(
     match u with 
     | mk_schnorr au Hu Hv => mk_schnorr
-        (Z.of_N (Npow_mod (Z.to_N au) 
-        (Z.to_N (p - 2)) (Z.to_N p)))
-        (@inv_schnorr_group_first au Hu)
-        (inv_schnorr_group_second au Hu Hv)
+        (* terms omitted *)
     end).
   Defined.
-
 
   (* Schnorr is a commutative Group *)
   Global Instance schnorr_comm : 
@@ -917,7 +915,7 @@ it is an instance of the typeclass $zp\_field$, which is
 a typeclass that encodes the axioms of a field. 
 
 \begin{lstlisting}[frame=single, language=Coq, caption={Coq Encoding of Prime Field},
-  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  label={field_def},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 (* Prime Field *)
 Section ZpField.
@@ -934,7 +932,8 @@ End ZpField.
 
 Finally, we combine the Schnorr group and the prime field 
 into a vector space instantiating the vector set with 
-the Schnorr group and the scalar set with the prime field. 
+the Schnorr group and the scalar set with the prime field, 
+shown in Listing \ref{vec_space}. 
 However, in order to establish that it is an 
 instance of vector space we need the definition 
 of scalar mulitiplication. We encode the  
@@ -947,8 +946,8 @@ possibilities of mixing group and field, both represented
 as an integer modulo some large 
 prime \cite{10.1007/978-3-662-63958-0_24}.
 
-\begin{lstlisting}[frame=single, language=Coq, caption={Definition of Natural Number},
-  label={ind_nat},captionpos=t, basicstyle=\ttfamily\footnotesize,
+\begin{lstlisting}[frame=single, language=Coq, caption={Vector Space Instantiation},
+  label={vec_space},captionpos=t, basicstyle=\ttfamily\footnotesize,
   abovecaptionskip=-\medskipamount]
 
   Definition pow (g : @Schnorr.Schnorr_group p q) 
@@ -981,26 +980,91 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
   
   
  
-\subsection{Fiat-Shamir Transform}
+\subsection{Fiat-Shamir Transform.}
  We have formalised the interactive version of sigma protocol. However,
  interaction is not convenient and therefore
- we use Fiat-Shamir transform to make it non-interactive. We use SHA256 
- to turn the interaction to non-interaction but in order to 
- make it a self-contained library and 
- avoid relying on any external library at the front-end (WebAssembly)
- we have encoded the SHA256 in the Coq theorem prover, with usual correctness 
- properties. 
+ Fiat-Shamir transform is used to make the sigma protocol non-interactive. 
+ Instead of waiting for a challenge from the verifier, the prover computes 
+ the challenge by hashing the commitment and possibly other public 
+ information by a random oracle.
+ This challenge is now deterministic and can be reproduced by anyone 
+ who knows the commitment and has access to the oracle. 
+ In practical implementations, cryptographic hash functions like SHA-256 are 
+ used in place of a random oracle. The random oracle model (ROM) assumes that these hash functions 
+ behave like a perfect random oracle, meaning their outputs are 
+ indistinguishable from random values and are consistent for any given input.
+ In this formalisation, we have encoded SHA256 we have encoded the SHA256 in the Coq 
+ theorem prover, with usual correctness properties stated in the NIST document \cite{nist_fips_180_4}.
+ Our goal is to make sure that our library is self-contained and does 
+ not depend on any external libraries, which is important specially 
+ for the front-end.
 
 
 
 
-\section{Case Studies/Experiment}
+\subsection{Efficient Extractor.}
+
+In this section we explain the ideas behind the formalisation of 
+efficient extractor and simulator. Recall that in $\Sigma$-protocol, 
+the extractor is efficient, i.e., it runs in polynomial time in its input length.
+However, the functions from the vector space does not captures the 
+infomation about complexity of operations, i.e., they do not 
+capture the number of steps they take to compute for a given input. 
+In our formalisation, we found that we could have followed the 
+monadic approach \cite{10.1145/3473585,10.1145/3158124} by adding an extra 
+return value for the number of steps it takes during the 
+execution for a given input for all the functions in vector space. 
+Moreover, monadic approach composes well, i.e., we can take 
+two monadic functions and by composing them together we 
+can compute the complexity of composed function. However, 
+during the code extraction into Rust and WebAssembly, it would 
+have stuck with all the function and destroyed our APIs. 
+Therefore, we decided to take another approach. 
+In practice, an extractor in multiplicative group is 
+a function that can compute the inverse efficiently and 
+in our concrete model we compute inverse using 
+the binary exponentiation function $repeat\_op\_ntimes\_rec$. 
+Therefore, we decided to encode an inductive data type $complexity\_repeat\_op\_ntimes\_rec$ --shown in \ref{extractor_complex}--
+that captures the number of steps of a binary exponentiation 
+fuction. Finally, we proved in theorem $correct\_complexity\_repeat\_op\_ntimes\_rec$ that 
+(concrete) function $repeat\_op\_ntimes\_rec$ runs in logarithmic in its input, or 
+polynomial (linear) in the nubmer of bits of its input. With this method, 
+we do not need to change anything in our API but the downside is that 
+it does not compose well like monadic approach. Nonetheless, it is 
+sufficient for our approach because our main goal is to extract 
+Rust and WebAssembly from our formalisation whose API are closely 
+aligned with a real-world library. 
+
+
+\begin{lstlisting}[frame=single, language=Coq, caption={Extractor Complexity},
+  label={extractor_complex},captionpos=t, basicstyle=\ttfamily\footnotesize,
+  abovecaptionskip=-\medskipamount]
+Inductive complexity_repeat_op_ntimes_rec 
+(e t : N) : positive -> N -> N -> Prop :=
+| xH_case : complexity_repeat_op_ntimes_rec e t xH 
+    (N.modulo e t) N0
+| xO_case p ret w : 
+    complexity_repeat_op_ntimes_rec e t p ret w ->
+    complexity_repeat_op_ntimes_rec e t (xO p) 
+    (N.modulo (ret * ret) t) (N.succ w)
+| xI_case p ret w : 
+    complexity_repeat_op_ntimes_rec e t p ret w ->
+    complexity_repeat_op_ntimes_rec e t (xI p) 
+    (N.modulo (e * (ret * ret)) t) (N.succ w).
+
+Lemma correct_complexity_repeat_op_ntimes_rec : 
+  forall n e w, complexity_repeat_op_ntimes_rec 
+    (repeat_op_ntimes_rec e n w)  (N.log2 n).
+Proof. (* proof terms omitted *) Qed.
+\end{lstlisting}
+
+\section{Case Studies/Experiment}\label{case_studies}
   We use our formalisation to model the Cryptographic protocols implemented in 
   Helios voting systems. Compare it with state-of-the-art 
   crypto library. 
 
 
-\section{Related Work, Limitations, and Future Work}
+\section{Related Work, Limitations, and Future Work}\label{rel_work}
   Given the popularity of sigma protocol in voting 
   and other domains, it is not surprising that it has 
   been formalised in the past \cite{5552642,9519460,
@@ -1032,7 +1096,7 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
 
   
   \subsection{Limitation and Future Work}
-   \textbf{Bas: Some text on extraction to Rust and WebAssembly is not verified?}\\ 
+   \textcolor{red}{Bas: Some text on extraction to Rust and WebAssembly is not verified?}
 
    Our formalisation currently lacks mix-network, a crucial cryptographic primitive used 
    in electronic voting. A mix-network is used to break the link between the order of 
@@ -1053,10 +1117,16 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
    in reality the interaction is removed by 
    using a hash function. Ideally, one would like 
    to formalise the security of sigma protocol in random oracle 
-   model, the closest we can get. There is a existing 
+   model, the closest we can get. This means that under the assumption 
+   that the hash function behaves as a random oracle, the non-interactive 
+   proof derived from the Fiat-Shamir transform is secure. 
+   The random oracle model provides a framework where we can 
+   reason about the security properties  of 
+   the transform. There is an existing 
    work about formalising random oracle in the Coq theorem 
-   prover \cite{10.1007/11617990_3}; however, it 
-   will still required some non-trivial work. 
+   prover \cite{10.1007/11617990_3} and we would like to 
+   connect it our implementation; however, it 
+   will require some non-trivial work. 
    
    
   In general, voting is a well-defined protocol formalised in terms 
@@ -1069,9 +1139,6 @@ prime \cite{10.1007/978-3-662-63958-0_24}.
   using session types \cite{10.1145/3453483.3454041}. 
   This approach would provide an end-to-end guarantee for the interaction 
   between clients and server in the voting system. 
-
-
-
 
  
 
