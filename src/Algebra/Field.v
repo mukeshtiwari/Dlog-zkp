@@ -32,8 +32,9 @@ Section Field.
     constructor.
     apply ring_theory_for_stdlib_tactic.
     intro Hn. 
-    symmetry in Hn. 
-    auto using (zero_neq_one (eq:=eq)).
+    symmetry in Hn.
+    pose proof (zero_neq_one (eq:=eq)) as Ha.
+    eapply Ha in Hn; assumption.
     apply field_div_definition.
     apply left_multiplicative_inverse.
   Qed. 
@@ -58,7 +59,8 @@ Section Field.
   Proof.
     intros ? Hx.
     rewrite commutative. 
-    auto using left_multiplicative_inverse.
+    eapply left_multiplicative_inverse;
+    assumption.
   Qed.
 
   
@@ -166,15 +168,16 @@ Section Field.
 
 
   (* A field is integral domain, but without  *)
+   
   Global Instance integral_domain : 
     @integral_domain T eq zero one opp add sub mul.
   Proof.
     split; 
-    auto using field_commutative_ring, 
+    eauto using field_commutative_ring, 
     field_is_zero_neq_one, 
     is_mul_nonzero_nonzero.
   Qed.
-
+  
 
 
 
