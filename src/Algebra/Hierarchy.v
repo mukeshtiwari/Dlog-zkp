@@ -130,7 +130,7 @@ Section Algebra.
       ring_is_left_distributive : is_left_distributive;
       ring_is_right_distributive : is_right_distributive;
       ring_sub_definition : forall x y, x - y = x + opp y;
-      (* ring_mul_Proper : Proper (eq ==> eq ==> eq) mul; *)
+      ring_mul_Proper : Proper (eq ==> eq ==> eq) mul;
       ring_sub_Proper : Proper (eq ==> eq ==> eq) sub
 
     }.
@@ -139,7 +139,7 @@ Section Algebra.
     Global Existing Instance ring_monoid_mul.
     Global Existing Instance ring_is_left_distributive.
     Global Existing Instance ring_is_right_distributive.
-    (* Global Existing Instance ring_mul_Proper. *)
+    Global Existing Instance ring_mul_Proper.
     Global Existing Instance ring_sub_Proper.
 
     

@@ -683,6 +683,7 @@ Module Zpfield.
       + intros x y z; apply mul_dist_add_left.
       + intros x y z; apply mul_dist_add_right.
       + intros x y; apply zp_sub_add_opp.
+      + apply zp_mul_proper.
       + apply zp_sub_proper.
       + intros x y. apply zp_mul_comm.
       + intros x y; apply zp_mul_left_inv; exact y.
