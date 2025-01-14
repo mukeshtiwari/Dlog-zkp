@@ -320,7 +320,7 @@ Section Fermat_Little_Theorem.
   Proof.
     intros ? ? ?.
     unfold populate_terms.
-    rewrite List.map_length.
+    rewrite List.length_map.
     apply list_upto_length.
   Qed.
 
@@ -379,7 +379,7 @@ Section Fermat_Little_Theorem.
   Proof.
     intros *.
     unfold mul_x_populate_terms.
-    rewrite List.map_length,
+    rewrite List.length_map,
     populate_terms_length.
     reflexivity.
   Qed.
@@ -438,7 +438,7 @@ Section Fermat_Little_Theorem.
   Proof.
     intros *.
     unfold mul_y_populate_terms.
-    rewrite List.map_length,
+    rewrite List.length_map,
     populate_terms_length.
     reflexivity.
   Qed.
@@ -500,7 +500,7 @@ Section Fermat_Little_Theorem.
   Proof.
     intros *.
     unfold append_mul_x_populate_terms.
-    rewrite List.app_length,
+    rewrite List.length_app,
     mul_x_populate_terms_length.
     simpl. lia.
   Qed.
@@ -720,9 +720,9 @@ Section Fermat_Little_Theorem.
     append_mul_y_populate_terms,
     mul_x_populate_terms, 
     mul_y_populate_terms.
-    simpl. rewrite List.map_length,
+    simpl. rewrite List.length_map,
     List.last_length. simpl.
-    rewrite List.map_length.
+    rewrite List.length_map.
     apply f_equal.
     reflexivity.
     rewrite append_mul_x_populate_terms_length.

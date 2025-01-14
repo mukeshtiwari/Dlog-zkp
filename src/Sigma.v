@@ -453,7 +453,7 @@ Module Zkp.
             assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
               List.length lf).
             unfold uniform_with_replacement.
-            rewrite List.map_length;
+            rewrite List.length_map;
             reflexivity.
             pose proof schnorr_distribution_probability_generic
             (uniform_with_replacement lf Hlfn)
@@ -552,7 +552,7 @@ Module Zkp.
             assert (Hlt : List.length (uniform_with_replacement lf Hlfn) =
               List.length lf).
             unfold uniform_with_replacement.
-            rewrite List.map_length;
+            rewrite List.length_map;
             reflexivity.
             pose proof simulator_distribution_probability_generic
             (uniform_with_replacement lf Hlfn)
